@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RazorPay Amount Form</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-5">
+  <h2 class="text-center">RazorPay Amount Form</h2>
+  <form action="" method="post" class="mt-4">
+    <div class="mb-3">
+      <label for="amount" class="form-label">Amount</label>
+      <input type="number" step="0.01" class="form-control" id="amount" name="amount" placeholder="Enter amount" required>
+    </div>
+    <div class="mb-3">
+      <label for="currency" class="form-label">Currency</label>
+      <select class="form-select" id="currency" name="currency" required>
+        <option value="" disabled selected>Select currency</option>
+        <option value="INR">INR</option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="amount" class="form-label">Email</label>
+      <input type="email" class="form-control" id="email" name="email" placeholder="Enter registered email carefully" required>
+    </div>
+
+    <button type="submit" id="razerpay" class="btn btn-primary">Proceed to Pay</button>
+  </form>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+  async function createOrder() {
+    console.log("---- Creating order ----");
+    const amount = document.getElementById('amount').value;
+    const currency = document.getElementById('currency').value;
+    const email = document.getElementById('email').value;
+
+    if (!amount || !currency) {
+      console.error("Amount or currency is missing");
+      return;
+    }
+
+    const response = await fetch('http://localhost:8080/razorpay/pay', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        amount: parseFloat(amount),
+        currency: currency,
+        email: email
+      })
+    });
+    console.log("Request send to backend:");
+    console.log(email);
+
+    if (!response.ok) {
+      console.error("Failed to create order:", response.status, response.statusText);
+      return;
+    }
+
+    const order = await response.json();
+    console.log("Order created:", order);
+    return order;
+  }
+
+  document.getElementById('razerpay').addEventListener('click', async function(e) {
+    e.preventDefault();
+    const response = await createOrder();
+    console.log("Response from createOrder:", response);
+    if (!response || !response.data || !response.data.razorpayOrderId) {
+      console.error("Invalid response from backend");
+      return;
+    }
+
+
+    const options = {
+      "key": "rzp_test_1osnPBeF2xSAFe",
+      "amount": response.data.amount,
+      "currency": response.data.currency,
+      "name": "Skedula Pvt Ltd",
+      "description": "Add to wallet",
+      "order_id": response.data.razorpayOrderId, // ✅ Correct Razorpay order ID
+      "handler": function (res) {
+        alert("Payment successful! Payment ID: " + res.razorpay_payment_id);
+        // send and handle this id in backend...
+      },
+      "theme": {
+        "color": "#3399cc"
+      }
+    };
+
+    console.log("Starting Razorpay payment with:", options);
+    const rzp = new Razorpay(options);
+    rzp.open();
+  });
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
