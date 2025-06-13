@@ -10,4 +10,5 @@ public interface RazorPayPaymentService {
 
     ResponseRazorPayAmountDTO createRazorpayPaymentOrder(RequestRazorPayAmountDTO requestRazorPayAmountDTO);
 
+    boolean isOwnerOfPayment(String email);
 }

@@ -17,11 +17,13 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final WalletPaymentStrategies walletPaymentStrategies;
 
+    @Override
     public void processPayment(Appointment appointment) {
         Payment payment = paymentRepository.findByAppointment(appointment).orElseThrow(()-> new ResourceNotFoundException("Payment not found"));
         walletPaymentStrategies.processPayment(payment);
     }
 
+    @Override
     public Payment createNewPayment(Appointment appointment) {
         Payment payment = Payment.builder()
                 .appointment(appointment)
@@ -30,6 +32,7 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentRepository.save(payment);
     }
 
+    @Override
     public void refundPayment(Appointment appointment) {
         Payment payment = paymentRepository.findByAppointment(appointment).orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
         walletPaymentStrategies.refundPayment(payment);

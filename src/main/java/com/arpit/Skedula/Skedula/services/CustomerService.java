@@ -15,4 +15,8 @@ public interface CustomerService {
 
     Page<CustomerDTO> getCustomer(Integer pageOffset, Integer pageSize);
 
+    boolean isOwnerOfProfile(Long id);
+
+    boolean isOwnerOfAppointment(Long appointmentId);
+
 }

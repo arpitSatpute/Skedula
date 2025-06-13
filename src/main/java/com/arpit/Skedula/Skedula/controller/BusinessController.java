@@ -4,11 +4,14 @@ import com.arpit.Skedula.Skedula.dto.BusinessDTO;
 import com.arpit.Skedula.Skedula.services.BusinessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(path = "/business")
 @RequiredArgsConstructor
+@Secured("Role_OWNER")
 public class BusinessController {
 
     private final BusinessService businessService;
@@ -20,10 +23,25 @@ public class BusinessController {
     }
 
     // Update Details By ID
+    @PreAuthorize("@businessService.isOwnerOfProfile(#id)")
     @PutMapping("/update/{id}")
     public ResponseEntity<BusinessDTO> update(@PathVariable Long id, @RequestBody BusinessDTO businessDTO) {
         return ResponseEntity.ok(businessService.updateBusiness(id, businessDTO));
     }
+
+    // Get Business by ID
+    @PreAuthorize("@businessService.isOwnerOfProfile(#id)")
+    @GetMapping("/get/{id}")
+    public ResponseEntity<BusinessDTO> getBusinessById(@PathVariable Long id) {
+        return ResponseEntity.ok(businessService.getBusinessById(id));
+    }
+
+    @PreAuthorize("@businessService.isOwnerOfProfile(#id)")
+    @DeleteMapping("/remove/{id}")
+    public void removeBusinessById(@PathVariable Long id) {
+        businessService.removeBusinessById(id);
+    }
+
     // Remove service
 
     // Get All Services // Public Routes

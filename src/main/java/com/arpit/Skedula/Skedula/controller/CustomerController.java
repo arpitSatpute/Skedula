@@ -15,12 +15,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping(path = "/customer")
 @RequiredArgsConstructor
-@Secured({"Role_Customer", "Role_Admin"})
+@Secured({"Role_Customer"})
 public class CustomerController {
 
     private final CustomerService customerService;
 
     // Get Customer by ID
+
+    @PreAuthorize("@customerService.isOwnerOfProfile(#id)")
     @GetMapping("/get/{id}")
     public ResponseEntity<CustomerDTO> getCustomerById(@PathVariable Long id) {
         return ResponseEntity.ok(customerService.getCustomerById(id));

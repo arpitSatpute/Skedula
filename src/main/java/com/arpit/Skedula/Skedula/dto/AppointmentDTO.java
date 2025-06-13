@@ -2,6 +2,7 @@ package com.arpit.Skedula.Skedula.dto;
 
 
 import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -15,7 +16,10 @@ import java.time.LocalDate;
 public class AppointmentDTO {
 
     private Long id;
+
+    @NotNull(message = "Appointment Date cannot be null")
     private LocalDate date;
+
 
     private AppointmentStatus appointmentStatus;
 

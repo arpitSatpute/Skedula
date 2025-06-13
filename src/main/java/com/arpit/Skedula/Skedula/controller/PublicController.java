@@ -25,6 +25,11 @@ public class PublicController {
         return ResponseEntity.ok(businessService.getAllBusiness(pageOffset, pageSize));
     }
 
+    @GetMapping("/getBusiness/{id}")
+    public ResponseEntity<BusinessDTO> getBusiness(@PathVariable Long id) {
+        return ResponseEntity.ok(businessService.getBusinessById(id));
+    }
+
 
     // Get Services By Paging
     @GetMapping("/getAllServices")

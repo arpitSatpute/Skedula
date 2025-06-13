@@ -18,6 +18,7 @@ import com.razorpay.RazorpayException;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -38,6 +39,16 @@ public class RazorPayPaymentServiceImpl implements RazorPayPaymentService {
     @Value("${razorpay.secret.key}")
     private String razorPaySecret;
 
+
+    @Override
+    public boolean isOwnerOfPayment(String email) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found in security context");
+        }
+
+        return user.getEmail().equals(email);
+    }
 
     @Override
     public ResponseRazorPayAmountDTO createRazorpayPaymentOrder(RequestRazorPayAmountDTO requestRazorpayAmount) {

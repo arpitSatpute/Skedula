@@ -6,8 +6,8 @@ import com.arpit.Skedula.Skedula.entity.Appointment;
 import com.arpit.Skedula.Skedula.entity.Business;
 import com.arpit.Skedula.Skedula.entity.BusinessServiceOffered;
 import com.arpit.Skedula.Skedula.entity.Customer;
-import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
 import com.arpit.Skedula.Skedula.entity.enums.Role;
+import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
 import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.AppointmentRepository;
 import com.arpit.Skedula.Skedula.repository.BusinessRepository;
@@ -52,19 +52,73 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointmentDTO.getBookedBy()));
         if(booked < total) {
             Appointment newAppointment = convertToEntity(appointmentDTO, serviceOffered, customer);
-
-
-            // TODO Wallet Transaction
-            paymentService.createNewPayment(newAppointment);
-            paymentService.processPayment(newAppointment);
+            newAppointment.setAppointmentStatus(AppointmentStatus.PENDING);
 
             appointmentRepository.save(newAppointment);
             AppointmentDTO result = convertToDTO(newAppointment);
-
             return result;
         }
-
         return null;
+    }
+
+    @Override
+    @Transactional
+    public AppointmentDTO approveAppointment(Long id) {
+        AppointmentDTO appointment = getAppointmentById(id);
+
+        BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(appointment.getServiceOffered())
+                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + appointment.getServiceOffered()));
+        Customer customer = customerRepository.findById(appointment.getBookedBy()).orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointment.getBookedBy()));
+
+        appointment.setAppointmentStatus(AppointmentStatus.BOOKED);
+        Appointment result = convertToEntity(appointment, serviceOffered, customer);
+
+        // Wallet Transaction
+        paymentService.createNewPayment(result);
+        paymentService.processPayment(result);
+
+        appointmentRepository.save(result);
+
+        return convertToDTO(result);
+
+    }
+
+    @Override
+    @Transactional
+    public AppointmentDTO rejectAppointment(Long id) {
+        AppointmentDTO appointment = getAppointmentById(id);
+
+        BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(appointment.getServiceOffered())
+                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + appointment.getServiceOffered()));
+        Customer customer = customerRepository.findById(appointment.getBookedBy()).orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointment.getBookedBy()));
+
+        appointment.setAppointmentStatus(AppointmentStatus.REJECTED);
+        Appointment result = convertToEntity(appointment, serviceOffered, customer);
+
+
+        appointmentRepository.save(result);
+
+        return convertToDTO(result);
+
+    }
+
+    @Override
+    @Transactional
+    public AppointmentDTO doneAppointment(Long id) {
+        AppointmentDTO appointment = getAppointmentById(id);
+
+        BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(appointment.getServiceOffered())
+                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + appointment.getServiceOffered()));
+        Customer customer = customerRepository.findById(appointment.getBookedBy()).orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointment.getBookedBy()));
+
+        appointment.setAppointmentStatus(AppointmentStatus.DONE);
+        Appointment result = convertToEntity(appointment, serviceOffered, customer);
+
+        appointmentRepository.save(result);
+
+        // Rating if possible
+
+        return convertToDTO(result);
 
     }
 
@@ -76,17 +130,40 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     }
 
+    @Override
+    public List<AppointmentDTO> getPendingAppointmentRequest(Long businessId) {
+        Business business = businessRepository.findById(businessId).orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
+        List<Appointment> appointmentList = appointmentRepository.findByBusinessAndAppointmentStatus(business, AppointmentStatus.PENDING);
+        if (appointmentList.isEmpty()) {
+            throw new ResourceNotFoundException("No pending appointments found for the given business.");
+        }
+        return appointmentList.stream()
+                .map(this::convertToDTO)
+                .toList();
+    }
+
+    @Override
+    public List<AppointmentDTO> getAppointmentByCustomerId(Long customerId) {
+        Customer customer = customerRepository.findById(customerId).orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
+        List<Appointment> appointmentList = appointmentRepository.findByBookedBy(customer);
+        if (appointmentList.isEmpty()) {
+            throw new ResourceNotFoundException("No appointments found for the given customer.");
+        }
+        return appointmentList.stream()
+                .map(this::convertToDTO)
+                .toList();
+    }
+
 
     @Override
     public AppointmentDTO cancelAppointmentByCustomer(Long id){
         Appointment appointment = appointmentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
         appointment.setAppointmentStatus(AppointmentStatus.CANCELLED);
         appointmentRepository.save(appointment);
-        // TODO Wallet Transaction from Business to Customer
-        paymentService.refundPayment(appointment);
+
+        //        paymentService.refundPayment(appointment);
 
         return convertToDTO(appointment);
-
     }
 
     @Override

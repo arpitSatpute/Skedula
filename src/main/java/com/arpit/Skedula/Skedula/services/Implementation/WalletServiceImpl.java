@@ -1,7 +1,5 @@
 package com.arpit.Skedula.Skedula.services.Implementation;
 
-import com.arpit.Skedula.Skedula.dto.AppointmentDTO;
-import com.arpit.Skedula.Skedula.dto.WalletDTO;
 import com.arpit.Skedula.Skedula.entity.*;
 import com.arpit.Skedula.Skedula.entity.enums.TransactionType;
 import com.arpit.Skedula.Skedula.repository.WalletRepository;

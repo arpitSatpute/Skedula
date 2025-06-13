@@ -14,6 +14,10 @@ public interface AppointmentService {
 
     AppointmentDTO bookAppointment(AppointmentDTO appointmentDTO);
 
+    AppointmentDTO approveAppointment(Long id);
+
+    List<AppointmentDTO> getPendingAppointmentRequest(Long businessId);
+
     AppointmentDTO getAppointmentById(Long id);
 
     AppointmentDTO cancelAppointmentByCustomer(Long id);
@@ -25,4 +29,11 @@ public interface AppointmentService {
     List<AppointmentDTO> getAllAppointmentByStatusRoleUserIdDate(AppointmentStatus status, Role role, Long userId, LocalDate date);
 
     List<AppointmentDTO> getAllAppointmentByStatusRoleUserIdServiceId(AppointmentStatus status, Role role, Long userId, Long serviceId);
+
+    List<AppointmentDTO> getAppointmentByCustomerId(Long customerId);
+
+
+    AppointmentDTO rejectAppointment(Long id);
+
+    AppointmentDTO doneAppointment(Long id);
 }

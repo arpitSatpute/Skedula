@@ -15,7 +15,7 @@ import java.util.List;
 public class CustomerDTO {
 
     public Long id;
-    public UserDTO user;
+    public Long user;
     List<Appointment> appointments;
 
 }

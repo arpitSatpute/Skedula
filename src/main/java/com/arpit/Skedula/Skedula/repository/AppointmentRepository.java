@@ -1,6 +1,8 @@
 package com.arpit.Skedula.Skedula.repository;
 
 import com.arpit.Skedula.Skedula.entity.Appointment;
+import com.arpit.Skedula.Skedula.entity.Business;
+import com.arpit.Skedula.Skedula.entity.Customer;
 import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
 import com.arpit.Skedula.Skedula.entity.enums.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,4 +27,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     List<Appointment> getAppointmentByAppointmentStatusAndBookedBy_User_RolesAndBookedBy_IdAndServiceOffered_Id(AppointmentStatus status, Role role, Long userId, Long serviceId);
 
     List<Appointment> getAppointmentByAppointmentStatusAndBookedBy_User_RolesAndBusiness_IdAndServiceOffered_Id(AppointmentStatus status, Role role, Long userId, Long serviceId);
+
+    List<Appointment> findByBusinessAndAppointmentStatus(Business business, AppointmentStatus appointmentStatus);
+
+    List<Appointment> findByBookedBy(Customer customer);
 }
