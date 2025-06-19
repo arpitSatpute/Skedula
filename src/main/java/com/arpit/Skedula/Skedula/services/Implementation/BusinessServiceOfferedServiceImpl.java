@@ -8,11 +8,18 @@ import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.BusinessRepository;
 import com.arpit.Skedula.Skedula.repository.BusinessServiceOfferedRepository;
 import com.arpit.Skedula.Skedula.services.BusinessServiceOfferedService;
+import com.uploadcare.api.Client;
+import com.uploadcare.upload.FileUploader;
+import com.uploadcare.upload.UploadFailureException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +31,42 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
 
     private final BusinessServiceOfferedRepository businessServiceOfferedRepository;
     private final ModelMapper modelMapper;
+    private final Client client;
+
+
+    @Override
+    public String uploadFile(MultipartFile multipartFile) {
+
+        if(multipartFile.isEmpty()){
+            throw new RuntimeException("File is empty");
+        }
+        File tempfile = null;
+        try{
+            String originalFilename = multipartFile.getOriginalFilename();
+            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));;
+            String uniqueName = System.currentTimeMillis() + extension;
+
+
+            tempfile = File.createTempFile(uniqueName, extension);
+            multipartFile.transferTo(tempfile);
+
+            FileUploader uploader = new FileUploader(client, tempfile);
+            uploader.store(true);
+            com.uploadcare.api.File uploadedFile = uploader.upload();
+
+            return "https://ucarecdn.com/" + uploadedFile.getFileId() + "/";
+
+        } catch (IOException e) {
+            throw new RuntimeException("File upload failed due to an I/O error", e);
+        } catch (UploadFailureException e) {
+            throw new RuntimeException("File upload failed due to Uploadcare error", e);
+        } finally {
+            if (tempfile != null && tempfile.exists()) {
+                tempfile.delete();
+            }
+        }
+
+    }
 
     @Override
     public Page<BusinessServiceOfferedDTO> getAllServices(Integer pageOffset, Integer pageSize) {
@@ -48,10 +91,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         businessServiceOffered.setPrice(serviceOfferedDTO.getPrice());
         businessServiceOffered.setTotalSlots(serviceOfferedDTO.getTotalSlots());
         businessServiceOffered.setDuration(serviceOfferedDTO.getDuration());
-        businessServiceOffered.setImageUrl(serviceOfferedDTO.getImageUrl());
-
-
-
+        businessServiceOffered.setImageUrl(uploadFile(serviceOfferedDTO.getImage()));
 
         businessServiceOfferedRepository.save(businessServiceOffered);
 
@@ -64,8 +104,6 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         result.setTotalSlots(businessServiceOffered.getTotalSlots());
         result.setDuration(businessServiceOffered.getDuration());
         result.setImageUrl(businessServiceOffered.getImageUrl());
-
-
         return result;
     }
 

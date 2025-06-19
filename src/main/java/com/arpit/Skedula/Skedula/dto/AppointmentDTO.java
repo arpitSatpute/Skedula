@@ -3,6 +3,7 @@ package com.arpit.Skedula.Skedula.dto;
 
 import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -23,6 +24,7 @@ public class AppointmentDTO {
 
     private AppointmentStatus appointmentStatus;
 
+    @Size(max = 5000, message = "Notes cannot exceed 500 characters")
     private String notes;
 
     // BusinessServiceOffered ID

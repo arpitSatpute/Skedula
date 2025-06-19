@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping(path = "/business")
 @RequiredArgsConstructor
-@Secured("Role_OWNER")
+@Secured("Role_Owner")
 public class BusinessController {
 
     private final BusinessService businessService;
