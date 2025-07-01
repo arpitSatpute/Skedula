@@ -111,6 +111,7 @@ function SignUp() {
               borderRadius: '4px',
               border: '1px solid #ccc'
             }}
+            required
           />
         </label>
 
@@ -119,6 +120,7 @@ function SignUp() {
           <select
             value={role}
             onChange={e => setRole(e.target.value)}
+            required
             style={{
               width: '100%',
               padding: '8px',

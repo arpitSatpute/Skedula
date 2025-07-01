@@ -15,7 +15,8 @@ import Appointments from './components/Appointments/Appointments.jsx'
 import Profiles from './components/User/Profile.jsx'
 import Contact from './components/Contact.jsx'
 import BookAppointment from './components/Appointments/BookAppointment.jsx'
-
+import Login from './components/Auth/Login.jsx'
+import SignUp from './components/Auth/SignUp.jsx'
 
 const router = createBrowserRouter([
   {
@@ -25,6 +26,14 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <Home />
+      },
+      {
+        path: "/login",
+        element: <Login />
+      },
+      {
+        path: "/signup",
+        element: <SignUp />
       },
       {
         path: "/about",
@@ -66,6 +75,7 @@ const router = createBrowserRouter([
         path: "/appointments/book",
         element: <BookAppointment />
       },
+      
     ]
   }
 ])
