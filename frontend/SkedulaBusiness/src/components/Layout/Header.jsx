@@ -1,6 +1,6 @@
 import React from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import logo from "../logo/logo.png"; // Adjust the path as necessary
+// import logo from "../logo/logo.png"; // Adjust the path as necessary
 
 const Header = ({ isLoggedIn, onLogin, onLogout }) => (
   <nav className="navbar navbar-expand-lg navbar-light bg-light">

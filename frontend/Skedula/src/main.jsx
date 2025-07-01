@@ -10,6 +10,12 @@ import ListServices from './components/services/ListServices.jsx'
 import Services from './components/services/Services.jsx'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import Wallet from './components/Wallet/Wallet.jsx'
+import About from './components/About.jsx'
+import Appointments from './components/Appointments/Appointments.jsx'
+import Profiles from './components/User/Profile.jsx'
+import Contact from './components/Contact.jsx'
+import BookAppointment from './components/Appointments/BookAppointment.jsx'
+
 
 const router = createBrowserRouter([
   {
@@ -19,6 +25,10 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <Home />
+      },
+      {
+        path: "/about",
+        element: <About />
       },
       {
         path: "/businesses",
@@ -39,7 +49,23 @@ const router = createBrowserRouter([
       {
         path: "/wallet",
         element: <Wallet />
-      }
+      },
+      {
+        path: "/appointments",
+        element: <Appointments />
+      },
+      {
+        path: "/profile",
+        element: <Profiles />
+      },
+      {
+        path: "/contact",
+        element: <Contact />
+      },
+      {
+        path: "/appointments/book",
+        element: <BookAppointment />
+      },
     ]
   }
 ])

@@ -17,14 +17,7 @@ function Wallet() {
   const balance = transactions.reduce((acc, t) => acc + t.amount, 0)
 
   const handleAddMoney = () => {
-    const amount = prompt("Enter amount to add:")
-    const num = Number(amount)
-    if (!isNaN(num) && num > 0) {
-      setTransactions([
-        { id: Date.now(), date: new Date().toISOString().slice(0, 10), description: "Added Money", amount: num },
-        ...transactions
-      ])
-    }
+    
   }
 
   return (
