@@ -14,6 +14,10 @@ import AddService from './components/Services/AddService.jsx'
 import AddBusiness from './components/Business/AddBusiness.jsx'
 import Appointments from './components/Appointments/Appointments.jsx'
 import Wallet from './components/Wallet/Wallet.jsx'
+import About from './components/About.jsx'
+import Contact from './components/Contact.jsx'
+import { AuthProvider } from './components/Auth/AuthContext.jsx'
+import Protected from '../../Skedula/src/components/Auth/Protected.jsx'
 
 const router = createBrowserRouter([
   {
@@ -25,16 +29,27 @@ const router = createBrowserRouter([
         element: <Home />
       },
       {
-        path: "/businesses",
-        element: <Business />
+        path: "/about",
+        element: <About />
       },
       {
-        path: "/auth/login",
+        path: "/contact",
+        element: <Contact />
+      },
+      {
+        path: "/login",
         element: <Login />
       },
       {
-        path : "/auth/signup",
+        path : "/signup",
         element: <SignUp />
+      },
+      {
+        element: <Protected authenticated={true} />,
+        children: [
+          {
+        path: "/businesses",
+        element: <Business />
       },
       {
         path: "/services",
@@ -68,12 +83,16 @@ const router = createBrowserRouter([
         path: "/wallet",
         element: <Wallet />
       }
+      ]
+      },
     ]
   }
 ])
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   </StrictMode>,
 )

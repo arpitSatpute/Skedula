@@ -1,8 +1,11 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import logo from "../logo/logo.png"; // Adjust the path as necessary
 
-const Header = ({ isLoggedIn, onLogin, onLogout }) => (
+const Header = ({ isLoggedIn, onLogout }) => {
+  const navigate = useNavigate();
+  return (
   <nav className="navbar navbar-expand-lg navbar-light bg-light">
     <div className="container-fluid">
       {/* Logo on the left */}
@@ -51,7 +54,7 @@ const Header = ({ isLoggedIn, onLogin, onLogout }) => (
               {isLoggedIn && <li><a className="dropdown-item" href="/profile">Profile</a></li>}
               {isLoggedIn && <li><a className="dropdown-item" href="/appointments">Appointments</a></li>}
               {isLoggedIn && <li><a className="dropdown-item" href="/wallet">Wallet</a></li>}
-              {!isLoggedIn && <li><button className="dropdown-item" onClick={onLogin}>Login</button></li>}
+              {!isLoggedIn && <li><button className="dropdown-item" onClick={() => navigate('/login')}>Login</button></li>}
               {isLoggedIn && <li><button className="dropdown-item" onClick={onLogout}>Logout</button></li>}
               <li><a className="dropdown-item" href="/wallet">Wallet</a></li>
             </ul>
@@ -59,7 +62,8 @@ const Header = ({ isLoggedIn, onLogin, onLogout }) => (
         </ul>
       </div>
     </div>
-  </nav>
-)
+      </nav>
+  );
+}
 
 export default Header;

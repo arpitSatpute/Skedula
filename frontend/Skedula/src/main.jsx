@@ -17,6 +17,9 @@ import Contact from './components/Contact.jsx'
 import BookAppointment from './components/Appointments/BookAppointment.jsx'
 import Login from './components/Auth/Login.jsx'
 import SignUp from './components/Auth/SignUp.jsx'
+import CustomerDashboard from './components/Dashboard/CustomerDashboard.jsx'
+import Protected from './components/Auth/Protected.jsx'
+import { AuthProvider } from './components/Auth/AuthContext.jsx'
 
 const router = createBrowserRouter([
   {
@@ -52,29 +55,41 @@ const router = createBrowserRouter([
         element: <ListServices />
       },
       {
-        path: "/services/:id",
-        element: <Services />
-      },
-      {
-        path: "/wallet",
-        element: <Wallet />
-      },
-      {
-        path: "/appointments",
-        element: <Appointments />
-      },
-      {
-        path: "/profile",
-        element: <Profiles />
-      },
-      {
         path: "/contact",
         element: <Contact />
       },
+      
+      // Protected routes grouped under a single Protected wrapper
       {
-        path: "/appointments/book",
-        element: <BookAppointment />
-      },
+        element: <Protected authenticated={true} />,
+        children: [
+          {
+            path: "/wallet",
+            element: <Wallet />
+          },
+          {
+            path: "/services/:id",
+            element: <Services />
+          },
+          {
+            path: "/appointments",
+            element: <Appointments />
+          },
+          {
+            path: "/profile",
+            element: <Profiles />
+          },
+          
+          {
+            path: "/appointments/book",
+            element: <BookAppointment />
+          },
+          {
+            path: "/dashboard",
+            element: <CustomerDashboard />
+          }
+        ]
+      }
       
     ]
   }
@@ -83,6 +98,8 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <AuthProvider>  
+      <RouterProvider router={router} />
+    </AuthProvider>
   </StrictMode>,
 )

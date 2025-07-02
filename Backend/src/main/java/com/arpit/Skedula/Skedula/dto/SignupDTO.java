@@ -1,6 +1,7 @@
 package com.arpit.Skedula.Skedula.dto;
 
 import com.arpit.Skedula.Skedula.entity.enums.Role;
+import jakarta.persistence.Lob;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

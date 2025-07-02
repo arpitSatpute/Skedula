@@ -1,102 +1,89 @@
-import React, { useState } from 'react'
-import axios from 'axios'
-import { useNavigate } from 'react-router-dom'
+import React, { useContext, useState } from 'react';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from './AuthContext';
+const Login = () => {
 
-function Login() {
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [role, setRole]         = useState('CUSTOMER')
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState(null)
-  const navigate                = useNavigate()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
-  const handleSubmit = async e => {
-    // handle redirection to respective website based on role
+  const { login } = useContext(AuthContext);  
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    
+      console.log("Entered Login");
+      await login(email, password);
+      console.log("Done Login");
+      navigate('/');
   }
 
   return (
-    <div style={{
-      maxWidth: '400px',
-      margin: '80px auto',
-      padding: '24px',
-      border: '1px solid #ddd',
-      borderRadius: '8px',
-      fontFamily: 'Arial, sans-serif'
-    }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '24px' }}>Login</h2>
-      {error && <div style={{ color: 'red', marginBottom: '12px' }}>{error}</div>}
-      <form onSubmit={handleSubmit}>
-        <label style={{ display: 'block', marginBottom: '12px' }}>
-          Email:
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            style={{
-              width: '100%',
-              padding: '8px',
-              marginTop: '4px',
-              borderRadius: '4px',
-              border: '1px solid #ccc'
-            }}
-          />
-        </label>
+    <div className="vh-100 bg-black d-flex align-items-center">
+      <div className="container">
+        <div className="row justify-content-center">
+          <div className="col-md-6 col-lg-5">
+            <div className="card bg-dark text-white shadow-lg border-0">
+              <div className="card-body p-5">
+                <h2 className="card-title text-center mb-4 fw-bold">Log In</h2>
+                
+                <form onSubmit={handleLogin}>
+                  {error && <div className="alert alert-danger">{error}</div>}
+                  
+                  <div className="mb-5">
+                    <label htmlFor="email" className="form-label">
+                      <i className="bi bi-envelope me-2"></i>Email
+                    </label>
+                    <input 
+                      type="email" 
+                      className="form-control bg-secondary border-black shadow-sm text-white" 
+                      id="email" 
+                      value={email}
+                      placeholder="Enter your email"
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
 
-        <label style={{ display: 'block', marginBottom: '12px' }}>
-          Password:
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            style={{
-              width: '100%',
-              padding: '8px',
-              marginTop: '4px',
-              borderRadius: '4px',
-              border: '1px solid #ccc'
-            }}
-          />
-        </label>
+                  <div className="mb-5">
+                    <label htmlFor="password" className="form-label">
+                      <i className="bi bi-lock me-2"></i>Password
+                    </label>
+                    <input 
+                      type="password" 
+                      className="form-control bg-secondary border-black shadow-sm text-white" 
+                      id="password" 
+                      value={password}
+                      placeholder="Enter password"
+                      onChange={(e)=> setPassword(e.target.value)}
+                    />
+                  </div>
 
-        <label style={{ display: 'block', marginBottom: '16px' }}>
-          Role:
-          <select
-            value={role}
-            onChange={e => setRole(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px',
-              marginTop: '4px',
-              borderRadius: '4px',
-              border: '1px solid #ccc'
-            }}
-          >
-            <option value="CUSTOMER">Customer</option>
-            <option value="OWNER">Owner</option>
-          </select>
-        </label>
+                  
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: '100%',
-            padding: '12px',
-            backgroundColor: loading ? '#aaa' : '#1976d2',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            fontSize: '1rem'
-          }}
-        >
-          {loading ? 'Logging in…' : 'Login'}
-        </button>
-      </form>
+                  <div className="d-grid">
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary btn-lg"
+                    >
+                      Log In
+                    </button>
+                  </div>
+                </form>
+
+                <div className="text-center mt-3">
+                  <small className="text-white">
+                    No account? <a href="/signup" className="text-white">Signup</a>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;
