@@ -50,11 +50,11 @@ public class BusinessServiceImpl implements BusinessService {
         return convertToDTO(business);
     }
 
-    public BusinessDTO getBusinessByBusinessId(Long businessId) {
-        Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new RuntimeException("Business not found with id: " + businessId));
-        return convertToDTO(business);
-    }
+//    public BusinessDTO getBusinessByBusinessId(Long businessId) {
+//        Business business = businessRepository.findById(businessId)
+//                .orElseThrow(() -> new RuntimeException("Business not found with id: " + businessId));
+//        return convertToDTO(business);
+//    }
 
     @Override
     public BusinessDTO register(BusinessDTO businessDTO) {
@@ -104,18 +104,18 @@ public class BusinessServiceImpl implements BusinessService {
     }
 
 
-    public User getUserByBusinessId(Long id) {
-        Business business = businessRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Business not found with id: " + id));
-        return business.getOwner();
-    }
+//    public User getUserByBusinessId(Long id) {
+//        Business business = businessRepository.findById(id)
+//                .orElseThrow(() -> new RuntimeException("Business not found with id: " + id));
+//        return business.getOwner();
+//    }
 
 
     @Override
-    public BusinessDTO getBusinessByUserId(Long id) {
+    public BusinessDTO getBusinessByUser() {
         String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        User user = userRepository.findByEmail(currentUser)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + currentUser));
         if(!currentUser.equals(user.getEmail())){
             throw new RuntimeException("User is not authorized to access this business");
         }
@@ -123,7 +123,7 @@ public class BusinessServiceImpl implements BusinessService {
             throw new RuntimeException("User is not enrolled for OWNER Role ");
         }
 
-        Business business = businessRepository.findByOwner_Id(id).orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + id));
+        Business business = businessRepository.findByOwner_Id(user.getId()).orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + user.getId()));
         return convertToDTO(business);
     }
 

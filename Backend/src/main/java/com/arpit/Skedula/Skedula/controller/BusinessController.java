@@ -44,10 +44,10 @@ public class BusinessController {
         businessService.removeBusinessById(id);
     }
 
-    @GetMapping("/get/user/{id}")
+    @GetMapping("/get/user")
 //    @PreAuthorize("@businessService.isCurrentUser(#id)")
-    public ResponseEntity<?> getBusinessByUserId(@PathVariable Long id) {
-        return ResponseEntity.ok(businessService.getBusinessByUserId(id));
+    public ResponseEntity<?> getBusinessByUser() {
+        return ResponseEntity.ok(businessService.getBusinessByUser());
     }
 
     // Remove service

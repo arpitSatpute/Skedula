@@ -29,5 +29,5 @@ public interface BusinessService{
 
     void removeBusinessById(Long id);
 
-    BusinessDTO getBusinessByUserId(Long id);
+    BusinessDTO getBusinessByUser();
 }
