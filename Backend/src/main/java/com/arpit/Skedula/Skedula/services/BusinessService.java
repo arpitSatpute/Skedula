@@ -25,5 +25,9 @@ public interface BusinessService{
 
     boolean isOwnerOfService(Long serviceId);
 
+    boolean isCurrentUser(Long userId);
+
     void removeBusinessById(Long id);
+
+    BusinessDTO getBusinessByUserId(Long id);
 }

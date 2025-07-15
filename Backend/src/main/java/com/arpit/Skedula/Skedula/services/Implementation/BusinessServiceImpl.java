@@ -6,6 +6,7 @@ import com.arpit.Skedula.Skedula.entity.Business;
 import com.arpit.Skedula.Skedula.entity.BusinessServiceOffered;
 import com.arpit.Skedula.Skedula.entity.User;
 import com.arpit.Skedula.Skedula.entity.enums.Role;
+import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.AppointmentRepository;
 import com.arpit.Skedula.Skedula.repository.BusinessRepository;
 import com.arpit.Skedula.Skedula.repository.BusinessServiceOfferedRepository;
@@ -13,6 +14,8 @@ import com.arpit.Skedula.Skedula.repository.UserRepository;
 import com.arpit.Skedula.Skedula.services.BusinessService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,9 +23,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static java.lang.System.out;
 
 
-@Service
+@Service("businessService")
 @RequiredArgsConstructor
 public class BusinessServiceImpl implements BusinessService {
 
@@ -46,11 +50,16 @@ public class BusinessServiceImpl implements BusinessService {
         return convertToDTO(business);
     }
 
+    public BusinessDTO getBusinessByBusinessId(Long businessId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Business not found with id: " + businessId));
+        return convertToDTO(business);
+    }
+
     @Override
-    @Transactional
     public BusinessDTO register(BusinessDTO businessDTO) {
-        User user = userRepository.findById(businessDTO.getOwner())
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + businessDTO.getOwner()));
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new RuntimeException("User not found with username: " + username));
         if(!(user.getRoles().contains(Role.OWNER))){
             throw new RuntimeException("User is not owner of this business");
         }
@@ -58,28 +67,34 @@ public class BusinessServiceImpl implements BusinessService {
         if(isExist){
             throw new RuntimeException("Business with name: " + businessDTO.getName() + " already exists");
         }
-
         Business business = convertToEntity(businessDTO, user);
-
         businessRepository.save(business);
-
-
         BusinessDTO result = convertToDTO(business);
-
         return result;
-
     }
 
     @Override
     public BusinessDTO updateBusiness(Long id, BusinessDTO businessDTO) {
         Business business = businessRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Business not found with id: " + id));
-        User user = userRepository.findById(businessDTO.getOwner()).orElseThrow(() -> new RuntimeException("User not found with id: " + businessDTO.getOwner()));
-        Business updated = convertToEntity(businessDTO, user);
-
-        return convertToDTO(businessRepository.save(updated));
+        // Do not allow changing the owner
+        business.setName(businessDTO.getName());
+        business.setDescription(businessDTO.getDescription());
+        business.setAddress(businessDTO.getAddress());
+        business.setCity(businessDTO.getCity());
+        business.setState(businessDTO.getState());
+        business.setCountry(businessDTO.getCountry());
+        business.setPhone(businessDTO.getPhone());
+        business.setEmail(businessDTO.getEmail());
+        business.setZipCode(businessDTO.getZipCode());
+        business.setMapLink(businessDTO.getMapLink());
+        business.setCRNNumber(businessDTO.getCRNNumber());
+        business.setGSTNumber(businessDTO.getGSTNumber());
+        business.setOpenTime(businessDTO.getOpenTime());
+        business.setCloseTime(businessDTO.getCloseTime());
+        // Save updated business
+        return convertToDTO(businessRepository.save(business));
     }
-
 
     @Override
     public Page<BusinessDTO> getBusinessByKeyword(Integer pageOffset, Integer pageSize, String keyword) {
@@ -95,15 +110,43 @@ public class BusinessServiceImpl implements BusinessService {
         return business.getOwner();
     }
 
+
     @Override
-    public boolean isOwnerOfProfile(Long id){
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        BusinessDTO business = getBusinessById(id);
+    public BusinessDTO getBusinessByUserId(Long id) {
+        String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        if(!currentUser.equals(user.getEmail())){
+            throw new RuntimeException("User is not authorized to access this business");
+        }
+        if(!(user.getRoles().contains(Role.OWNER))){
+            throw new RuntimeException("User is not enrolled for OWNER Role ");
+        }
+
+        Business business = businessRepository.findByOwner_Id(id).orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + id));
+        return convertToDTO(business);
+    }
+
+    @Override
+    public boolean isOwnerOfProfile(Long businessId) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Business not found with id: " + businessId));
+        String owner = business.getOwner().getEmail();
+        if (!business.getOwner().getRoles().contains(Role.OWNER)) {
+            throw new RuntimeException("User is not enrolled for OWNER Role ");
+        }
+        return owner.equals(email);
+    }
+
+    @Override
+    public boolean isCurrentUser(Long userId) {
+        String useremail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found with userId: " + userId));
         if(!user.getRoles().contains(Role.OWNER)){
             throw new RuntimeException("User is not enrolled for OWNER Role ");
         }
-        User owner = getUserByBusinessId(id);
-        return owner.getEmail().equals(user.getEmail());
+        return user.getEmail().equals(useremail);
     }
 
 
@@ -136,6 +179,8 @@ public class BusinessServiceImpl implements BusinessService {
         return business.getOwner().getEmail().equals(user.getEmail());
 
     }
+
+
 
     public void removeBusinessById(Long id) {
         businessRepository.deleteById(id);

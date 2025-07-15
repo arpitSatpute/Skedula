@@ -1,9 +1,7 @@
 package com.arpit.Skedula.Skedula.dto;
 
 import com.arpit.Skedula.Skedula.entity.enums.Role;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.util.Set;
@@ -19,6 +17,10 @@ public class UserDTO {
     @Email(message = "Invalid email format")
     @NotEmpty(message = "Email cannot be empty")
     private String email;
+
+    @NotBlank
+    @Size(min = 10, max = 10, message = "Phone number must be 10 digits")
+    private String phone;
 
     @NotNull(message = "Role cannot be null")
     private Set<Role> roles;

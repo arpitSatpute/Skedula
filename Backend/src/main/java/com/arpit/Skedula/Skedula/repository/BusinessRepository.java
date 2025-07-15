@@ -28,4 +28,6 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
     Optional<Business> findByAppointments(Appointment appointment);
 
     Optional<Business> findByServiceOffered_Id(BusinessServiceOffered serviceOffered);
+
+    Optional<Business> findByOwner_Id(Long id);
 }

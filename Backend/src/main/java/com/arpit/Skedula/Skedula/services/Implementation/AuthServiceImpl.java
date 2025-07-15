@@ -2,6 +2,7 @@ package com.arpit.Skedula.Skedula.services.Implementation;
 
 import com.arpit.Skedula.Skedula.dto.SignupDTO;
 import com.arpit.Skedula.Skedula.dto.UserDTO;
+import com.arpit.Skedula.Skedula.entity.Business;
 import com.arpit.Skedula.Skedula.entity.Customer;
 import com.arpit.Skedula.Skedula.entity.User;
 import com.arpit.Skedula.Skedula.entity.Wallet;
@@ -65,23 +66,25 @@ public class AuthServiceImpl implements AuthService {
     public UserDTO signup(SignupDTO signupDto) {
         Optional<User> existingUserOpt = userRepository.findByEmail(signupDto.getEmail());
         if (existingUserOpt.isPresent()) {
-            User existingUser = existingUserOpt.get();
-            if (existingUser.getRoles().contains(signupDto.getRole())) {
-                throw new RuntimeConflictException("The user already exists with email id: "
-                        + signupDto.getEmail() + " and role: " + signupDto.getRole());
-            } else {
-                existingUser.getRoles().add(signupDto.getRole());
-                User updatedUser = userRepository.save(existingUser);
-
-                UserDTO userDTO = modelMapper.map(updatedUser, UserDTO.class);
-                // Create associated entity if needed
-                if (signupDto.getRole() == Role.CUSTOMER) {
-                    customerService.createCustomer(userDTO);
-                    // TODO create customer wallet
-                }
-                return userDTO;
-            }
+//            User existingUser = existingUserOpt.get();
+//            if (existingUser.getRoles().contains(signupDto.getRole())) {
+//                throw new RuntimeConflictException("The user already exists with email id: "
+//                        + signupDto.getEmail() + " and role: " + signupDto.getRole());
+//            } else {
+//                existingUser.getRoles().add(signupDto.getRole());
+//                User updatedUser = userRepository.save(existingUser);
+//
+//                UserDTO userDTO = modelMapper.map(updatedUser, UserDTO.class);
+//                // Create associated entity if needed
+//                if (signupDto.getRole() == Role.CUSTOMER) {
+//                    customerService.createCustomer(userDTO);
+//                    // TODO create customer wallet
+//                }
+//                return userDTO;
+//            }
+            throw new RuntimeConflictException("The user already exists with email id: " + signupDto.getEmail());
         }
+
 
         // Validate allowed roles
         if (signupDto.getRole() != Role.CUSTOMER && signupDto.getRole() != Role.OWNER) {
@@ -98,6 +101,12 @@ public class AuthServiceImpl implements AuthService {
         if (signupDto.getRole() == Role.CUSTOMER) {
             customerService.createCustomer(userDTO);
             // TODO create customer wallet
+        }
+        if( signupDto.getRole() == Role.OWNER) {
+            Business business = Business.builder()
+
+                    .owner(savedUser)
+                    .build();
         }
         return userDTO;
     }
@@ -119,9 +128,5 @@ public class AuthServiceImpl implements AuthService {
         return null;
     }
 
-    private void beAOwner(UserDTO userDTO) {
-        if (!userDTO.getRoles().contains(Role.OWNER)) {
-            ;
-        }
-    }
+
 }
