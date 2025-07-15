@@ -6,8 +6,6 @@ import lombok.*;
 import java.time.LocalTime;
 import java.util.List;
 
-import java.util.Date;
-
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -38,7 +36,7 @@ public class Business {
     // Share Link of Google Map
     private String mapLink;
 
-    private String ownerIdentity;
+    private String identity;
     private String CRNNumber;
 
     private String GSTNumber;

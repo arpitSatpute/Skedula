@@ -204,6 +204,7 @@ public class BusinessServiceImpl implements BusinessService {
         business.setCRNNumber(businessDTO.getCRNNumber());
         business.setGSTNumber(businessDTO.getGSTNumber());
         business.setOpenTime(businessDTO.getOpenTime());
+        business.setIdentity(businessDTO.getIdentity());
         business.setCloseTime(businessDTO.getCloseTime());
 
         return business;
@@ -227,6 +228,7 @@ public class BusinessServiceImpl implements BusinessService {
         businessDTO.setMapLink(business.getMapLink());
         businessDTO.setCRNNumber(business.getCRNNumber());
         businessDTO.setGSTNumber(business.getGSTNumber());
+        businessDTO.setIdentity(business.getIdentity());
         businessDTO.setOpenTime(business.getOpenTime());
         businessDTO.setCloseTime(business.getCloseTime());
 

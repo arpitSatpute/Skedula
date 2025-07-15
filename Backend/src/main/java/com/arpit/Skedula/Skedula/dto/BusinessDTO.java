@@ -1,14 +1,8 @@
 package com.arpit.Skedula.Skedula.dto;
 
-import com.arpit.Skedula.Skedula.entity.Appointment;
-import com.arpit.Skedula.Skedula.entity.BusinessServiceOffered;
-import com.arpit.Skedula.Skedula.entity.User;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import lombok.*;
 
 import java.time.LocalTime;
-import java.util.Date;
 import java.util.List;
 
 @Data
@@ -36,7 +30,7 @@ public class BusinessDTO {
     // Share Link of Google Map
     private String mapLink;
 
-    private String ownerIdentity;
+    private String identity;
     private String CRNNumber;
 
     private String GSTNumber;
