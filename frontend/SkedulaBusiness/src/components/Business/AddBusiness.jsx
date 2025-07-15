@@ -1,285 +1,437 @@
-import React, { useState, useEffect } from 'react'
-import axios from 'axios'
-import { useNavigate, useParams } from 'react-router-dom'
+import React, { useState, useEffect, useContext } from 'react'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { AuthContext } from '../Auth/AuthContext';
+import apiClient from '../Auth/ApiClient';
 
 function AddBusiness() {
   const { id } = useParams()
+  const location = useLocation()
   const isEdit = Boolean(id)
-  const [name, setName]             = useState('')
-  const [description, setDescription] = useState('')
-  const [email, setEmail]           = useState('')
-  const [phone, setPhone]           = useState('')
-  const [address, setAddress]       = useState('')
-  const [city, setCity]             = useState('')
-  const [stateField, setStateField] = useState('')
-  const [country, setCountry]       = useState('')
-  const [zipCode, setZipCode]       = useState('')
-  const [mapLink, setMapLink]       = useState('')
-  const [ownerIdentity, setOwnerIdentity] = useState('')
-  const [CRNNumber, setCRNNumber]   = useState('')
-  const [GSTNumber, setGSTNumber]   = useState('')
-  const [openTime, setOpenTime]     = useState('')
-  const [closeTime, setCloseTime]   = useState('')
-  const [loading, setLoading]       = useState(false)
-  const [error, setError]           = useState(null)
-  const navigate                    = useNavigate()
+  const { user } = useContext(AuthContext)
+  const navigate = useNavigate();
 
-  // Load existing business for edit
+  // Get current user from localStorage as fallback
+  const getCurrentUser = () => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      const userRole = localStorage.getItem('userRole');
+      
+      if (storedUser) {
+        return JSON.parse(storedUser);
+      } else if (userRole) {
+        return {
+          email: 'user@example.com',
+          role: userRole,
+          name: 'User'
+        };
+      }
+      return user; // Fallback to AuthContext user
+    } catch (error) {
+      console.error('Error getting current user:', error);
+      return null;
+    }
+  };
+
+  const currentUser = getCurrentUser();
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    country: '',
+    zipCode: '',
+    mapLink: '',
+    ownerIdentity: '',
+    CRNNumber: '',
+    GSTNumber: '',
+    openTime: '',
+    closeTime: ''
+  })
+
+  const [customError, setCustomError] = useState('')
+  const [isLoadingBusiness, setIsLoadingBusiness] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  
   useEffect(() => {
-    if (!isEdit) return
-    setLoading(true)
-    axios.get(`/api/businesses/${id}`)
-      .then(res => {
-        const b = res.data
-        setName(b.name)
-        setDescription(b.description)
-        setEmail(b.email)
-        setPhone(b.phone)
-        setAddress(b.address)
-        setCity(b.city)
-        setStateField(b.state)
-        setCountry(b.country)
-        setZipCode(b.zipCode)
-        setMapLink(b.mapLink)
-        setOwnerIdentity(b.ownerIdentity)
-        setCRNNumber(b.CRNNumber)
-        setGSTNumber(b.GSTNumber)
-        setOpenTime(b.openTime)
-        setCloseTime(b.closeTime)
-      })
-      .catch(() => setError('Failed to load business'))
-      .finally(() => setLoading(false))
+    if (!isEdit || !id) return
+
+      setFormData(JSON.parse(sessionStorage.getItem('editBusiness')))
+    
   }, [id, isEdit])
 
-  const handleSubmit = async e => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+    // Clear errors when user starts typing
+    if (customError) setCustomError('')
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    setLoading(true);
+    setCustomError('');
+
     try {
-      const payload = {
-        name,
-        description,
-        email,
-        phone,
-        address,
-        city,
-        state: stateField,
-        country,
-        zipCode,
-        mapLink,
-        ownerIdentity,
-        CRNNumber,
-        GSTNumber,
-        openTime,
-        closeTime
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Here you would typically send formData to your API
+      if(!isEdit) {
+        console.log("Creating new business:", formData);
+        const response = await apiClient.post(`/business/register`, formData);
+        console.log("Business created:", response.data);
       }
-      if (isEdit) {
-        await axios.put(`/api/businesses/${id}`, payload)
-      } else {
-        await axios.post('/api/businesses', payload)
+      else{
+        
+        console.log("Editing new business:", formData);
+        const response = await apiClient.put(`/business/update/${id}`, formData);
+        console.log("Business edited:", response.data);
       }
-      navigate('/businesses')
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save business')
+      
+      console.log('Form submitted:', formData);
+      
+      // Simulate success
+      const message = isEdit ? 'Business updated successfully!' : 'Business created successfully!';
+      alert(message);
+      
+      // Navigate back to businesses list
+      navigate('/businesses');
+      
+    } catch (error) {
+      setCustomError('Failed to save business. Please try again.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
-  if (loading && isEdit) return <div>Loading…</div>
+  // Check authentication
+  if (!currentUser) {
+    return (
+      <div className="container-fluid py-4">
+        <div className="row justify-content-center">
+          <div className="col-lg-6">
+            <div className="alert alert-warning text-center">
+              <h4>Authentication Required</h4>
+              <p>You must be logged in to access this page.</p>
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate('/login')}
+              >
+                Login
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoadingBusiness) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading business...</span>
+        </div>
+        <div className="ms-3">
+          <p className="mb-0">Loading business data...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div style={{
-      maxWidth: '600px',
-      margin: '40px auto',
-      padding: '24px',
-      fontFamily: 'Arial, sans-serif',
-      border: '1px solid #ddd',
-      borderRadius: '8px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-    }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '24px' }}>
-        {isEdit ? 'Edit Business' : 'Add New Business'}
-      </h2>
-      {error && <div style={{ color: 'red', marginBottom: '12px' }}>{error}</div>}
+    <div className="container-fluid py-4">
+      <div className="row justify-content-center">
+        <div className="col-lg-8 col-md-10">
+          <div className="card shadow-sm border-0">
+            <div className="card-header bg-primary text-white">
+              <h3 className="card-title mb-0">
+                <i className="bi bi-building me-2"></i>
+                {isEdit ? 'Edit Business' : 'Add New Business'}
+              </h3>
+            </div>
+            <div className="card-body p-4">
+              {customError && (
+                <div className="alert alert-danger alert-dismissible" role="alert">
+                  <i className="bi bi-exclamation-triangle me-2"></i>
+                  {customError}
+                  <button 
+                    type="button" 
+                    className="btn-close" 
+                    onClick={() => setCustomError('')}
+                    aria-label="Close"
+                  ></button>
+                </div>
+              )}
 
-      <form onSubmit={handleSubmit}>
-        <label style={{ display: 'block', marginBottom: '12px' }}>
-          Name:
-          <input
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            required
-            style={{ width: '100%', padding: '8px', marginTop: '4px', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
-        </label>
+              {loading && (
+                <div className="alert alert-info" role="alert">
+                  <div className="d-flex align-items-center">
+                    <div className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
+                    <span>{isEdit ? 'Updating' : 'Creating'} business...</span>
+                  </div>
+                </div>
+              )}
 
-        <label style={{ display: 'block', marginBottom: '12px' }}>
-          Description:
-          <textarea
-            rows="3"
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            required
-            style={{ width: '100%', padding: '8px', marginTop: '4px', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
-        </label>
+              <form onSubmit={handleSubmit}>
+                {/* Business Information */}
+                <div className="row mb-4">
+                  <div className="col-12">
+                    <h5 className="text-muted mb-3">Business Information</h5>
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Business Name *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      required
+                      placeholder="Enter business name"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Email *</label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      required
+                      placeholder="business@example.com"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="col-12 mb-3">
+                    <label className="form-label">Description *</label>
+                    <textarea
+                      className="form-control"
+                      rows="3"
+                      value={formData.description}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
+                      required
+                      placeholder="Describe your business..."
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Phone</label>
+                    <input
+                      type="tel"
+                      className="form-control"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      placeholder="Phone number"
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
 
-        <label style={{ display: 'block', marginBottom: '12px' }}>
-          Email:
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            style={{ width: '100%', padding: '8px', marginTop: '4px', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
-        </label>
+                {/* Location Information */}
+                <div className="row mb-4">
+                  <div className="col-12">
+                    <h5 className="text-muted mb-3">Location Information</h5>
+                  </div>
+                  <div className="col-12 mb-3">
+                    <label className="form-label">Address</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={formData.address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
+                      placeholder="Street address"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">City</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={formData.city}
+                      onChange={(e) => handleInputChange('city', e.target.value)}
+                      placeholder="City"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">State</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={formData.state}
+                      onChange={(e) => handleInputChange('state', e.target.value)}
+                      placeholder="State"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Country</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={formData.country}
+                      onChange={(e) => handleInputChange('country', e.target.value)}
+                      placeholder="Country"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">ZIP Code</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={formData.zipCode}
+                      onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                      placeholder="ZIP Code"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="col-12 mb-3">
+                    <label className="form-label">Google Maps Link</label>
+                    <input
+                      type="url"
+                      className="form-control"
+                      value={formData.mapLink}
+                      onChange={(e) => handleInputChange('mapLink', e.target.value)}
+                      placeholder="https://maps.google.com/..."
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
 
-        <label style={{ display: 'block', marginBottom: '12px' }}>
-          Phone:
-          <input
-            type="tel"
-            value={phone}
-            onChange={e => setPhone(e.target.value)}
-            style={{ width: '100%', padding: '8px', marginTop: '4px', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
-        </label>
+                {/* Legal Information */}
+                <div className="row mb-4">
+                  <div className="col-12">
+                    <h5 className="text-muted mb-3">Legal Information</h5>
+                  </div>
+                  <div className="col-md-4 mb-3">
+                    <label className="form-label">Owner Identity *</label>
+                    <input
+                      type="text"
+                      className={`form-control ${isEdit ? 'bg-light' : ''}`}
+                      value={formData.ownerIdentity}
+                      onChange={(e) => handleInputChange('ownerIdentity', e.target.value)}
+                      required
+                      disabled={isEdit || loading}
+                      placeholder="Owner ID"
+                    />
+                    {isEdit && (
+                      <div className="form-text">
+                        <small className="text-muted">This field cannot be edited after creation</small>
+                      </div>
+                    )}
+                  </div>
+                  <div className="col-md-4 mb-3">
+                    <label className="form-label">CRN Number *</label>
+                    <input
+                      type="text"
+                      className={`form-control ${isEdit ? 'bg-light' : ''}`}
+                      value={formData.CRNNumber}
+                      onChange={(e) => handleInputChange('CRNNumber', e.target.value)}
+                      required
+                      disabled={isEdit || loading}
+                      placeholder="CRN Number"
+                    />
+                    {isEdit && (
+                      <div className="form-text">
+                        <small className="text-muted">This field cannot be edited after creation</small>
+                      </div>
+                    )}
+                  </div>
+                  <div className="col-md-4 mb-3">
+                    <label className="form-label">GST Number *</label>
+                    <input
+                      type="text"
+                      className={`form-control ${isEdit ? 'bg-light' : ''}`}
+                      value={formData.GSTNumber}
+                      onChange={(e) => handleInputChange('GSTNumber', e.target.value)}
+                      required
+                      disabled={isEdit || loading}
+                      placeholder="GST Number"
+                    />
+                    {isEdit && (
+                      <div className="form-text">
+                        <small className="text-muted">This field cannot be edited after creation</small>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-        <label style={{ display: 'block', marginBottom: '12px' }}>
-          Address:
-          <input
-            type="text"
-            value={address}
-            onChange={e => setAddress(e.target.value)}
-            style={{ width: '100%', padding: '8px', marginTop: '4px', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
-        </label>
+                {/* Business Hours */}
+                <div className="row mb-4">
+                  <div className="col-12">
+                    <h5 className="text-muted mb-3">Business Hours</h5>
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Opening Time *</label>
+                    <input
+                      type="time"
+                      className="form-control"
+                      value={formData.openTime}
+                      onChange={(e) => handleInputChange('openTime', e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Closing Time *</label>
+                    <input
+                      type="time"
+                      className="form-control"
+                      value={formData.closeTime}
+                      onChange={(e) => handleInputChange('closeTime', e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
 
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-          <input
-            type="text"
-            placeholder="City"
-            value={city}
-            onChange={e => setCity(e.target.value)}
-            style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
-          <input
-            type="text"
-            placeholder="State"
-            value={stateField}
-            onChange={e => setStateField(e.target.value)}
-            style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
+                {/* Submit Button */}
+                <div className="d-grid gap-2 d-md-flex justify-content-md-end">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary me-md-2"
+                    onClick={() => navigate('/businesses')}
+                    disabled={loading}
+                  >
+                    <i className="bi bi-arrow-left me-2"></i>
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        {isEdit ? 'Updating...' : 'Creating...'}
+                      </>
+                    ) : (
+                      <>
+                        <i className={`bi ${isEdit ? 'bi-pencil' : 'bi-plus-circle'} me-2`}></i>
+                        {isEdit ? 'Update Business' : 'Create Business'}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
-
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-          <input
-            type="text"
-            placeholder="Country"
-            value={country}
-            onChange={e => setCountry(e.target.value)}
-            style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
-          <input
-            type="text"
-            placeholder="Zip Code"
-            value={zipCode}
-            onChange={e => setZipCode(e.target.value)}
-            style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
-        </div>
-
-        <label style={{ display: 'block', marginBottom: '12px' }}>
-          Map Link:
-          <input
-            type="url"
-            value={mapLink}
-            onChange={e => setMapLink(e.target.value)}
-            style={{ width: '100%', padding: '8px', marginTop: '4px', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
-        </label>
-
-        {/* Sensitive fields read-only on edit */}
-        <label style={{ display: 'block', marginBottom: '12px' }}>
-          Owner Identity:
-          <input
-            type="text"
-            value={ownerIdentity}
-            onChange={e => setOwnerIdentity(e.target.value)}
-            required
-            disabled={isEdit}
-            style={{ width: '100%', padding: '8px', marginTop: '4px', borderRadius: '4px', border: '1px solid #ccc', background: isEdit ? '#f5f5f5' : '#fff' }}
-          />
-        </label>
-
-        <label style={{ display: 'block', marginBottom: '12px' }}>
-          CRN Number:
-          <input
-            type="text"
-            value={CRNNumber}
-            onChange={e => setCRNNumber(e.target.value)}
-            required
-            disabled={isEdit}
-            style={{ width: '100%', padding: '8px', marginTop: '4px', borderRadius: '4px', border: '1px solid #ccc', background: isEdit ? '#f5f5f5' : '#fff' }}
-          />
-        </label>
-
-        <label style={{ display: 'block', marginBottom: '12px' }}>
-          GST Number:
-          <input
-            type="text"
-            value={GSTNumber}
-            onChange={e => setGSTNumber(e.target.value)}
-            required
-            disabled={isEdit}
-            style={{ width: '100%', padding: '8px', marginTop: '4px', borderRadius: '4px', border: '1px solid #ccc', background: isEdit ? '#f5f5f5' : '#fff' }}
-          />
-        </label>
-
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-          <label style={{ flex: 1 }}>
-            Open Time:
-            <input
-              type="time"
-              value={openTime}
-              onChange={e => setOpenTime(e.target.value)}
-              required
-              style={{ width: '100%', padding: '8px', marginTop: '4px', borderRadius: '4px', border: '1px solid #ccc' }}
-            />
-          </label>
-          <label style={{ flex: 1 }}>
-            Close Time:
-            <input
-              type="time"
-              value={closeTime}
-              onChange={e => setCloseTime(e.target.value)}
-              required
-              style={{ width: '100%', padding: '8px', marginTop: '4px', borderRadius: '4px', border: '1px solid #ccc' }}
-            />
-          </label>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: '100%',
-            padding: '12px',
-            backgroundColor: loading ? '#aaa' : '#1976d2',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            fontSize: '1rem'
-          }}
-        >
-          {loading ? (isEdit ? 'Updating…' : 'Saving…') : (isEdit ? 'Update Business' : 'Create Business')}
-        </button>
-      </form>
+      </div>
     </div>
   )
 }
 
-export default AddBusiness
+export default AddBusiness;

@@ -1,97 +1,510 @@
-import React, { useState, useEffect } from 'react'
-import axios from 'axios'
-import { useParams } from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import apiClient from '../Auth/ApiClient.js';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-function Business() {
-  const { id } = useParams()
-  const [biz, setBiz]       = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState(null)
+const Business = () => {
+  const [business, setBusiness] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const user =  localStorage.getItem('user');
+  const navigate = useNavigate();
+  // Dummy business data based on BusinessDTO
+  // const dummyBusiness = {
+  //   id: 1,
+  //   owner: 101,
+  //   name: "Elegant Beauty Salon & Spa",
+  //   description: "Premium beauty salon offering hair styling, skincare treatments, nail care, and relaxing spa services. Experience luxury and rejuvenation with our expert team of professionals.",
+  //   email: "contact@elegantbeauty.com",
+  //   phone: "+91 98765 43210",
+  //   address: "123 Fashion Street, Commercial Complex",
+  //   city: "Mumbai",
+  //   state: "Maharashtra",
+  //   country: "India",
+  //   zipCode: "400001",
+  //   mapLink: "https://maps.google.com/elegant-beauty-salon",
+  //   ownerIdentity: "OWNER2024001",
+  //   CRNNumber: "CRN123456789",
+  //   GSTNumber: "GST27ABCDE1234F1Z5",
+  //   openTime: "09:00",
+  //   closeTime: "20:00",
+  //   serviceOffered: [
+  //     {
+  //       id: 1,
+  //       serviceName: "Hair Styling & Cut",
+  //       description: "Professional hair styling and cutting services",
+  //       price: 1500.00,
+  //       duration: "60 minutes",
+  //       category: "Hair Care"
+  //     },
+  //     {
+  //       id: 2,
+  //       serviceName: "Facial Treatment",
+  //       description: "Deep cleansing and rejuvenating facial treatment",
+  //       price: 2000.00,
+  //       duration: "90 minutes",
+  //       category: "Skin Care"
+  //     },
+  //     {
+  //       id: 3,
+  //       serviceName: "Manicure & Pedicure",
+  //       description: "Complete nail care and grooming",
+  //       price: 800.00,
+  //       duration: "45 minutes",
+  //       category: "Nail Care"
+  //     },
+  //     {
+  //       id: 4,
+  //       serviceName: "Body Massage",
+  //       description: "Relaxing full body massage therapy",
+  //       price: 2500.00,
+  //       duration: "90 minutes",
+  //       category: "Wellness"
+  //     },
+  //     {
+  //       id: 5,
+  //       serviceName: "Hair Coloring",
+  //       description: "Professional hair coloring and highlights",
+  //       price: 3000.00,
+  //       duration: "120 minutes",
+  //       category: "Hair Care"
+  //     }
+  //   ],
+  //   appointments: [
+  //     {
+  //       id: 1,
+  //       customerName: "Priya Sharma",
+  //       serviceName: "Hair Styling & Cut",
+  //       appointmentDate: "2024-07-15",
+  //       appointmentTime: "10:00",
+  //       status: "Confirmed"
+  //     },
+  //     {
+  //       id: 2,
+  //       customerName: "Rahul Kumar",
+  //       serviceName: "Body Massage",
+  //       appointmentDate: "2024-07-15",
+  //       appointmentTime: "14:00",
+  //       status: "Pending"
+  //     },
+  //     {
+  //       id: 3,
+  //       customerName: "Anjali Patel",
+  //       serviceName: "Facial Treatment",
+  //       appointmentDate: "2024-07-16",
+  //       appointmentTime: "11:30",
+  //       status: "Confirmed"
+  //     }
+  //   ]
+  // };
 
-  useEffect(() => {
-    axios.get(`/api/businesses/${id}`)
-      .then(res => setBiz(res.data))
-      .catch(() => setError('Failed to load business details'))
-      .finally(() => setLoading(false))
-  }, [id])
+  useEffect( () => {
+    // Simulate API call
+    const loadBusiness = async () => {
+      setLoading(true);
+      try {
+        // Simulate API delay
+        // await new Promise(resolve => setTimeout(resolve, 1500));
+        console.log("User data loaded:", user);
+        const id = user;
+        const response = await apiClient.get(`/business/get/user`);
+        // Set to dummyBusiness to show business data, or null to show empty state
+        console.log("Business data loaded:", response.status);
+        
+          console.log("Business data loaded:", response.data.data);
+          setBusiness(response.data.data);
+        
+        
+      } catch (err) {
+        if (err.response && err.response.status === 404) {
+            setBusiness(null);
+          }
+          // setError('Failed to load business');
+          console.error("Error loading business data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (loading) return <div>Loading business…</div>
-  if (error)   return <div style={{ color: 'red' }}>{error}</div>
-  if (!biz)    return null
+    loadBusiness();
+  }, []);
 
+  if (loading) {
+    return (
+      <div className="container py-5">
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+            <span className="visually-hidden">Loading business...</span>
+          </div>
+          <p className="mt-3 text-muted">Loading your business information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container py-5">
+        <div className="alert alert-danger" role="alert">
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  // No business available - show add business option only
+  if (!business) {
+    return (
+      <div className="container py-4">
+        <div className="row justify-content-center">
+          <div className="col-lg-6">
+            <div className="text-center py-5">
+              <div className="mb-4">
+                <i className="bi bi-building display-1 text-primary opacity-50"></i>
+              </div>
+              <h2 className="mb-3">No Business Registered</h2>
+              <p className="text-muted mb-4 lead">
+                You haven't registered your business yet. Click below to get started.
+              </p>
+
+              <Link to="/business/add" className="btn btn-primary btn-lg px-5">
+                <i className="bi bi-plus-circle me-2"></i>
+                Add Your Business
+              </Link>
+              
+              <div className="mt-4">
+                <small className="text-muted">
+                  Need help? <a href="/contact" className="text-decoration-none">Contact our support team</a>
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  const handleEditBusiness = () => {
+
+    sessionStorage.setItem('editBusiness', JSON.stringify(business));
+    navigate(`/business/${business.id}/edit`);
+
+  }
+
+  // Calculate statistics
+  const totalServices = business.serviceOffered?.length || 0;
+  const totalAppointments = business.appointments?.length || 0;
+  const confirmedAppointments = business.appointments?.filter(apt => apt.status === 'Confirmed').length || 0;
+  const totalRevenue = business.serviceOffered?.reduce((sum, service) => sum + service.price, 0) || 0;
+
+  // Business available - show business dashboard with categorized data
   return (
-    <div style={{
-      maxWidth: '800px',
-      margin: '40px auto',
-      padding: '24px',
-      fontFamily: 'Arial, sans-serif',
-      color: '#333'
-    }}>
-      <h1 style={{ fontSize: '2.2rem', marginBottom: '16px' }}>
-        {biz.name}
-      </h1>
-      <p style={{ marginBottom: '24px' }}>
-        {biz.description}
-      </p>
-
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '16px',
-        marginBottom: '24px'
-      }}>
-        <div><strong>Email:</strong> {biz.email}</div>
-        <div><strong>Phone:</strong> {biz.phone}</div>
-        <div>
-          <strong>Address:</strong> {biz.address}, {biz.city}, {biz.state} {biz.zipCode}, {biz.country}
+    <div className="container py-4">
+      {/* Header */}
+      <div className="row mb-4">
+        <div className="col">
+          <h2 className="mb-1">
+            <i className="bi bi-building me-2"></i>
+            {business.name}
+          </h2>
+          <p className="text-muted">Business ID: #{business.id} | Owner ID: #{business.owner}</p>
         </div>
-        <div>
-          <strong>Map:</strong>{' '}
-          <a href={biz.mapLink} target="_blank" rel="noopener noreferrer">
-            View on Google Maps
-          </a>
-        </div>
-        <div><strong>Owner ID:</strong> {biz.ownerIdentity}</div>
-        <div><strong>CRN:</strong> {biz.CRNNumber}</div>
-        <div><strong>GST:</strong> {biz.GSTNumber}</div>
-        <div>
-          <strong>Hours:</strong> {biz.openTime} – {biz.closeTime}
+        <div className="col-auto">
+          <div onClick={handleEditBusiness} className="btn btn-primary">
+            <i className="bi bi-pencil me-2"></i>
+            Edit Business
+          </div>
         </div>
       </div>
 
-      <section style={{ marginBottom: '24px' }}>
-        <h2 style={{ marginBottom: '12px' }}>Services Offered</h2>
-        {biz.serviceOffered && biz.serviceOffered.length > 0
-          ? (
-            <ul>
-              {biz.serviceOffered.map(s => (
-                <li key={s.id}>
-                  {s.name} – ${s.price.toFixed(2)}
-                </li>
-              ))}
-            </ul>
-          )
-          : <p>No services listed.</p>
-        }
-      </section>
+      {/* Category 1: Business Information */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-header bg-primary text-white">
+              <h5 className="mb-0">
+                <i className="bi bi-info-circle me-2"></i>
+                Business Information
+              </h5>
+            </div>
+            <div className="card-body">
+              <div className="row">
+                <div className="col-md-8">
+                  <h6 className="text-primary mb-2">{business.name}</h6>
+                  <p className="text-muted mb-3">{business.description}</p>
+                  
+                  <div className="row">
+                    <div className="col-md-6">
+                      <div className="mb-2">
+                        <i className="bi bi-envelope text-primary me-2"></i>
+                        <strong>Email:</strong> {business.email}
+                      </div>
+                      <div className="mb-2">
+                        <i className="bi bi-telephone text-primary me-2"></i>
+                        <strong>Phone:</strong> {business.phone}
+                      </div>
+                      <div className="mb-2">
+                        <i className="bi bi-clock text-primary me-2"></i>
+                        <strong>Hours:</strong> {business.openTime} - {business.closeTime}
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <div className="mb-2">
+                        <i className="bi bi-geo-alt text-primary me-2"></i>
+                        <strong>Address:</strong> {business.address}
+                      </div>
+                      <div className="mb-2">
+                        <i className="bi bi-building text-primary me-2"></i>
+                        <strong>City:</strong> {business.city}, {business.state}
+                      </div>
+                      <div className="mb-2">
+                        <i className="bi bi-globe text-primary me-2"></i>
+                        <strong>Country:</strong> {business.country} - {business.zipCode}
+                      </div>
+                    </div>
+                  </div>
 
-      <section>
-        <h2 style={{ marginBottom: '12px' }}>Upcoming Appointments</h2>
-        {biz.appointments && biz.appointments.length > 0
-          ? (
-            <ul>
-              {biz.appointments.map(a => (
-                <li key={a.id}>
-                  {new Date(a.date).toLocaleString()} – {a.customerName}
-                </li>
-              ))}
-            </ul>
-          )
-          : <p>No upcoming appointments.</p>
-        }
-      </section>
+                  {business.mapLink && (
+                    <div className="mt-3">
+                      <a href={business.mapLink} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm">
+                        <i className="bi bi-map me-1"></i>
+                        View on Google Maps
+                      </a>
+                    </div>
+                  )}
+                </div>
+                <div className="col-md-4">
+                  <div className="bg-light rounded p-3">
+                    <h6 className="text-muted mb-3">Quick Stats</h6>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span>Services:</span>
+                      <span className="fw-bold">{totalServices}</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span>Appointments:</span>
+                      <span className="fw-bold">{totalAppointments}</span>
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <span>Confirmed:</span>
+                      <span className="fw-bold text-success">{confirmedAppointments}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Category 2: Legal & Registration Details */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-header bg-success text-white">
+              <h5 className="mb-0">
+                <i className="bi bi-shield-check me-2"></i>
+                Legal & Registration Details
+              </h5>
+            </div>
+            <div className="card-body">
+              <div className="row">
+                <div className="col-md-4">
+                  <div className="text-center p-3 border rounded">
+                    <i className="bi bi-person-badge text-success fs-3 mb-2"></i>
+                    <h6>Owner Identity</h6>
+                    <p className="mb-0 fw-bold">{business.ownerIdentity}</p>
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="text-center p-3 border rounded">
+                    <i className="bi bi-file-earmark-text text-info fs-3 mb-2"></i>
+                    <h6>CRN Number</h6>
+                    <p className="mb-0 fw-bold">{business.CRNNumber}</p>
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="text-center p-3 border rounded">
+                    <i className="bi bi-receipt text-warning fs-3 mb-2"></i>
+                    <h6>GST Number</h6>
+                    <p className="mb-0 fw-bold">{business.GSTNumber}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Category 3: Services Offered */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-header bg-info text-white">
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">
+                  <i className="bi bi-gear me-2"></i>
+                  Services Offered ({totalServices})
+                </h5>
+                <Link to="/services/add" className="btn btn-light btn-sm">
+                  <i className="bi bi-plus me-1"></i>
+                  Add Service
+                </Link>
+              </div>
+            </div>
+            <div className="card-body">
+              {business.serviceOffered && business.serviceOffered.length > 0 ? (
+                <div className="row">
+                  {business.serviceOffered.map((service) => (
+                    <div key={service.id} className="col-md-6 col-lg-4 mb-3">
+                      <div className="border rounded p-3 h-100 bg-light">
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                          <h6 className="text-primary mb-0">{service.serviceName}</h6>
+                          <span className="badge bg-secondary">{service.category}</span>
+                        </div>
+                        <p className="text-muted small mb-2">{service.description}</p>
+                        <div className="d-flex justify-content-between align-items-center">
+                          <span className="text-success fw-bold">₹{service.price.toLocaleString()}</span>
+                          <span className="text-muted small">{service.duration}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <i className="bi bi-gear text-muted display-4 mb-3"></i>
+                  <p className="text-muted">No services added yet.</p>
+                  <Link to="/services/add" className="btn btn-primary">
+                    <i className="bi bi-plus me-1"></i>
+                    Add Your First Service
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Category 4: Recent Appointments */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-header bg-warning text-dark">
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">
+                  <i className="bi bi-calendar-event me-2"></i>
+                  Recent Appointments ({totalAppointments})
+                </h5>
+                <Link to="/appointments" className="btn btn-dark btn-sm">
+                  <i className="bi bi-eye me-1"></i>
+                  View All
+                </Link>
+              </div>
+            </div>
+            <div className="card-body">
+              {business.appointments && business.appointments.length > 0 ? (
+                <div className="table-responsive">
+                  <table className="table table-hover">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Customer</th>
+                        <th>Service</th>
+                        <th>Date & Time</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {business.appointments.slice(0, 5).map((appointment) => (
+                        <tr key={appointment.id}>
+                          <td>
+                            <i className="bi bi-person-circle me-2"></i>
+                            {appointment.customerName}
+                          </td>
+                          <td>{appointment.serviceName}</td>
+                          <td>
+                            <small>
+                              {appointment.appointmentDate}<br/>
+                              {appointment.appointmentTime}
+                            </small>
+                          </td>
+                          <td>
+                            <span className={`badge ${
+                              appointment.status === 'Confirmed' ? 'bg-success' : 
+                              appointment.status === 'Pending' ? 'bg-warning' : 'bg-danger'
+                            }`}>
+                              {appointment.status}
+                            </span>
+                          </td>
+                          <td>
+                            <button className="btn btn-outline-primary btn-sm">
+                              <i className="bi bi-eye"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <i className="bi bi-calendar-x text-muted display-4 mb-3"></i>
+                  <p className="text-muted">No appointments scheduled yet.</p>
+                  <Link to="/appointments/create" className="btn btn-warning">
+                    <i className="bi bi-plus me-1"></i>
+                    Create Appointment
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="row">
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-header bg-dark text-white">
+              <h5 className="mb-0">
+                <i className="bi bi-lightning me-2"></i>
+                Quick Actions
+              </h5>
+            </div>
+            <div className="card-body">
+              <div className="row">
+                <div className="col-md-3 mb-2">
+                  <Link to="/appointments" className="btn btn-outline-primary w-100">
+                    <i className="bi bi-calendar-event me-2"></i>
+                    Manage Appointments
+                  </Link>
+                </div>
+                <div className="col-md-3 mb-2">
+                  <Link to="/services" className="btn btn-outline-success w-100">
+                    <i className="bi bi-gear me-2"></i>
+                    Manage Services
+                  </Link>
+                </div>
+                <div className="col-md-3 mb-2">
+                  <Link to="/analytics" className="btn btn-outline-info w-100">
+                    <i className="bi bi-graph-up me-2"></i>
+                    View Analytics
+                  </Link>
+                </div>
+                <div className="col-md-3 mb-2">
+                  <Link to="/settings" className="btn btn-outline-warning w-100">
+                    <i className="bi bi-gear-fill me-2"></i>
+                    Business Settings
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default Business
+export default Business;

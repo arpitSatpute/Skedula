@@ -6,17 +6,20 @@ export const AuthContext = createContext();
 export const AuthProvider = ({children}) => {
     const [user, setUser] = useState(null);
 
-    const login = async (email, password) => {
+    const login = async (email, password, role) => {
         try{
-            const response = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}auth/login`, { email, password });
-        const { accessToken } = response.data.data;
-        localStorage.setItem('accessToken', accessToken);
-        
-        console.log('Login successful');
-        return response.data;
-        }
-        
-        catch (error) {
+            // Fix: Ensure URL has proper slash
+            const baseURL = import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:8080/api';
+            const url = baseURL.endsWith('/') ? `${baseURL}auth/login` : `${baseURL}/auth/login`;
+            
+            const response = await axios.post(url, { email, password, role });
+            const { accessToken } = response.data.data;
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('userRole', role);
+            setUser({ email, role });
+            console.log('Login successful');
+            return response.data;
+        } catch (error) {
             console.error('Login failed:', error);
             throw error;
         }
@@ -24,8 +27,11 @@ export const AuthProvider = ({children}) => {
 
     const signup = async (data) => {
         try {
-            const response = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}auth/signup`, data);
+            const baseURL = import.meta.env.VITE_BACKEND_BASE_URL;
+            
+            const response = await axios.post(`${baseURL}/auth/signup`, data);
             console.log('Signup successful');
+            localStorage.setItem('user', response.data.data.id);
             return response.data;
         } catch(error) {
             console.error('Signup failed:', error);
@@ -35,6 +41,8 @@ export const AuthProvider = ({children}) => {
 
     const logout = () => {
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('user');
         setUser(null);
         console.log('Logout successful');
     };
@@ -52,4 +60,3 @@ export const AuthProvider = ({children}) => {
         </AuthContext.Provider>
     );
 };
-  

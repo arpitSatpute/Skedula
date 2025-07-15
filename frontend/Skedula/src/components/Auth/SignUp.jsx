@@ -1,14 +1,20 @@
 import React, { useContext, useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { AuthContext } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const SignUp = () => {
 
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+
   const [name, setName] = React.useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [role, setRole] = useState('CUSTOMER');
   const [error, setError] = useState(null);
 
   const navigate = useNavigate();
@@ -17,15 +23,25 @@ const SignUp = () => {
   const handleSignup = async (e) => {
     e.preventDefault();
     console.log("Entered Signup");
-    await signup({ name, email, password, phone });
-    console.log("Done Signup");
+    
+    await signup({ name, email, password, phone, role });
+    toast.success("Signup successful! Redirecting to login…");
+    if(role !== 'CUSTOMER') {
+      toast.error(`Redirecting to ${role} login page.`);
+      await sleep(2000);
+      window.location.href = `${import.meta.env.VITE_FRONTEND_OWNER_URL}/login`;
+      return;
+    }
+    await sleep(2000);
     navigate('/login');
     console.log("Navigated to Login");
     
   }
 
   return (
-    <div className="vh-100 bg-black d-flex align-items-center">
+    <>
+      <div className="vh-100 bg-black d-flex align-items-center">
+    
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-md-6 col-lg-5">
@@ -90,11 +106,26 @@ const SignUp = () => {
                       placeholder="Enter your phone number"
                     />
                   </div>
+                  <div className="mb-5">
+                    <label htmlFor="role" className="form-label">
+                      <i className="bi bi-person me-2"></i>Role
+                    </label>
+                    <select 
+                      className="form-select bg-secondary border-black shadow-sm text-white" 
+                      id="role" 
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                    >
+                      <option value="OWNER">Business Owner</option>
+                      <option value="CUSTOMER">Customer</option>
+                    </select>
+                  </div>
 
                   <div className="d-grid">
                     <button 
                       type="submit" 
                       className="btn btn-primary btn-lg "
+                      onClick={handleSignup}
                     >
                       Sign Up
                     </button>
@@ -111,7 +142,18 @@ const SignUp = () => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+      <ToastContainer
+       position="top-right"
+       autoClose={2500}
+       hideProgressBar={false}
+       newestOnTop={false}
+       closeOnClick
+      pauseOnHover
+       draggable
+       theme="dark"
+     />
+    </>
   );
 }
 

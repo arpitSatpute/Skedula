@@ -5,6 +5,7 @@ import { AuthContext } from './AuthContext';
 const Login = () => {
 
   const [email, setEmail] = useState('');
+  const [role, setRole] = useState("OWNER");
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -15,9 +16,11 @@ const Login = () => {
     e.preventDefault();
     
       console.log("Entered Login");
-      await login(email, password);
+      await login(email, password, role);
       console.log("Done Login");
       navigate('/');
+    
+    
   }
 
   return (

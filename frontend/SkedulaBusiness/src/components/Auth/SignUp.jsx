@@ -3,12 +3,13 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { AuthContext } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const SignUp = () => {
+const Signup = () => {
 
   const [name, setName] = React.useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [role, setRole] = useState("OWNER");
   const [error, setError] = useState(null);
 
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ const SignUp = () => {
   const handleSignup = async (e) => {
     e.preventDefault();
     console.log("Entered Signup");
-    await signup({ name, email, password, phone });
+    await signup({ name, email, password, phone, role });
     console.log("Done Signup");
     navigate('/login');
     console.log("Navigated to Login");
@@ -115,4 +116,4 @@ const SignUp = () => {
   );
 }
 
-export default SignUp;
+export default Signup;

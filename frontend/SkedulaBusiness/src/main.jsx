@@ -1,4 +1,5 @@
-import { StrictMode } from 'react'
+import { React, StrictMode } from 'react'
+import ReactDOM from 'react-dom';
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
@@ -17,12 +18,23 @@ import Wallet from './components/Wallet/Wallet.jsx'
 import About from './components/About.jsx'
 import Contact from './components/Contact.jsx'
 import { AuthProvider } from './components/Auth/AuthContext.jsx'
-import Protected from '../../Skedula/src/components/Auth/Protected.jsx'
+import Protected from './components/Auth/Protected.jsx'
+import AuthRoute from './components/Auth/AuthRoute.jsx'
+import UserProfile from './components/Profile/UserProfile.jsx'
+
+// Create a wrapper component that provides AuthContext inside Router
+// const AppWithAuth = () => {
+//   return (
+//     // <AuthProvider>
+//       <Layout />
+//     // </AuthProvider>
+//   )
+// }
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Layout />,
+    element: <Layout />, 
     children: [
       {
         path: "/",
@@ -36,63 +48,75 @@ const router = createBrowserRouter([
         path: "/contact",
         element: <Contact />
       },
-      {
-        path: "/login",
-        element: <Login />
-      },
-      {
-        path : "/signup",
-        element: <SignUp />
-      },
-      {
-        element: <Protected authenticated={true} />,
-        children: [
+      // Public routes that redirect authenticated users
+      // {
+      //   element: <AuthRoute />,
+      //   children: [
           {
-        path: "/businesses",
-        element: <Business />
-      },
-      {
-        path: "/services",
-        element: <ListServices />
-      },
-      {
-        path: "/services/:id",
-        element: <Services/>
-      },
-      {
-        path: "/services/add",
-        element: <AddService />
-      },
-      {
-        path: "/services/:id/edit",
-        element: <AddService />
-      },
-      {
-        path: "/business/:id/edit",
-        element: <AddBusiness />
-      },
-      {
-        path: "/business/add",
-        element: <AddBusiness />
-      },
-      {
-        path: "/appointments",
-        element: <Appointments />
-      },
-      {
-        path: "/wallet",
-        element: <Wallet />
+            path: "/login",
+            element: <Login />
+          },
+          {
+            path: "/signup",
+            element: <SignUp />
+          },
+      //   ]
+      // },
+      // Protected routes that require authentication
+      // {
+      //   element: <Protected />,
+      //   children: [
+          {
+            path: "/profile",
+            element: <UserProfile />
+          },
+          {
+            path: "/businesses",
+            element: <Business />
+          },
+          {
+            path: "/services",
+            element: <ListServices />
+          },
+          {
+            path: "/services/:id",
+            element: <Services/>
+          },
+          {
+            path: "/services/add",
+            element: <AddService />
+          },
+          {
+            path: "/services/:id/edit",
+            element: <AddService />
+          },
+          {
+            path: "/business/:id/edit",
+            element: <AddBusiness />
+          },
+          {
+            path: "/business/add",
+            element: <AddBusiness />
+          },
+          {
+            path: "/appointments",
+            element: <Appointments />
+          },
+          {
+            path: "/wallet",
+            element: <Wallet />
+          }
+        ]
       }
-      ]
-      },
     ]
-  }
-])
+//   }
+// ]
+)
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
       <RouterProvider router={router} />
     </AuthProvider>
-  </StrictMode>,
+  </StrictMode>
 )
