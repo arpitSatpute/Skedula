@@ -3,101 +3,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient.js';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import ConfirmationModal from '../ConfirmationModel/ConfirmationModel.jsx';
 
 const Business = () => {
   const [business, setBusiness] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const user =  localStorage.getItem('user');
   const navigate = useNavigate();
-  // Dummy business data based on BusinessDTO
-  // const dummyBusiness = {
-  //   id: 1,
-  //   owner: 101,
-  //   name: "Elegant Beauty Salon & Spa",
-  //   description: "Premium beauty salon offering hair styling, skincare treatments, nail care, and relaxing spa services. Experience luxury and rejuvenation with our expert team of professionals.",
-  //   email: "contact@elegantbeauty.com",
-  //   phone: "+91 98765 43210",
-  //   address: "123 Fashion Street, Commercial Complex",
-  //   city: "Mumbai",
-  //   state: "Maharashtra",
-  //   country: "India",
-  //   zipCode: "400001",
-  //   mapLink: "https://maps.google.com/elegant-beauty-salon",
-  //   ownerIdentity: "OWNER2024001",
-  //   CRNNumber: "CRN123456789",
-  //   GSTNumber: "GST27ABCDE1234F1Z5",
-  //   openTime: "09:00",
-  //   closeTime: "20:00",
-  //   serviceOffered: [
-  //     {
-  //       id: 1,
-  //       serviceName: "Hair Styling & Cut",
-  //       description: "Professional hair styling and cutting services",
-  //       price: 1500.00,
-  //       duration: "60 minutes",
-  //       category: "Hair Care"
-  //     },
-  //     {
-  //       id: 2,
-  //       serviceName: "Facial Treatment",
-  //       description: "Deep cleansing and rejuvenating facial treatment",
-  //       price: 2000.00,
-  //       duration: "90 minutes",
-  //       category: "Skin Care"
-  //     },
-  //     {
-  //       id: 3,
-  //       serviceName: "Manicure & Pedicure",
-  //       description: "Complete nail care and grooming",
-  //       price: 800.00,
-  //       duration: "45 minutes",
-  //       category: "Nail Care"
-  //     },
-  //     {
-  //       id: 4,
-  //       serviceName: "Body Massage",
-  //       description: "Relaxing full body massage therapy",
-  //       price: 2500.00,
-  //       duration: "90 minutes",
-  //       category: "Wellness"
-  //     },
-  //     {
-  //       id: 5,
-  //       serviceName: "Hair Coloring",
-  //       description: "Professional hair coloring and highlights",
-  //       price: 3000.00,
-  //       duration: "120 minutes",
-  //       category: "Hair Care"
-  //     }
-  //   ],
-  //   appointments: [
-  //     {
-  //       id: 1,
-  //       customerName: "Priya Sharma",
-  //       serviceName: "Hair Styling & Cut",
-  //       appointmentDate: "2024-07-15",
-  //       appointmentTime: "10:00",
-  //       status: "Confirmed"
-  //     },
-  //     {
-  //       id: 2,
-  //       customerName: "Rahul Kumar",
-  //       serviceName: "Body Massage",
-  //       appointmentDate: "2024-07-15",
-  //       appointmentTime: "14:00",
-  //       status: "Pending"
-  //     },
-  //     {
-  //       id: 3,
-  //       customerName: "Anjali Patel",
-  //       serviceName: "Facial Treatment",
-  //       appointmentDate: "2024-07-16",
-  //       appointmentTime: "11:30",
-  //       status: "Confirmed"
-  //     }
-  //   ]
-  // };
+  
 
   useEffect( () => {
     // Simulate API call
@@ -187,15 +102,49 @@ const Business = () => {
   }
   const handleEditBusiness = () => {
 
-    sessionStorage.setItem('editBusiness', JSON.stringify(business));
+    // Store business data with correct field names for AddBusiness to use
+    const businessDataForEdit = {
+      ...business,
+      // Ensure all fields are present for the edit form
+      identity: business.identity || '',
+      crnnumber: business.crnnumber || '',
+      gstnumber: business.gstnumber || ''
+    };
+    
+    console.log('Storing business data for edit:', businessDataForEdit);
+    sessionStorage.setItem('editBusiness', JSON.stringify(businessDataForEdit));
     navigate(`/business/${business.id}/edit`);
 
   }
 
+  const handleRemoveBusinessClick = () => {
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmRemove = async () => {
+    try {
+      setLoading(true);
+      setShowConfirmModal(false);
+      
+      const response = await apiClient.delete(`/business/remove/${business.id}`);
+      
+      if (response.status === 200) {
+        alert('Business removed successfully');
+        setBusiness(null);
+      }
+    } catch (error) {
+      console.error('Error removing business:', error);
+      setError('Failed to remove business. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Calculate statistics
-  const totalServices = business.serviceOffered?.length || 0;
-  const totalAppointments = business.appointments?.length || 0;
-  const confirmedAppointments = business.appointments?.filter(apt => apt.status === 'Confirmed').length || 0;
+  const totalServices = (business.serviceOffered && Array.isArray(business.serviceOffered)) ? business.serviceOffered.length : 0;
+  const totalAppointments = (business.appointments && Array.isArray(business.appointments)) ? business.appointments.length : 0;
+  const confirmedAppointments = (business.appointments && Array.isArray(business.appointments)) ? 
+    business.appointments.filter(apt => apt.status === 'Confirmed').length : 0;
   const totalRevenue = business.serviceOffered?.reduce((sum, service) => sum + service.price, 0) || 0;
 
   // Business available - show business dashboard with categorized data
@@ -313,21 +262,21 @@ const Business = () => {
                   <div className="text-center p-3 border rounded">
                     <i className="bi bi-person-badge text-success fs-3 mb-2"></i>
                     <h6>Owner Identity</h6>
-                    <p className="mb-0 fw-bold">{business.ownerIdentity}</p>
+                    <p className="mb-0 fw-bold">{business.identity || 'Not provided'}</p>
                   </div>
                 </div>
                 <div className="col-md-4">
                   <div className="text-center p-3 border rounded">
                     <i className="bi bi-file-earmark-text text-info fs-3 mb-2"></i>
                     <h6>CRN Number</h6>
-                    <p className="mb-0 fw-bold">{business.CRNNumber}</p>
+                    <p className="mb-0 fw-bold">{business.crnnumber || 'Not provided'}</p>
                   </div>
                 </div>
                 <div className="col-md-4">
                   <div className="text-center p-3 border rounded">
                     <i className="bi bi-receipt text-warning fs-3 mb-2"></i>
                     <h6>GST Number</h6>
-                    <p className="mb-0 fw-bold">{business.GSTNumber}</p>
+                    <p className="mb-0 fw-bold">{business.gstnumber || 'Not provided'}</p>
                   </div>
                 </div>
               </div>
@@ -353,19 +302,19 @@ const Business = () => {
               </div>
             </div>
             <div className="card-body">
-              {business.serviceOffered && business.serviceOffered.length > 0 ? (
+              {business.serviceOffered && Array.isArray(business.serviceOffered) && business.serviceOffered.length > 0 ? (
                 <div className="row">
                   {business.serviceOffered.map((service) => (
                     <div key={service.id} className="col-md-6 col-lg-4 mb-3">
                       <div className="border rounded p-3 h-100 bg-light">
                         <div className="d-flex justify-content-between align-items-start mb-2">
                           <h6 className="text-primary mb-0">{service.serviceName}</h6>
-                          <span className="badge bg-secondary">{service.category}</span>
+                          <span className="badge bg-secondary">{service.category || 'General'}</span>
                         </div>
                         <p className="text-muted small mb-2">{service.description}</p>
                         <div className="d-flex justify-content-between align-items-center">
-                          <span className="text-success fw-bold">₹{service.price.toLocaleString()}</span>
-                          <span className="text-muted small">{service.duration}</span>
+                          <span className="text-success fw-bold">₹{service.price?.toLocaleString() || '0'}</span>
+                          <span className="text-muted small">{service.duration || 'N/A'}</span>
                         </div>
                       </div>
                     </div>
@@ -403,7 +352,7 @@ const Business = () => {
               </div>
             </div>
             <div className="card-body">
-              {business.appointments && business.appointments.length > 0 ? (
+              {business.appointments && Array.isArray(business.appointments) && business.appointments.length > 0 ? (
                 <div className="table-responsive">
                   <table className="table table-hover">
                     <thead className="table-light">
@@ -420,13 +369,13 @@ const Business = () => {
                         <tr key={appointment.id}>
                           <td>
                             <i className="bi bi-person-circle me-2"></i>
-                            {appointment.customerName}
+                            {appointment.customerName || 'Unknown'}
                           </td>
-                          <td>{appointment.serviceName}</td>
+                          <td>{appointment.serviceName || 'N/A'}</td>
                           <td>
                             <small>
-                              {appointment.appointmentDate}<br/>
-                              {appointment.appointmentTime}
+                              {appointment.appointmentDate || 'N/A'}<br/>
+                              {appointment.appointmentTime || 'N/A'}
                             </small>
                           </td>
                           <td>
@@ -434,7 +383,7 @@ const Business = () => {
                               appointment.status === 'Confirmed' ? 'bg-success' : 
                               appointment.status === 'Pending' ? 'bg-warning' : 'bg-danger'
                             }`}>
-                              {appointment.status}
+                              {appointment.status || 'Unknown'}
                             </span>
                           </td>
                           <td>
@@ -493,16 +442,28 @@ const Business = () => {
                   </Link>
                 </div>
                 <div className="col-md-3 mb-2">
-                  <Link to="/settings" className="btn btn-outline-warning w-100">
+                  <div onClick={() => setShowConfirmModal(true)} className="btn btn-outline-danger w-100">
                     <i className="bi bi-gear-fill me-2"></i>
-                    Business Settings
-                  </Link>
+                    Remove Business
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Add the confirmation modal */}
+      <ConfirmationModal
+        show={showConfirmModal}
+        onHide={() => setShowConfirmModal(false)}
+        onConfirm={handleConfirmRemove}
+        title="Remove Business"
+        message={`Are you sure you want to permanently remove "${business?.name}"? This action cannot be undone and will delete all associated data including services, appointments, and customer records.`}
+        confirmText="Yes, Remove Business"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

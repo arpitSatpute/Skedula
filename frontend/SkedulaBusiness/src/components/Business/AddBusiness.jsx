@@ -46,9 +46,9 @@ function AddBusiness() {
     country: '',
     zipCode: '',
     mapLink: '',
-    ownerIdentity: '',
-    CRNNumber: '',
-    GSTNumber: '',
+    identity: '',
+    crnnumber: '', // Changed from CRNNumber
+    gstnumber: '', // Changed from GSTNumber
     openTime: '',
     closeTime: ''
   })
@@ -59,10 +59,38 @@ function AddBusiness() {
 
   
   useEffect(() => {
-    if (!isEdit || !id) return
+    if (!isEdit || !id) return;
 
-      setFormData(JSON.parse(sessionStorage.getItem('editBusiness')))
-    
+    try {
+      const storedBusiness = sessionStorage.getItem('editBusiness');
+      if (storedBusiness) {
+        const businessData = JSON.parse(storedBusiness);
+        console.log('Loading business data for edit:', businessData);
+        
+        setFormData({
+          name: businessData.name || '',
+          description: businessData.description || '',
+          email: businessData.email || '',
+          phone: businessData.phone || '',
+          address: businessData.address || '',
+          city: businessData.city || '',
+          state: businessData.state || '',
+          country: businessData.country || '',
+          zipCode: businessData.zipCode || '',
+          mapLink: businessData.mapLink || '',
+          identity: businessData.identity || '',
+          crnnumber: businessData.crnnumber || '', // Backend field name
+          gstnumber: businessData.gstnumber || '', // Backend field name
+          openTime: businessData.openTime || '',
+          closeTime: businessData.closeTime || ''
+        });
+        
+        sessionStorage.removeItem('editBusiness');
+      }
+    } catch (error) {
+      console.error('Error loading business data:', error);
+      setCustomError('Error loading business data');
+    }
   }, [id, isEdit])
 
   const handleInputChange = (field, value) => {
@@ -80,33 +108,46 @@ function AddBusiness() {
     setLoading(true);
     setCustomError('');
 
+    // Validate required fields
+    if (!formData.name || !formData.email || !formData.description || 
+        !formData.identity || !formData.crnnumber || !formData.gstnumber || 
+        !formData.openTime || !formData.closeTime) {
+      setCustomError('Please fill in all required fields');
+      setLoading(false);
+      return;
+    }
+
+    console.log("Form data to be sent:", formData);
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      // Here you would typically send formData to your API
-      if(!isEdit) {
+      if (!isEdit) {
         console.log("Creating new business:", formData);
         const response = await apiClient.post(`/business/register`, formData);
         console.log("Business created:", response.data);
-      }
-      else{
         
-        console.log("Editing new business:", formData);
+        if (response.status === 200 || response.status === 201) {
+          alert('Business created successfully!');
+          navigate('/businesses');
+        }
+      } else {
+        console.log("Updating business:", formData);
         const response = await apiClient.put(`/business/update/${id}`, formData);
-        console.log("Business edited:", response.data);
+        console.log("Business updated:", response.data);
+        
+        if (response.status === 200) {
+          alert('Business updated successfully!');
+          navigate('/businesses');
+        }
       }
-      
-      console.log('Form submitted:', formData);
-      
-      // Simulate success
-      const message = isEdit ? 'Business updated successfully!' : 'Business created successfully!';
-      alert(message);
-      
-      // Navigate back to businesses list
-      navigate('/businesses');
       
     } catch (error) {
-      setCustomError('Failed to save business. Please try again.');
+      console.error('Error saving business:', error);
+      console.error('Error response:', error.response?.data);
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          'Failed to save business. Please try again.';
+      setCustomError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -315,12 +356,12 @@ function AddBusiness() {
                     <h5 className="text-muted mb-3">Legal Information</h5>
                   </div>
                   <div className="col-md-4 mb-3">
-                    <label className="form-label">Owner Identity *</label>
+                    <label className="form-label">Identity *</label>
                     <input
                       type="text"
                       className={`form-control ${isEdit ? 'bg-light' : ''}`}
-                      value={formData.ownerIdentity}
-                      onChange={(e) => handleInputChange('ownerIdentity', e.target.value)}
+                      value={formData.identity}
+                      onChange={(e) => handleInputChange('identity', e.target.value)}
                       required
                       disabled={isEdit || loading}
                       placeholder="Owner ID"
@@ -336,8 +377,8 @@ function AddBusiness() {
                     <input
                       type="text"
                       className={`form-control ${isEdit ? 'bg-light' : ''}`}
-                      value={formData.CRNNumber}
-                      onChange={(e) => handleInputChange('CRNNumber', e.target.value)}
+                      value={formData.crnnumber}
+                      onChange={(e) => handleInputChange('crnnumber', e.target.value)}
                       required
                       disabled={isEdit || loading}
                       placeholder="CRN Number"
@@ -353,8 +394,8 @@ function AddBusiness() {
                     <input
                       type="text"
                       className={`form-control ${isEdit ? 'bg-light' : ''}`}
-                      value={formData.GSTNumber}
-                      onChange={(e) => handleInputChange('GSTNumber', e.target.value)}
+                      value={formData.gstnumber}
+                      onChange={(e) => handleInputChange('gstnumber', e.target.value)}
                       required
                       disabled={isEdit || loading}
                       placeholder="GST Number"
