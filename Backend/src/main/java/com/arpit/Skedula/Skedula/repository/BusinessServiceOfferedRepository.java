@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import com.arpit.Skedula.Skedula.entity.BusinessServiceOffered;
 
+import java.util.List;
+
 @Repository
 public interface BusinessServiceOfferedRepository extends JpaRepository<BusinessServiceOffered, Long> {
 
@@ -18,4 +20,6 @@ public interface BusinessServiceOfferedRepository extends JpaRepository<Business
             "LOWER(b.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(b.description) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<BusinessServiceOffered> findByKeyword(String keyword, Pageable pageable);
+
+    List<BusinessServiceOffered> findByBusiness_Owner_Email(String businessOwnerEmail);
 }

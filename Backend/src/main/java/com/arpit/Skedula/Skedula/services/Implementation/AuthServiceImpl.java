@@ -8,6 +8,7 @@ import com.arpit.Skedula.Skedula.entity.User;
 import com.arpit.Skedula.Skedula.entity.Wallet;
 import com.arpit.Skedula.Skedula.entity.enums.Role;
 import com.arpit.Skedula.Skedula.exceptions.RuntimeConflictException;
+import com.arpit.Skedula.Skedula.repository.BusinessRepository;
 import com.arpit.Skedula.Skedula.repository.UserRepository;
 import com.arpit.Skedula.Skedula.repository.WalletRepository;
 import com.arpit.Skedula.Skedula.security.JWTService;
@@ -46,6 +47,8 @@ public class AuthServiceImpl implements AuthService {
     private final CustomerService customerService;
     private final WalletService walletService;
     private final WalletRepository walletRepository;
+    private final BusinessRepository businessRepository;
+
 
 
     @Override
@@ -66,22 +69,6 @@ public class AuthServiceImpl implements AuthService {
     public UserDTO signup(SignupDTO signupDto) {
         Optional<User> existingUserOpt = userRepository.findByEmail(signupDto.getEmail());
         if (existingUserOpt.isPresent()) {
-//            User existingUser = existingUserOpt.get();
-//            if (existingUser.getRoles().contains(signupDto.getRole())) {
-//                throw new RuntimeConflictException("The user already exists with email id: "
-//                        + signupDto.getEmail() + " and role: " + signupDto.getRole());
-//            } else {
-//                existingUser.getRoles().add(signupDto.getRole());
-//                User updatedUser = userRepository.save(existingUser);
-//
-//                UserDTO userDTO = modelMapper.map(updatedUser, UserDTO.class);
-//                // Create associated entity if needed
-//                if (signupDto.getRole() == Role.CUSTOMER) {
-//                    customerService.createCustomer(userDTO);
-//                    // TODO create customer wallet
-//                }
-//                return userDTO;
-//            }
             throw new RuntimeConflictException("The user already exists with email id: " + signupDto.getEmail());
         }
 
@@ -100,14 +87,8 @@ public class AuthServiceImpl implements AuthService {
         // Create associated entity based on role
         if (signupDto.getRole() == Role.CUSTOMER) {
             customerService.createCustomer(userDTO);
-            // TODO create customer wallet
         }
-        if( signupDto.getRole() == Role.OWNER) {
-            Business business = Business.builder()
 
-                    .owner(savedUser)
-                    .build();
-        }
         return userDTO;
     }
 

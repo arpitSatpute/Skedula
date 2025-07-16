@@ -4,6 +4,7 @@ import com.arpit.Skedula.Skedula.dto.BusinessServiceOfferedDTO;
 import com.arpit.Skedula.Skedula.dto.OnBoardBusinessServiceOfferedDTO;
 import com.arpit.Skedula.Skedula.entity.Business;
 import com.arpit.Skedula.Skedula.entity.BusinessServiceOffered;
+import com.arpit.Skedula.Skedula.entity.User;
 import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.BusinessRepository;
 import com.arpit.Skedula.Skedula.repository.BusinessServiceOfferedRepository;
@@ -15,11 +16,15 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.*;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +33,6 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
     private final BusinessServiceOfferedRepository serviceOfferedRepository;
     private final ModelMapper mapper;
     private final BusinessRepository businessRepository;
-
     private final BusinessServiceOfferedRepository businessServiceOfferedRepository;
     private final ModelMapper modelMapper;
     private final Client client;
@@ -69,6 +73,19 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
     }
 
     @Override
+    public Void setFile(MultipartFile multipartFile, Long id) {
+        BusinessServiceOffered businessServiceOffered = businessServiceOfferedRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
+        String fileUrl = uploadFile(multipartFile);
+        businessServiceOffered.setImageUrl(fileUrl);
+        businessServiceOfferedRepository.save(businessServiceOffered);
+        System.out.println("file set: -------------------------------------------------------------");
+
+        return null;
+    }
+
+
+    @Override
     public Page<BusinessServiceOfferedDTO> getAllServices(Integer pageOffset, Integer pageSize) {
         return businessServiceOfferedRepository.findAll(PageRequest.of(pageOffset, pageSize))
                 .map(service -> modelMapper.map(service, BusinessServiceOfferedDTO.class));
@@ -91,7 +108,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         businessServiceOffered.setPrice(serviceOfferedDTO.getPrice());
         businessServiceOffered.setTotalSlots(serviceOfferedDTO.getTotalSlots());
         businessServiceOffered.setDuration(serviceOfferedDTO.getDuration());
-        businessServiceOffered.setImageUrl(uploadFile(serviceOfferedDTO.getImage()));
+        businessServiceOffered.setImageUrl(null);
 
         businessServiceOfferedRepository.save(businessServiceOffered);
 
@@ -103,9 +120,15 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         result.setPrice(businessServiceOffered.getPrice());
         result.setTotalSlots(businessServiceOffered.getTotalSlots());
         result.setDuration(businessServiceOffered.getDuration());
-        result.setImageUrl(businessServiceOffered.getImageUrl());
+        result.setImageUrl(null);
+
+        System.out.println("Service created: -------------------------------------------------------------");
+
+
         return result;
     }
+
+
 
     @Override
     public BusinessServiceOfferedDTO getServiceById(Long id) {
@@ -138,5 +161,50 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
 
         return modelMapper.map(existingService, BusinessServiceOfferedDTO.class);
     }
+
+    @Override
+    public List<BusinessServiceOfferedDTO> getServiceByUser(){
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_Owner_Email(user.getEmail());
+        if (services == null) {
+            throw new ResourceNotFoundException("No services found for the user: " + user.getEmail());
+        }
+        return services.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    private BusinessServiceOfferedDTO convertToDTO(BusinessServiceOffered services) {
+        BusinessServiceOfferedDTO dto = new BusinessServiceOfferedDTO();
+        dto.setId(services.getId());
+        dto.setName(services.getName());
+        dto.setDescription(services.getDescription());
+        dto.setPrice(services.getPrice());
+        dto.setTotalSlots(services.getTotalSlots());
+        dto.setDuration(services.getDuration());
+        dto.setImageUrl(services.getImageUrl());
+        dto.setBusiness(services.getBusiness().getId());
+
+        return dto;
+    }
+
+    private BusinessServiceOffered convertToEntity(BusinessServiceOfferedDTO dto) {
+        BusinessServiceOffered entity = new BusinessServiceOffered();
+        entity.setId(dto.getId());
+        entity.setName(dto.getName());
+        entity.setDescription(dto.getDescription());
+        entity.setPrice(dto.getPrice());
+        entity.setTotalSlots(dto.getTotalSlots());
+        entity.setDuration(dto.getDuration());
+        entity.setImageUrl(dto.getImageUrl());
+
+        Business business = businessRepository.findById(dto.getBusiness())
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + dto.getBusiness()));
+        entity.setBusiness(business);
+
+        return entity;
+    }
+
+
 
 }

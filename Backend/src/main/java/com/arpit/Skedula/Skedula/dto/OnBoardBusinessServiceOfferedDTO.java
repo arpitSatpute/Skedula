@@ -16,24 +16,22 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class OnBoardBusinessServiceOfferedDTO {
 
-    @NotNull(message = "Service name Cannot be null")
+//    @NotNull(message = "Service name Cannot be null")
     private String name;
 
-    @NotNull(message = "Service description cannot be null")
-    @Size(min = 50, max = 5000, message = "Service description must be between 50 and 5000 characters")
+//    @NotNull(message = "Service description cannot be null")
+//    @Size(min = 50, max = 5000, message = "Service description must be between 50 and 5000 characters")
     private String description;
 
-    @NotNull(message = "Service duration cannot be null")
-    @Min(value = 5, message = "Service duration must be at least 5 minutes")
+//    @NotNull(message = "Service duration cannot be null")
+//    @Min(value = 5, message = "Service duration must be at least 5 minutes")
     private Integer duration;
 
-    @NotNull(message = "Service price cannot be null")
+//    @NotNull(message = "Service price cannot be null")
     private BigDecimal price;
 
-    @Lob
-    private MultipartFile image;
 
-    @NotNull(message = "Total slots cannot be null")
+//    @NotNull(message = "Total slots cannot be null")
     private Long totalSlots;
 
     //Business ID

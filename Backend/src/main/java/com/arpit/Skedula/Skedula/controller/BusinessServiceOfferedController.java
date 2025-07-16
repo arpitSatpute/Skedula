@@ -9,11 +9,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping(path = "/services-offered")
 @RequiredArgsConstructor
-@Secured("Role_Owner")
+@Secured("ROLE_OWNER")
 public class BusinessServiceOfferedController {
 
     private final BusinessServiceOfferedService businessServiceOfferedService;
@@ -23,6 +26,12 @@ public class BusinessServiceOfferedController {
     @PostMapping("/create")
     public ResponseEntity<BusinessServiceOfferedDTO> create(@RequestBody OnBoardBusinessServiceOfferedDTO businessServiceOfferedDTO) {
         return ResponseEntity.ok(businessServiceOfferedService.createService(businessServiceOfferedDTO));
+    }
+
+    @PutMapping("uploadFile/{id}")
+    public ResponseEntity<Void> uploadFile(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        Void fileUrl = businessServiceOfferedService.setFile(file, id);
+        return ResponseEntity.ok(fileUrl);
     }
 
     // Update Details By ID
@@ -39,6 +48,11 @@ public class BusinessServiceOfferedController {
         businessServiceOfferedService.deleteService(id);
         return ResponseEntity.ok("Service deleted successfully");
 
+    }
+
+    @GetMapping("/get/user")
+    public ResponseEntity<List<BusinessServiceOfferedDTO>> getServicesByUser() {
+        return ResponseEntity.ok(businessServiceOfferedService.getServiceByUser());
     }
 
     // Get All Services Offered // Public Routes

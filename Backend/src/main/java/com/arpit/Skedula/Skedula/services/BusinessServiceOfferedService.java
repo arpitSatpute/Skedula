@@ -6,6 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @Service
 public interface BusinessServiceOfferedService {
 
@@ -22,4 +24,8 @@ public interface BusinessServiceOfferedService {
     BusinessServiceOfferedDTO updateService(Long id, BusinessServiceOfferedDTO serviceOfferedDTO);
 
     String uploadFile(MultipartFile multipartFile);
+
+    Void setFile(MultipartFile multipartFile, Long id);
+
+    List<BusinessServiceOfferedDTO> getServiceByUser();
 }
