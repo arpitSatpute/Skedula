@@ -133,14 +133,7 @@ const Header = () => {
                     Businesses
                   </Link>
                 </li>
-                {currentUser?.role === 'OWNER' && (
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/business/add">
-                      <i className="bi bi-plus-circle me-1"></i>
-                      Add Business
-                    </Link>
-                  </li>
-                )}
+                
                 <li className="nav-item">
                   <Link className="nav-link" to="/services">
                     <i className="bi bi-gear me-1"></i>

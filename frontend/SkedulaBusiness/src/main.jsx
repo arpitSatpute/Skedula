@@ -83,7 +83,7 @@ const router = createBrowserRouter([
             element: <Services/>
           },
           {
-            path: "/services/add",
+            path: "/services/add/:id",
             element: <AddService />
           },
           {

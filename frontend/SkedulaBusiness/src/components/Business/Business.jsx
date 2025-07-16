@@ -10,7 +10,6 @@ const Business = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const user =  localStorage.getItem('user');
   const navigate = useNavigate();
   
 
@@ -21,8 +20,6 @@ const Business = () => {
       try {
         // Simulate API delay
         // await new Promise(resolve => setTimeout(resolve, 1500));
-        console.log("User data loaded:", user);
-        const id = user;
         const response = await apiClient.get(`/business/get/user`);
         // Set to dummyBusiness to show business data, or null to show empty state
         console.log("Business data loaded:", response.status);
@@ -295,7 +292,7 @@ const Business = () => {
                   <i className="bi bi-gear me-2"></i>
                   Services Offered ({totalServices})
                 </h5>
-                <Link to="/services/add" className="btn btn-light btn-sm">
+                <Link to={`/services/add/${business.id}`} className="btn btn-light btn-sm">
                   <i className="bi bi-plus me-1"></i>
                   Add Service
                 </Link>
@@ -324,7 +321,7 @@ const Business = () => {
                 <div className="text-center py-4">
                   <i className="bi bi-gear text-muted display-4 mb-3"></i>
                   <p className="text-muted">No services added yet.</p>
-                  <Link to="/services/add" className="btn btn-primary">
+                  <Link to={`/services/add/${business.id}`} className="btn btn-primary">
                     <i className="bi bi-plus me-1"></i>
                     Add Your First Service
                   </Link>
@@ -443,7 +440,7 @@ const Business = () => {
                 </div>
                 <div className="col-md-3 mb-2">
                   <div onClick={() => setShowConfirmModal(true)} className="btn btn-outline-danger w-100">
-                    <i className="bi bi-gear-fill me-2"></i>
+                    <i className="bi bi-trash me-2"></i>
                     Remove Business
                   </div>
                 </div>

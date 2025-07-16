@@ -46,7 +46,7 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-dark text-light py-5 mt-auto">
+    <footer className="bg-black text-light py-5 mt-auto">
       <div className="container">
         <div className="row">
           {/* Brand Section */}
@@ -56,7 +56,7 @@ const Footer = () => {
                 <i className="bi bi-calendar-check me-2"></i>
                 Skedula
               </h5>
-              <p className="text-muted">
+              <p className="text-secondary">
                 Your all-in-one business scheduling and appointment management solution. 
                 Streamline bookings, manage services, and grow your business with ease.
               </p>
@@ -74,16 +74,16 @@ const Footer = () => {
 
             {/* Social Links */}
             <div className="d-flex gap-3">
-              <a href="#" className="text-muted hover-text-primary">
+              <a href="#" className="text-secondary hover-text-primary">
                 <i className="bi bi-facebook fs-5"></i>
               </a>
-              <a href="#" className="text-muted hover-text-primary">
+              <a href="#" className="text-secondary hover-text-primary">
                 <i className="bi bi-twitter fs-5"></i>
               </a>
-              <a href="#" className="text-muted hover-text-primary">
+              <a href="#" className="text-secondary hover-text-primary">
                 <i className="bi bi-instagram fs-5"></i>
               </a>
-              <a href="#" className="text-muted hover-text-primary">
+              <a href="#" className="text-secondary hover-text-primary">
                 <i className="bi bi-linkedin fs-5"></i>
               </a>
             </div>
@@ -94,22 +94,22 @@ const Footer = () => {
             <h6 className="fw-bold mb-3">Quick Links</h6>
             <ul className="list-unstyled">
               <li className="mb-2">
-                <Link to="/" className="text-muted text-decoration-none hover-text-primary">
+                <Link to="/" className="text-secondary text-decoration-none hover-text-primary">
                   <i className="bi bi-house me-1"></i> Home
                 </Link>
               </li>
               <li className="mb-2">
-                <Link to="/about" className="text-muted text-decoration-none hover-text-primary">
+                <Link to="/about" className="text-secondary text-decoration-none hover-text-primary">
                   <i className="bi bi-info-circle me-1"></i> About Us
                 </Link>
               </li>
               <li className="mb-2">
-                <Link to="/contact" className="text-muted text-decoration-none hover-text-primary">
+                <Link to="/contact" className="text-secondary text-decoration-none hover-text-primary">
                   <i className="bi bi-envelope me-1"></i> Contact
                 </Link>
               </li>
               <li className="mb-2">
-                <Link to="/pricing" className="text-muted text-decoration-none hover-text-primary">
+                <Link to="/pricing" className="text-secondary text-decoration-none hover-text-primary">
                   <i className="bi bi-tag me-1"></i> Pricing
                 </Link>
               </li>
@@ -123,23 +123,23 @@ const Footer = () => {
               {isAuthenticated ? (
                 <>
                   <li className="mb-2">
-                    <Link to="/businesses" className="text-muted text-decoration-none hover-text-primary">
+                    <Link to="/businesses" className="text-secondary text-decoration-none hover-text-primary">
                       <i className="bi bi-building me-1"></i> Businesses
                     </Link>
                   </li>
                   <li className="mb-2">
-                    <Link to="/appointments" className="text-muted text-decoration-none hover-text-primary">
+                    <Link to="/appointments" className="text-secondary text-decoration-none hover-text-primary">
                       <i className="bi bi-calendar-event me-1"></i> Appointments
                     </Link>
                   </li>
                   <li className="mb-2">
-                    <Link to="/services" className="text-muted text-decoration-none hover-text-primary">
+                    <Link to="/services" className="text-secondary text-decoration-none hover-text-primary">
                       <i className="bi bi-gear me-1"></i> Manage Services
                     </Link>
                   </li>
                   {user?.role === 'OWNER' && (
                     <li className="mb-2">
-                      <Link to="/business/add" className="text-muted text-decoration-none hover-text-primary">
+                      <Link to="/business/add" className="text-secondary text-decoration-none hover-text-primary">
                         <i className="bi bi-plus-circle me-1"></i> Add Business
                       </Link>
                     </li>
@@ -148,22 +148,22 @@ const Footer = () => {
               ) : (
                 <>
                   <li className="mb-2">
-                    <span className="text-muted">
+                    <span className="text-secondary">
                       <i className="bi bi-calendar-check me-1"></i> Appointment Booking
                     </span>
                   </li>
                   <li className="mb-2">
-                    <span className="text-muted">
+                    <span className="text-secondary">
                       <i className="bi bi-building me-1"></i> Business Management
                     </span>
                   </li>
                   <li className="mb-2">
-                    <span className="text-muted">
+                    <span className="text-secondary">
                       <i className="bi bi-people me-1"></i> Customer Management
                     </span>
                   </li>
                   <li className="mb-2">
-                    <span className="text-muted">
+                    <span className="text-secondary">
                       <i className="bi bi-graph-up me-1"></i> Analytics & Reports
                     </span>
                   </li>
@@ -179,17 +179,17 @@ const Footer = () => {
               {isAuthenticated ? (
                 <>
                   <li className="mb-2">
-                    <Link to="/profile" className="text-muted text-decoration-none hover-text-primary">
+                    <Link to="/profile" className="text-secondary text-decoration-none hover-text-primary">
                       <i className="bi bi-person me-1"></i> My Profile
                     </Link>
                   </li>
                   <li className="mb-2">
-                    <Link to="/settings" className="text-muted text-decoration-none hover-text-primary">
+                    <Link to="/settings" className="text-secondary text-decoration-none hover-text-primary">
                       <i className="bi bi-gear me-1"></i> Settings
                     </Link>
                   </li>
                   <li className="mb-2">
-                    <Link to="/wallet" className="text-muted text-decoration-none hover-text-primary">
+                    <Link to="/wallet" className="text-secondary text-decoration-none hover-text-primary">
                       <i className="bi bi-wallet me-1"></i> Wallet
                     </Link>
                   </li>
@@ -202,22 +202,22 @@ const Footer = () => {
               ) : (
                 <>
                   <li className="mb-2">
-                    <Link to="/login" className="text-muted text-decoration-none hover-text-primary">
+                    <Link to="/login" className="text-secondary text-decoration-none hover-text-primary">
                       <i className="bi bi-box-arrow-in-right me-1"></i> Login
                     </Link>
                   </li>
                   <li className="mb-2">
-                    <Link to="/signup" className="text-muted text-decoration-none hover-text-primary">
+                    <Link to="/signup" className="text-secondary text-decoration-none hover-text-primary">
                       <i className="bi bi-person-plus me-1"></i> Sign Up
                     </Link>
                   </li>
                   <li className="mb-2">
-                    <Link to="/features" className="text-muted text-decoration-none hover-text-primary">
+                    <Link to="/features" className="text-secondary text-decoration-none hover-text-primary">
                       <i className="bi bi-star me-1"></i> Features
                     </Link>
                   </li>
                   <li className="mb-2">
-                    <Link to="/help" className="text-muted text-decoration-none hover-text-primary">
+                    <Link to="/help" className="text-secondary text-decoration-none hover-text-primary">
                       <i className="bi bi-question-circle me-1"></i> Get Help
                     </Link>
                   </li>
@@ -231,22 +231,22 @@ const Footer = () => {
             <h6 className="fw-bold mb-3">Support</h6>
             <ul className="list-unstyled">
               <li className="mb-2">
-                <Link to="/help" className="text-muted text-decoration-none hover-text-primary">
+                <Link to="/help" className="text-secondary text-decoration-none hover-text-primary">
                   <i className="bi bi-question-circle me-1"></i> Help Center
                 </Link>
               </li>
               <li className="mb-2">
-                <Link to="/faq" className="text-muted text-decoration-none hover-text-primary">
+                <Link to="/faq" className="text-secondary text-decoration-none hover-text-primary">
                   <i className="bi bi-chat-square-text me-1"></i> FAQ
                 </Link>
               </li>
               <li className="mb-2">
-                <Link to="/docs" className="text-muted text-decoration-none hover-text-primary">
+                <Link to="/docs" className="text-secondary text-decoration-none hover-text-primary">
                   <i className="bi bi-book me-1"></i> Documentation
                 </Link>
               </li>
               <li className="mb-2">
-                <a href="mailto:support@skedula.com" className="text-muted text-decoration-none hover-text-primary">
+                <a href="mailto:support@skedula.com" className="text-secondary text-decoration-none hover-text-primary">
                   <i className="bi bi-envelope me-1"></i> Email Support
                 </a>
               </li>
@@ -259,19 +259,19 @@ const Footer = () => {
         {/* Bottom Footer */}
         <div className="row align-items-center">
           <div className="col-md-6 mb-3 mb-md-0">
-            <p className="mb-0 text-muted">
+            <p className="mb-0 text-secondary">
               © {currentYear} Skedula. All rights reserved.
             </p>
           </div>
           <div className="col-md-6">
             <div className="d-flex justify-content-md-end gap-4">
-              <Link to="/privacy" className="text-muted text-decoration-none hover-text-primary small">
+              <Link to="/privacy" className="text-secondary text-decoration-none hover-text-primary small">
                 Privacy Policy
               </Link>
-              <Link to="/terms" className="text-muted text-decoration-none hover-text-primary small">
+              <Link to="/terms" className="text-secondary text-decoration-none hover-text-primary small">
                 Terms of Service
               </Link>
-              <Link to="/cookies" className="text-muted text-decoration-none hover-text-primary small">
+              <Link to="/cookies" className="text-secondary text-decoration-none hover-text-primary small">
                 Cookie Policy
               </Link>
             </div>
