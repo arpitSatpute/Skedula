@@ -168,30 +168,10 @@ const Header = () => {
                   aria-expanded="false"
                 >
                   <i className="bi bi-person-circle me-2"></i>
-                  <span className="d-none d-md-inline">
-                    {currentUser.firstName ? `${currentUser.firstName} ${currentUser.lastName}` : currentUser.name || currentUser.email}
-                  </span>
-                  <span className="d-md-none">
-                    User
-                  </span>
+                  
                 </button>
                 <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                  <li>
-                    <h6 className="dropdown-header">
-                      <i className="bi bi-person me-1"></i>
-                      {currentUser.firstName ? `${currentUser.firstName} ${currentUser.lastName}` : currentUser.name || 'User'}
-                    </h6>
-                  </li>
-                  <li>
-                    <span className="dropdown-item-text text-muted small">
-                      📧 {currentUser.email}
-                    </span>
-                  </li>
-                  <li>
-                    <span className="dropdown-item-text text-muted small">
-                      👤 Role: {currentUser.role}
-                    </span>
-                  </li>
+                 
                   <li><hr className="dropdown-divider" /></li>
                   <li>
                     <Link className="dropdown-item" to="/profile">
