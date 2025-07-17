@@ -1,82 +1,51 @@
-import React, { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import apiClient from '../Auth/ApiClient'
+import React from 'react'
+import { Form, useNavigate, useParams } from 'react-router-dom';
+import { useState } from 'react';   
 
-function AddService() {
-  const { id } = useParams() // Get business ID from URL
-  const navigate = useNavigate()
-  const [serviceId, setServiceId] = useState(null);
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    duration: '',
-    price: '',
-    totalSlots: '',
-    business: id || ''
-  })
-  
-  const [image, setImage] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
 
-  // Handle input changes
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
-    
-    if (error) setError(null)
-  }
+function EditService() {
 
-  // Handle image change
-  const handleImageChange = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      setImage(file)
-      setError(null)
+    const {id, serviceId} = useParams();
+    const serviceData = JSON.parse(localStorage.getItem('serviceData')) || {};
+    const [service, setService] = useState(serviceData);
+    const [formData, setFormData] = useState({
+        name: service.name || '',
+        description: service.description || '',    
+        duration: service.duration || '',
+        price: service.price || '',
+        totalSlots: service.totalSlots || '',
+        business: id || ''
+    });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(null);
+
+    const handleInputChange = (field, value) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+        try {
+            const data = new FormData();
+            for (const key in formData) {
+                data.append(key, formData[key]);
+            }
+            const response = await apiClient.put(`/services-offered/update/${serviceId}`, data);
+            console.log('Service updated:', response.data);
+            setSuccess('Service updated successfully!');
+        } catch (err) {
+            console.error('Error updating service:', err);
+            setError('Failed to update service.');
+        } finally {
+            setLoading(false);
+        }
     }
-  }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    // TODO: Add your API logic here
-    console.log('Form submitted:', formData)
-    const submitBtn = document.getElementById('createServiceButton');
-    submitBtn.disabled = true; // Disable button to prevent multiple submissions
-    try {
-      const response = await apiClient.post('/services-offered/create', formData);
-      
-      setServiceId(response.data.data.id);
-      try {
-        const file = new FormData();
-        file.append('file', image);
-      
-        const uploadImage = await apiClient.put(`/services-offered/uploadFile/${response.data.data.id}`, file);
-        
-       } catch (error) {
-        console.error('Error uploading image:', error);
-        setError('Failed to upload image');
-      } 
-      setSuccess('Service created successfully!');
-      setLoading(true);
-    } catch (error) {
-      console.error('Error creating service:', error);
-      setError('Failed to create service');
-    }
-    finally {
-      submitBtn.disabled = false; // Re-enable button after submission
-      setLoading(false);
-      setTimeout(() => {
-      navigate(`/services`); 
-      }, 5000);// Redirect to services page
-    }
-  }
-
-  return (
+    const navigate = useNavigate();
+    return (
     <div className="container-fluid py-4">
       <div className="row justify-content-center">
         <div className="col-lg-8 col-md-10">
@@ -84,9 +53,8 @@ function AddService() {
             <div className="card-header bg-primary text-white">
               <h3 className="card-title mb-0">
                 <i className="bi bi-gear me-2"></i>
-                Add New Service
+                Edit Service
               </h3>
-              
             </div>
             
             <div className="card-body p-4">
@@ -208,37 +176,7 @@ function AddService() {
                     />
                     <div className="form-text">Available booking slots</div>
                   </div>
-                </div>
-
-                {/* Service Image */}
-                <div className="row mb-4">
-                  <div className="col-12">
-                    <h5 className="text-muted mb-3">Service Image</h5>
-                  </div>
-                  
-                  <div className="col-12 mb-3">
-                    <label className="form-label">Upload Service Image</label>
-                    <input
-                      type="file"
-                      className="form-control"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      disabled={loading}
-                    />
-                    <div className="form-text">
-                      Accepted formats: JPG, PNG, GIF. Maximum size: 5MB
-                    </div>
-                    
-                    {image && (
-                      <div className="mt-2">
-                        <small className="text-success">
-                          <i className="bi bi-check-circle me-1"></i>
-                          Selected: {image.name}
-                        </small>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                </div>                
 
                 {/* Submit Buttons */}
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -255,18 +193,17 @@ function AddService() {
                   <button
                     type="submit"
                     className="btn btn-primary"
-                    id='createServiceButton'
                     disabled={loading}
                   >
                     {loading ? (
                       <>
                         <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        Creating...
+                        Updating...
                       </>
                     ) : (
                       <>
                         <i className="bi bi-plus-circle me-2"></i>
-                        Create Service
+                        Update Service
                       </>
                     )}
                   </button>
@@ -278,6 +215,7 @@ function AddService() {
       </div>
     </div>
   )
+  
 }
 
-export default AddService
+export default EditService

@@ -5,7 +5,6 @@ import apiClient from '../Auth/ApiClient';
 
 function AddBusiness() {
   const { id } = useParams()
-  const location = useLocation()
   const isEdit = Boolean(id)
   const { user } = useContext(AuthContext)
   const navigate = useNavigate();

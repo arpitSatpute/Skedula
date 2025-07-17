@@ -21,6 +21,7 @@ import { AuthProvider } from './components/Auth/AuthContext.jsx'
 import Protected from './components/Auth/Protected.jsx'
 import AuthRoute from './components/Auth/AuthRoute.jsx'
 import UserProfile from './components/Profile/UserProfile.jsx'
+import EditService from './components/Services/EditService.jsx';
 
 // Create a wrapper component that provides AuthContext inside Router
 // const AppWithAuth = () => {
@@ -87,8 +88,8 @@ const router = createBrowserRouter([
             element: <AddService />
           },
           {
-            path: "/services/:id/edit",
-            element: <AddService />
+            path: "/services/edit/:id/:serviceId",
+            element: <EditService />
           },
           {
             path: "/business/:id/edit",

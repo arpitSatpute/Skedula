@@ -18,21 +18,14 @@ const Business = () => {
     const loadBusiness = async () => {
       setLoading(true);
       try {
-        // Simulate API delay
-        // await new Promise(resolve => setTimeout(resolve, 1500));
         const response = await apiClient.get(`/business/get/user`);
-        // Set to dummyBusiness to show business data, or null to show empty state
-        console.log("Business data loaded:", response.status);
-        
+          console.log("Business data loaded:", response.status);
           console.log("Business data loaded:", response.data.data);
           setBusiness(response.data.data);
-        
-        
       } catch (err) {
         if (err.response && err.response.status === 404) {
             setBusiness(null);
           }
-          // setError('Failed to load business');
           console.error("Error loading business data:", err);
       } finally {
         setLoading(false);
@@ -290,7 +283,7 @@ const Business = () => {
               <div className="d-flex justify-content-between align-items-center">
                 <h5 className="mb-0">
                   <i className="bi bi-gear me-2"></i>
-                  Services Offered ({totalServices})
+                  Services Offered
                 </h5>
                 <Link to={`/services/add/${business.id}`} className="btn btn-light btn-sm">
                   <i className="bi bi-plus me-1"></i>
@@ -299,34 +292,16 @@ const Business = () => {
               </div>
             </div>
             <div className="card-body">
-              {business.serviceOffered && Array.isArray(business.serviceOffered) && business.serviceOffered.length > 0 ? (
-                <div className="row">
-                  {business.serviceOffered.map((service) => (
-                    <div key={service.id} className="col-md-6 col-lg-4 mb-3">
-                      <div className="border rounded p-3 h-100 bg-light">
-                        <div className="d-flex justify-content-between align-items-start mb-2">
-                          <h6 className="text-primary mb-0">{service.serviceName}</h6>
-                          <span className="badge bg-secondary">{service.category || 'General'}</span>
-                        </div>
-                        <p className="text-muted small mb-2">{service.description}</p>
-                        <div className="d-flex justify-content-between align-items-center">
-                          <span className="text-success fw-bold">₹{service.price?.toLocaleString() || '0'}</span>
-                          <span className="text-muted small">{service.duration || 'N/A'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
+              
                 <div className="text-center py-4">
-                  <i className="bi bi-gear text-muted display-4 mb-3"></i>
-                  <p className="text-muted">No services added yet.</p>
-                  <Link to={`/services/add/${business.id}`} className="btn btn-primary">
-                    <i className="bi bi-plus me-1"></i>
-                    Add Your First Service
+                  <div className='mb-4'>
+                    <i className="bi bi-gear text-muted display-4 mb-3"></i>
+                  </div>
+                  <Link to={`/services`} className="btn btn-primary">
+                    View Your Services
                   </Link>
                 </div>
-              )}
+              
             </div>
           </div>
         </div>
@@ -349,60 +324,16 @@ const Business = () => {
               </div>
             </div>
             <div className="card-body">
-              {business.appointments && Array.isArray(business.appointments) && business.appointments.length > 0 ? (
-                <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead className="table-light">
-                      <tr>
-                        <th>Customer</th>
-                        <th>Service</th>
-                        <th>Date & Time</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {business.appointments.slice(0, 5).map((appointment) => (
-                        <tr key={appointment.id}>
-                          <td>
-                            <i className="bi bi-person-circle me-2"></i>
-                            {appointment.customerName || 'Unknown'}
-                          </td>
-                          <td>{appointment.serviceName || 'N/A'}</td>
-                          <td>
-                            <small>
-                              {appointment.appointmentDate || 'N/A'}<br/>
-                              {appointment.appointmentTime || 'N/A'}
-                            </small>
-                          </td>
-                          <td>
-                            <span className={`badge ${
-                              appointment.status === 'Confirmed' ? 'bg-success' : 
-                              appointment.status === 'Pending' ? 'bg-warning' : 'bg-danger'
-                            }`}>
-                              {appointment.status || 'Unknown'}
-                            </span>
-                          </td>
-                          <td>
-                            <button className="btn btn-outline-primary btn-sm">
-                              <i className="bi bi-eye"></i>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
                 <div className="text-center py-4">
-                  <i className="bi bi-calendar-x text-muted display-4 mb-3"></i>
-                  <p className="text-muted">No appointments scheduled yet.</p>
+                  <div className='mb-4'>
+                    <i className="bi bi-calendar-x text-muted display-4 mb-3"></i>
+                  </div>
                   <Link to="/appointments/create" className="btn btn-warning">
                     <i className="bi bi-plus me-1"></i>
-                    Create Appointment
+                    View Appointment
                   </Link>
                 </div>
-              )}
+              
             </div>
           </div>
         </div>
