@@ -170,17 +170,14 @@ public class BusinessServiceImpl implements BusinessService {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(serviceId).orElseThrow(() -> new RuntimeException("Service not found with id: " + serviceId));
-        Business business = businessRepository.findByServiceOffered_Id(serviceOffered).orElseThrow(() -> new RuntimeException("Business not found for service with id: " + serviceId));
+        Business business = businessRepository.findById(serviceOffered.getBusiness().getId()).orElseThrow(() -> new RuntimeException("Business not found for service with id: " + serviceOffered.getBusiness()));
 
         if(!user.getRoles().contains(Role.OWNER)){
             throw new RuntimeException("User is not enrolled for OWNER Role ");
         }
-
         return business.getOwner().getEmail().equals(user.getEmail());
 
     }
-
-
 
     public void removeBusinessById(Long id) {
         businessRepository.deleteById(id);

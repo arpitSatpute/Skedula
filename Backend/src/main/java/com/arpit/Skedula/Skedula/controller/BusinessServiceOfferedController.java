@@ -37,17 +37,15 @@ public class BusinessServiceOfferedController {
     // Update Details By ID
     @PreAuthorize("@businessService.isOwnerOfService(#id)")
     @PutMapping("/update/{id}")
-    public ResponseEntity<BusinessServiceOfferedDTO> updateService(@PathVariable Long id, @RequestBody BusinessServiceOfferedDTO serviceOfferedDTO) {
+    public ResponseEntity<BusinessServiceOfferedDTO> updateService(@PathVariable Long id, @RequestBody OnBoardBusinessServiceOfferedDTO serviceOfferedDTO) {
         return ResponseEntity.ok(businessServiceOfferedService.updateService(id, serviceOfferedDTO));
     }
 
     // Remove service
     @PreAuthorize("@businessService.isOwnerOfService(#id)")
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
-        businessServiceOfferedService.deleteService(id);
-        return ResponseEntity.ok("Service deleted successfully");
-
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        return ResponseEntity.ok(businessServiceOfferedService.deleteService(id));
     }
 
     @GetMapping("/get/user")

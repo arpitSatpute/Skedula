@@ -17,11 +17,11 @@ public interface BusinessServiceOfferedService {
 
     BusinessServiceOfferedDTO getServiceById(Long id);
 
-    void deleteService(Long id);
+    Void deleteService(Long id);
 
     Page<BusinessServiceOfferedDTO> getServiceByKeyword(Integer pageOffset, Integer pageSize, String keyword);
 
-    BusinessServiceOfferedDTO updateService(Long id, BusinessServiceOfferedDTO serviceOfferedDTO);
+    BusinessServiceOfferedDTO updateService(Long id, OnBoardBusinessServiceOfferedDTO serviceOfferedDTO);
 
     String uploadFile(MultipartFile multipartFile);
 

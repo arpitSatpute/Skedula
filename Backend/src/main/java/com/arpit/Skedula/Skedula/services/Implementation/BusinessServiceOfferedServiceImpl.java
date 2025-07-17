@@ -132,9 +132,10 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
 
     @Override
     public BusinessServiceOfferedDTO getServiceById(Long id) {
-        return businessServiceOfferedRepository.findById(id)
-                .map(service -> modelMapper.map(service, BusinessServiceOfferedDTO.class))
+        BusinessServiceOffered service = businessServiceOfferedRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
+        return convertToDTO(service);
+
     }
 
     @Override
@@ -145,21 +146,27 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
 
 
     @Override
-    public void deleteService(Long id) {
+    public Void deleteService(Long id) {
         BusinessServiceOffered service = businessServiceOfferedRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
         businessServiceOfferedRepository.delete(service);
+        return null;
     }
 
     @Override
-    public BusinessServiceOfferedDTO updateService(Long id, BusinessServiceOfferedDTO serviceOfferedDTO) {
+    public BusinessServiceOfferedDTO updateService(Long id, OnBoardBusinessServiceOfferedDTO serviceOfferedDTO) {
         BusinessServiceOffered existingService = businessServiceOfferedRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
 
-        modelMapper.map(serviceOfferedDTO, existingService);
+        existingService.setName(serviceOfferedDTO.getName());
+        existingService.setDescription(serviceOfferedDTO.getDescription());
+        existingService.setPrice(serviceOfferedDTO.getPrice());
+        existingService.setTotalSlots(serviceOfferedDTO.getTotalSlots());
+        existingService.setDuration(serviceOfferedDTO.getDuration());
+
         businessServiceOfferedRepository.save(existingService);
 
-        return modelMapper.map(existingService, BusinessServiceOfferedDTO.class);
+        return convertToDTO(existingService);
     }
 
     @Override
