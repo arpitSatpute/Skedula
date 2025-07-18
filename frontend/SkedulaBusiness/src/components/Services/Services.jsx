@@ -17,7 +17,6 @@ function Services() {
   
   useEffect(() => {
     const fetchData = async () => {
-      // setLoading(true);
       setLoading(true);
       setError('');
       try {
@@ -65,7 +64,7 @@ function Services() {
   }
 
   const handleViewAppointments = () => {
-
+      navigate(`/appointments/business/service/${service.business}/${id}`);
   }
 
   if (loading) {
@@ -73,9 +72,9 @@ function Services() {
       <div className="container py-5">
         <div className="text-center">
           <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
-            <span className="visually-hidden">Loading business...</span>
+            <span className="visually-hidden">Loading Service...</span>
           </div>
-          <p className="mt-3 text-muted">Loading your business information...</p>
+          <p className="mt-3 text-muted">Loading your Service information...</p>
         </div>
       </div>
     );

@@ -140,12 +140,6 @@ const Header = () => {
                     Services
                   </Link>
                 </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/appointments">
-                    <i className="bi bi-calendar-event me-1"></i>
-                    Appointments
-                  </Link>
-                </li>
               </>
             )}
             <li className="nav-item">

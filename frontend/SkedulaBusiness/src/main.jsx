@@ -100,7 +100,11 @@ const router = createBrowserRouter([
             element: <AddBusiness />
           },
           {
-            path: "/appointments",
+            path: "/appointments/business/service/:id/:serviceId",
+            element: <Appointments />
+          },
+          {
+            path: "/appointments/business/:id",
             element: <Appointments />
           },
           {

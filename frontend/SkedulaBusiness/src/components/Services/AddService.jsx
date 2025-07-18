@@ -56,7 +56,7 @@ function AddService() {
         file.append('file', image);
       
         const uploadImage = await apiClient.put(`/services-offered/uploadFile/${response.data.data.id}`, file);
-        
+        const imageResponse = await uploadImage.data.data;
        } catch (error) {
         console.error('Error uploading image:', error);
         setError('Failed to upload image');

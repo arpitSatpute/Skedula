@@ -131,7 +131,7 @@ const Business = () => {
   };
 
   // Calculate statistics
-  const totalServices = (business.serviceOffered && Array.isArray(business.serviceOffered)) ? business.serviceOffered.length : 0;
+  const totalServices = (business.serviceOffered.length) ? business.serviceOffered.length : 0;
   const totalAppointments = (business.appointments && Array.isArray(business.appointments)) ? business.appointments.length : 0;
   const confirmedAppointments = (business.appointments && Array.isArray(business.appointments)) ? 
     business.appointments.filter(apt => apt.status === 'Confirmed').length : 0;
@@ -147,7 +147,7 @@ const Business = () => {
             <i className="bi bi-building me-2"></i>
             {business.name}
           </h2>
-          <p className="text-muted">Business ID: #{business.id} | Owner ID: #{business.owner}</p>
+         
         </div>
         <div className="col-auto">
           <div onClick={handleEditBusiness} className="btn btn-primary">
@@ -275,69 +275,39 @@ const Business = () => {
         </div>
       </div>
 
-      {/* Category 3: Services Offered */}
+
       <div className="row mb-4">
         <div className="col-12">
           <div className="card border-0 shadow-sm">
-            <div className="card-header bg-info text-white">
-              <div className="d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">
-                  <i className="bi bi-gear me-2"></i>
-                  Services Offered
-                </h5>
-                <Link to={`/services/add/${business.id}`} className="btn btn-light btn-sm">
-                  <i className="bi bi-plus me-1"></i>
-                  Add Service
-                </Link>
-              </div>
+            <div className="card-header bg-primary text-white">
+              <h5 className="mb-0">
+                <i className="bi bi-shield-check me-2"></i>
+                Statistics
+              </h5>
             </div>
             <div className="card-body">
-              
-                <div className="text-center py-4">
-                  <div className='mb-4'>
-                    <i className="bi bi-gear text-muted display-4 mb-3"></i>
+              <div className="row">
+                <div className="col-md-6">
+                  <div className="text-center p-3 border rounded">
+                    <i className="bi bi-person-badge text-success fs-3 mb-2"></i>
+                    <h6>Services</h6>
+                    <p className="mb-0 fw-bold">{totalServices}</p>
                   </div>
-                  <Link to={`/services`} className="btn btn-primary">
-                    View Your Services
-                  </Link>
                 </div>
-              
+                
+                <div className="col-md-6">
+                  <div className="text-center p-3 border rounded">
+                    <i className="bi bi-receipt text-warning fs-3 mb-2"></i>
+                    <h6>Appointment</h6>
+                    <p className="mb-0 fw-bold">{totalAppointments}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Category 4: Recent Appointments */}
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="card border-0 shadow-sm">
-            <div className="card-header bg-warning text-dark">
-              <div className="d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">
-                  <i className="bi bi-calendar-event me-2"></i>
-                  Recent Appointments ({totalAppointments})
-                </h5>
-                <Link to="/appointments" className="btn btn-dark btn-sm">
-                  <i className="bi bi-eye me-1"></i>
-                  View All
-                </Link>
-              </div>
-            </div>
-            <div className="card-body">
-                <div className="text-center py-4">
-                  <div className='mb-4'>
-                    <i className="bi bi-calendar-x text-muted display-4 mb-3"></i>
-                  </div>
-                  <Link to="/appointments/create" className="btn btn-warning">
-                    <i className="bi bi-plus me-1"></i>
-                    View Appointment
-                  </Link>
-                </div>
-              
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Quick Actions */}
       <div className="row">
@@ -352,10 +322,10 @@ const Business = () => {
             <div className="card-body">
               <div className="row">
                 <div className="col-md-3 mb-2">
-                  <Link to="/appointments" className="btn btn-outline-primary w-100">
+                  <button  onClick={() => {navigate(`/appointments/business/${business.id}`)}} className="btn btn-outline-primary w-100">
                     <i className="bi bi-calendar-event me-2"></i>
                     Manage Appointments
-                  </Link>
+                  </button>
                 </div>
                 <div className="col-md-3 mb-2">
                   <Link to="/services" className="btn btn-outline-success w-100">
@@ -364,16 +334,16 @@ const Business = () => {
                   </Link>
                 </div>
                 <div className="col-md-3 mb-2">
-                  <Link to="/analytics" className="btn btn-outline-info w-100">
-                    <i className="bi bi-graph-up me-2"></i>
-                    View Analytics
-                  </Link>
+                  <button onClick={() => navigate(`/services/add/${business.id}`)} className="btn btn-outline-primary w-100">
+                    <i className="bi bi-plus me-2"></i>
+                    Add Services
+                  </button>
                 </div>
                 <div className="col-md-3 mb-2">
-                  <div onClick={() => setShowConfirmModal(true)} className="btn btn-outline-danger w-100">
+                  <button onClick={() => setShowConfirmModal(true)} className="btn btn-outline-danger w-100">
                     <i className="bi bi-trash me-2"></i>
                     Remove Business
-                  </div>
+                  </button>
                 </div>
               </div>
             </div>
