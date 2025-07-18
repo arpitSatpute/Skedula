@@ -181,7 +181,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
                 .collect(Collectors.toList());
     }
 
-    private BusinessServiceOfferedDTO convertToDTO(BusinessServiceOffered services) {
+    public BusinessServiceOfferedDTO convertToDTO(BusinessServiceOffered services) {
         BusinessServiceOfferedDTO dto = new BusinessServiceOfferedDTO();
         dto.setId(services.getId());
         dto.setName(services.getName());

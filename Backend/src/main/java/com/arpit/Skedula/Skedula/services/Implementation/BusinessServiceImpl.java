@@ -1,6 +1,8 @@
 package com.arpit.Skedula.Skedula.services.Implementation;
 
+import com.arpit.Skedula.Skedula.dto.AppointmentDTO;
 import com.arpit.Skedula.Skedula.dto.BusinessDTO;
+import com.arpit.Skedula.Skedula.dto.BusinessServiceOfferedDTO;
 import com.arpit.Skedula.Skedula.entity.Appointment;
 import com.arpit.Skedula.Skedula.entity.Business;
 import com.arpit.Skedula.Skedula.entity.BusinessServiceOffered;
@@ -11,11 +13,12 @@ import com.arpit.Skedula.Skedula.repository.AppointmentRepository;
 import com.arpit.Skedula.Skedula.repository.BusinessRepository;
 import com.arpit.Skedula.Skedula.repository.BusinessServiceOfferedRepository;
 import com.arpit.Skedula.Skedula.repository.UserRepository;
+import com.arpit.Skedula.Skedula.services.AppointmentService;
 import com.arpit.Skedula.Skedula.services.BusinessService;
+import com.arpit.Skedula.Skedula.services.BusinessServiceOfferedService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +26,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static java.lang.System.out;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 
 @Service("businessService")
@@ -35,6 +41,9 @@ public class BusinessServiceImpl implements BusinessService {
     private final UserRepository userRepository;
     private final AppointmentRepository appointmentRepository;
     private final BusinessServiceOfferedRepository businessServiceOfferedRepository;
+    private final AppointmentService appointmentService;
+    private final BusinessServiceOfferedService businessServiceOfferedService;
+
 
     @Override
     public Page<BusinessDTO> getAllBusiness(Integer pageOffset, Integer pageSize){
@@ -50,11 +59,6 @@ public class BusinessServiceImpl implements BusinessService {
         return convertToDTO(business);
     }
 
-//    public BusinessDTO getBusinessByBusinessId(Long businessId) {
-//        Business business = businessRepository.findById(businessId)
-//                .orElseThrow(() -> new RuntimeException("Business not found with id: " + businessId));
-//        return convertToDTO(business);
-//    }
 
     @Override
     public BusinessDTO register(BusinessDTO businessDTO) {
@@ -77,6 +81,9 @@ public class BusinessServiceImpl implements BusinessService {
     public BusinessDTO updateBusiness(Long id, BusinessDTO businessDTO) {
         Business business = businessRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Business not found with id: " + id));
+        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_Id(id);
+        List<Appointment> appoointments = appointmentRepository.findByBusiness_Id(id);
+
         // Do not allow changing the owner
         business.setName(businessDTO.getName());
         business.setDescription(businessDTO.getDescription());
@@ -92,8 +99,13 @@ public class BusinessServiceImpl implements BusinessService {
         business.setGSTNumber(businessDTO.getGSTNumber());
         business.setOpenTime(businessDTO.getOpenTime());
         business.setCloseTime(businessDTO.getCloseTime());
+        business.setIdentity(businessDTO.getIdentity());
+        business.setAppointments(appoointments);
+        business.setServiceOffered(services);
+
         // Save updated business
-        return convertToDTO(businessRepository.save(business));
+        businessRepository.save(business);
+        return convertToDTO(business);
     }
 
     @Override
@@ -102,13 +114,6 @@ public class BusinessServiceImpl implements BusinessService {
         Page<Business> bussinessPage = businessRepository.findByKeyword(keyword, pageable);
         return bussinessPage.map(business -> modelMapper.map(business, BusinessDTO.class));
     }
-
-
-//    public User getUserByBusinessId(Long id) {
-//        Business business = businessRepository.findById(id)
-//                .orElseThrow(() -> new RuntimeException("Business not found with id: " + id));
-//        return business.getOwner();
-//    }
 
 
     @Override
@@ -186,6 +191,9 @@ public class BusinessServiceImpl implements BusinessService {
 
     private Business convertToEntity(BusinessDTO businessDTO, User user) {
 
+        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_Id(businessDTO.getId());
+        List<Appointment> appointments = appointmentRepository.findByBusiness_Id(businessDTO.getId());
+
         Business business = new Business();
         business.setOwner(user);
         business.setName(businessDTO.getName());
@@ -203,12 +211,25 @@ public class BusinessServiceImpl implements BusinessService {
         business.setOpenTime(businessDTO.getOpenTime());
         business.setIdentity(businessDTO.getIdentity());
         business.setCloseTime(businessDTO.getCloseTime());
+        business.setServiceOffered(services);
+        business.setAppointments(appointments);
+
 
         return business;
 
     }
 
     private BusinessDTO convertToDTO(Business business) {
+
+        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_Id(business.getId());
+        List<BusinessServiceOfferedDTO> serviceDTO = services.stream()
+                .map(businessServiceOfferedService::convertToDTO)
+                .collect(Collectors.toList());
+
+        List<Appointment> appointments = appointmentRepository.findByBusiness_Id(business.getId());
+        List<AppointmentDTO> appointmentDTO = appointments.stream()
+                .map(appointmentService::convertToDTO)
+                .collect(Collectors.toList());
 
         BusinessDTO businessDTO = new BusinessDTO();
         businessDTO.setId(business.getId());
@@ -228,6 +249,8 @@ public class BusinessServiceImpl implements BusinessService {
         businessDTO.setIdentity(business.getIdentity());
         businessDTO.setOpenTime(business.getOpenTime());
         businessDTO.setCloseTime(business.getCloseTime());
+        businessDTO.setServiceOffered(serviceDTO);
+        businessDTO.setAppointments(appointmentDTO);
 
         return businessDTO;
 

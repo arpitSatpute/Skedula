@@ -18,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 import static org.modelmapper.Converters.Collection.map;
 
 @Service
@@ -32,6 +34,8 @@ public class CustomerServiceImpl implements CustomerService {
     public CustomerDTO createCustomer(UserDTO userDTO) {
         Customer customer = new Customer();
         customer.setUser(modelMapper.map(userDTO, User.class));
+        customer.setCustomerId(generateCustomerId());
+        customer.setAppointments(null);
         customerRepository.save(customer);
         return modelMapper.map(customer, CustomerDTO.class);
     }
@@ -77,5 +81,13 @@ public class CustomerServiceImpl implements CustomerService {
         Customer customer = customerRepository.findById(appointment.getBookedBy().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointment.getBookedBy().getId()));
         return customer.getUser().getEmail().equals(user.getEmail());
+    }
+
+    private String generateCustomerId() {
+        String customerId = "SKECS" + UUID.randomUUID().toString().replace("-", "");
+        if (customerRepository.existsByCustomerId(customerId)){
+            return generateCustomerId();
+        }
+        return customerId;
     }
 }

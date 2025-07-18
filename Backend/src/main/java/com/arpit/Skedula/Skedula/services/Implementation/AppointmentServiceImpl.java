@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -252,7 +253,54 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
 
-    private AppointmentDTO convertToDTO(Appointment newAppointment) {
+    @Override
+    public List<AppointmentDTO> getAllAppointmentsByBusinessIdAndServiceId(Long businessId, Long serviceId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
+        BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(serviceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + serviceId));
+        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndServiceOffered_Id(businessId, serviceId);
+
+        return appointments.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public  List<AppointmentDTO> getAllAppointmentsByBusinessId(Long businessId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
+
+        List<Appointment> appointments = appointmentRepository.findByBusiness_Id(businessId);
+
+        return appointments.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+    }
+
+    @Override
+     public List<AppointmentDTO> getAppointmentsOnAndAfterDate(LocalDate date, Long businessId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
+        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateIsGreaterThanEqual(businessId, date);
+
+        return appointments.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AppointmentDTO> getAppointmentsBeforeDate(LocalDate date, Long businessId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
+        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateBefore(businessId, date);
+        return appointments.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public AppointmentDTO convertToDTO(Appointment newAppointment) {
         AppointmentDTO result = new AppointmentDTO();
         result.setId(newAppointment.getId());
         result.setBookedBy(newAppointment.getBookedBy().getId());

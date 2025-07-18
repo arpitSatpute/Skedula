@@ -1,6 +1,7 @@
 package com.arpit.Skedula.Skedula.services;
 
 import com.arpit.Skedula.Skedula.dto.AppointmentDTO;
+import com.arpit.Skedula.Skedula.entity.Appointment;
 import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
 import com.arpit.Skedula.Skedula.entity.enums.Role;
 import org.springframework.stereotype.Service;
@@ -32,8 +33,17 @@ public interface AppointmentService {
 
     List<AppointmentDTO> getAppointmentByCustomerId(Long customerId);
 
-
     AppointmentDTO rejectAppointment(Long id);
 
     AppointmentDTO doneAppointment(Long id);
+
+    List<AppointmentDTO> getAllAppointmentsByBusinessIdAndServiceId(Long businessId, Long serviceId);
+
+    List<AppointmentDTO> getAllAppointmentsByBusinessId(Long businessId);
+
+    AppointmentDTO convertToDTO(Appointment newAppointment);
+
+    List<AppointmentDTO> getAppointmentsOnAndAfterDate(LocalDate date, Long businessId);
+
+    List<AppointmentDTO> getAppointmentsBeforeDate(LocalDate date, Long businessId);
 }

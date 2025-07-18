@@ -19,9 +19,13 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     public Long id;
 
+    public String customerId;
+
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
     public User user;
+
+
 
     @OneToMany(fetch = FetchType.LAZY)
     List<Appointment> appointments;

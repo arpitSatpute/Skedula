@@ -15,6 +15,7 @@ import java.util.List;
 public class CustomerDTO {
 
     public Long id;
+    public String customerId;
     public Long user;
     List<Appointment> appointments;
 

@@ -22,4 +22,8 @@ public interface BusinessServiceOfferedRepository extends JpaRepository<Business
     Page<BusinessServiceOffered> findByKeyword(String keyword, Pageable pageable);
 
     List<BusinessServiceOffered> findByBusiness_Owner_Email(String businessOwnerEmail);
+
+    List<BusinessServiceOffered> findByBusiness_Id(Long id);
+
+    List<BusinessServiceOfferedDTO> getBusinessServiceOffered_IdByBusiness_Id(Long id);
 }

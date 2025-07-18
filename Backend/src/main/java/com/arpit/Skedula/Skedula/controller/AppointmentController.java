@@ -13,13 +13,11 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping(path = "/appointment")
+@RequestMapping(path = "/appointments")
 @RequiredArgsConstructor
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
-
-
 
     // Make Appointment
 
@@ -108,6 +106,38 @@ public class AppointmentController {
     @GetMapping("/get/customer/{customerId}")
     public ResponseEntity<List<AppointmentDTO>> getAllAppointmentsByCustomerId(@PathVariable Long customerId) {
         return ResponseEntity.ok(appointmentService.getAppointmentByCustomerId(customerId));
+    }
+
+
+    // Get All Appointments By Business Id and Service Id
+    @PreAuthorize("@businessService.isOwnerOfProfile(#businessId)")
+    @GetMapping("get/business/service/{businessId}/{serviceId}")
+    public ResponseEntity<List<AppointmentDTO>> getAllAppointmentsByBusinessIdAndServiceId(@PathVariable Long businessId, @PathVariable Long serviceId) {
+        return ResponseEntity.ok(appointmentService.getAllAppointmentsByBusinessIdAndServiceId(businessId, serviceId));
+    }
+
+    @PreAuthorize("@businessService.isOwnerOfProfile(#businessId)")
+    @GetMapping("get/business/{businessId}")
+    public ResponseEntity<List<AppointmentDTO>> getAllAppointmentsByBusinessId(@PathVariable Long businessId) {
+        return ResponseEntity.ok(appointmentService.getAllAppointmentsByBusinessId(businessId));
+    }
+
+
+    @GetMapping("/get/on-and-after/{date}/{businessId}")
+    public ResponseEntity<List<AppointmentDTO>> getAppointmentsOnAndAfterDate(@PathVariable LocalDate date, @PathVariable Long businessId) {
+        if (date == null || businessId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(appointmentService.getAppointmentsOnAndAfterDate(date, businessId));
+    }
+
+
+    @GetMapping("/get/before/{date}/{businessId}")
+    public ResponseEntity<List<AppointmentDTO>> getAppointmentsBeforeDate(@PathVariable LocalDate date, @PathVariable Long businessId) {
+        if (date == null || businessId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(appointmentService.getAppointmentsBeforeDate(date, businessId));
     }
 
 }
