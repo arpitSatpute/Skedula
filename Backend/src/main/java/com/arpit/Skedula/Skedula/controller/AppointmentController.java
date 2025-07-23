@@ -123,7 +123,7 @@ public class AppointmentController {
     }
 
 
-    @GetMapping("/get/on-and-after/{date}/{businessId}")
+    @GetMapping("/get/upcoming/{date}/{businessId}")
     public ResponseEntity<List<AppointmentDTO>> getAppointmentsOnAndAfterDate(@PathVariable LocalDate date, @PathVariable Long businessId) {
         if (date == null || businessId == null) {
             return ResponseEntity.badRequest().build();
@@ -132,7 +132,7 @@ public class AppointmentController {
     }
 
 
-    @GetMapping("/get/before/{date}/{businessId}")
+    @GetMapping("/get/previous/{date}/{businessId}")
     public ResponseEntity<List<AppointmentDTO>> getAppointmentsBeforeDate(@PathVariable LocalDate date, @PathVariable Long businessId) {
         if (date == null || businessId == null) {
             return ResponseEntity.badRequest().build();
