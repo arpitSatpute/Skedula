@@ -77,37 +77,70 @@ function Appointments() {
     { value: 'Rejected', label: 'Rejected', icon: 'bi-x-circle-fill' }
   ]
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        if(!serviceId) {
-          const response = await apiClient.get(`/appointments/get/business/${id}`);
-          setAppointments(dummyAppointments);
-          // setAppointments(response.data.data);
-          console.log("Appointments loaded:", response.data.data);
+  // Function to fetch appointments based on tab and service
+  const fetchAppointments = async (tabType = activeTab, date) => {
+
+
+    setLoading(true)
+    setError(null)
+    
+    try {
+      console.log(date);
+      let apiUrl = ''
+      
+      // Determine API endpoint based on tab type and service
+      if (!serviceId) {
+        if (tabType === 'upcoming') {
+          apiUrl = `/appointments/get/upcoming/${date}/${id}`
+          console.log(apiUrl);
+        } else {
+          apiUrl = `/appointments/get/previous/${date}/${id}`
+          console.log(apiUrl);
         }
-        else {
-          const response = await apiClient.get(`/appointments/get/business/service/${id}/${serviceId}`);
-          setAppointments(dummyAppointments);
-          // setAppointments(response.data.data);
-          console.log("Appointments loaded:", response.data.data);
-        }
-      } catch (err) {
-        console.error('Error fetching appointments:', err)
-        setError('Failed to load appointments. Please try again later.')
-      } finally {
-        setLoading(false)
+        // All business appointments   
+        
+      } 
+      else {
+        // Service-specific appointments
+        apiUrl = `/appointments/get/business/service/${id}/${serviceId}`  
+        console.log(apiUrl);
       }
+      
+      console.log(`Fetching ${tabType} appointments from:`, apiUrl)
+      
+      const response = await apiClient.get(apiUrl)
+      
+      // For now, using dummy data - replace with response.data.data when API is ready
+      setAppointments(dummyAppointments)
+      // setAppointments(response.data.data || [])
+      
+      console.log(`${tabType} appointments loaded:`, response.data.data)
+      
+    } catch (err) {
+      console.error(`Error fetching ${tabType} appointments:`, err)
+      setError(`Failed to load ${tabType} appointments. Please try again later.`)
+    } finally {
+      setLoading(false)
     }
-    fetchData()
-  }, [id, serviceId])
+  }
+
+  // Initial load when component mounts or dependencies change
+  useEffect(() => {
+    const date = new Date().toISOString().split('T')[0] // Get current date in YYYY-MM-DD format;
+    fetchAppointments(activeTab, date)
+  }, [id, serviceId]) // Only depend on id and serviceId for initial load
+
+  // Handle tab change
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab)
+    setFilterStatus('All') // Reset filter when changing tabs
+    fetchAppointments(newTab) // Fetch new data for the selected tab
+  }
 
   // Cancel handler
   const handleCancel = async (appointmentId) => {
     try {
-      const response = await apiClient.put(`/appointments/cancel/business/${appointmentId}`);
+      const response = await apiClient.put(`/appointments/cancel/business/${appointmentId}`)
       setAppointments(prev =>
         prev.map(app =>
           app.id === appointmentId ? { ...app, status: 'Cancelled' } : app
@@ -115,13 +148,14 @@ function Appointments() {
       )
     } catch (err) {
       console.error('Cancel failed', err)
+      setError('Failed to cancel appointment')
     }
   }
 
   // Approve handler
   const handleApprove = async (appointmentId) => {
     try {
-      const response = await apiClient.put(`/appointments/approve/business/${appointmentId}`);
+      const response = await apiClient.put(`/appointments/approve/business/${appointmentId}`)
       setAppointments(prev =>
         prev.map(app =>
           app.id === appointmentId ? { ...app, status: 'Confirmed' } : app
@@ -129,13 +163,14 @@ function Appointments() {
       )
     } catch (err) {
       console.error('Approve failed', err)
+      setError('Failed to approve appointment')
     }
   }
 
   // Mark Done handler
   const handleMarkDone = async (appointmentId) => {
     try {
-      const response = await apiClient.put(`/appointments/done/business/${appointmentId}`);
+      const response = await apiClient.put(`/appointments/done/business/${appointmentId}`)
       setAppointments(prev =>
         prev.map(app =>
           app.id === appointmentId ? { ...app, status: 'Done' } : app
@@ -143,6 +178,7 @@ function Appointments() {
       )
     } catch (err) {
       console.error('Mark done failed', err)
+      setError('Failed to mark appointment as done')
     }
   }
 
@@ -151,9 +187,9 @@ function Appointments() {
       <div className="container py-5">
         <div className="text-center">
           <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
-            <span className="visually-hidden">Loading appointments...</span>
+            <span className="visually-hidden">Loading {activeTab} appointments...</span>
           </div>
-          <p className="mt-3 text-muted">Loading your appointments...</p>
+          <p className="mt-3 text-muted">Loading your {activeTab} appointments...</p>
         </div>
       </div>
     )
@@ -165,33 +201,29 @@ function Appointments() {
         <div className="alert alert-danger" role="alert">
           <i className="bi bi-exclamation-triangle me-2"></i>
           {error}
+          <button 
+            className="btn btn-outline-danger btn-sm ms-3"
+            onClick={() => fetchAppointments(activeTab)}
+          >
+            <i className="bi bi-arrow-clockwise me-1"></i>
+            Retry
+          </button>
         </div>
       </div>
     )
   }
 
-  // Separate appointments by time
-  const now = new Date()
-  const upcomingAppointments = appointments.filter(app => new Date(app.date) >= now)
-  const previousAppointments = appointments.filter(app => new Date(app.date) < now)
-
-  // Apply status filter
-  const filterByStatus = (appointmentList) => {
-    return filterStatus === 'All' 
-      ? appointmentList 
-      : appointmentList.filter(a => a.status === filterStatus)
-  }
-
-  const displayedUpcoming = filterByStatus(upcomingAppointments)
-  const displayedPrevious = filterByStatus(previousAppointments)
+  // Apply status filter (no need to separate by time since API handles it)
+  const displayedAppointments = filterStatus === 'All' 
+    ? appointments 
+    : appointments.filter(a => a.status === filterStatus)
 
   // Get counts for the dropdown
   const getStatusCount = (status) => {
     if (status === 'All') {
-      return activeTab === 'upcoming' ? upcomingAppointments.length : previousAppointments.length
+      return appointments.length
     }
-    const list = activeTab === 'upcoming' ? upcomingAppointments : previousAppointments
-    return list.filter(a => a.status === status).length
+    return appointments.filter(a => a.status === status).length
   }
 
   const renderAppointmentCard = (app) => {
@@ -262,9 +294,9 @@ function Appointments() {
               </p>
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons - Only show for upcoming appointments */}
             <div className="d-grid gap-2">
-              {app.status === 'Pending' && (
+              {activeTab === 'upcoming' && app.status === 'Pending' && (
                 <div className="row g-2">
                   <div className="col-6">
                     <button 
@@ -287,7 +319,7 @@ function Appointments() {
                 </div>
               )}
 
-              {app.status === 'Confirmed' && (
+              {activeTab === 'upcoming' && app.status === 'Confirmed' && (
                 <div className="row g-2">
                   <div className="col-6">
                     <button 
@@ -310,10 +342,11 @@ function Appointments() {
                 </div>
               )}
 
-              {!['Pending', 'Confirmed'].includes(app.status) && (
+              {/* No actions for previous appointments or completed statuses */}
+              {(activeTab === 'previous' || !['Pending', 'Confirmed'].includes(app.status)) && (
                 <button className="btn btn-outline-secondary btn-sm" disabled>
                   <i className="bi bi-info-circle me-1"></i>
-                  No actions available
+                  {activeTab === 'previous' ? 'Past appointment' : 'No actions available'}
                 </button>
               )}
             </div>
@@ -352,27 +385,29 @@ function Appointments() {
         {/* Tabs and Filter Section */}
         <div className="row justify-content-center mb-4">
           <div className="col-lg-10">
-            <div className="card border-0 shadow-sm">
-              <div className="card-body p-4">
-                <div className="row align-items-center">
+            <div className="card border-0 shadow-sm w-auto">
+              <div className="card-body p-4 d-flex flex-column justify-content-between">
+                <div className="row align-items-center justify-content-center">
                   {/* Tabs */}
-                  <div className="col-md-6 mb-3 mb-md-0">
+                  <div className="col-md-6 mb-3 mb-md-0 upcoming-previous-tabs">
                     <div className="btn-group w-100" role="group">
                       <button
                         type="button"
                         className={`btn ${activeTab === 'upcoming' ? 'btn-primary' : 'btn-outline-primary'}`}
-                        onClick={() => setActiveTab('upcoming')}
+                        onClick={() => handleTabChange('upcoming')}
+                        disabled={loading}
                       >
                         <i className="bi bi-arrow-up-circle me-2"></i>
-                        Upcoming ({upcomingAppointments.length})
+                        Upcoming ({activeTab === 'upcoming' ? appointments.length : '...'})
                       </button>
                       <button
                         type="button"
                         className={`btn ${activeTab === 'previous' ? 'btn-primary' : 'btn-outline-primary'}`}
-                        onClick={() => setActiveTab('previous')}
+                        onClick={() => handleTabChange('previous')}
+                        disabled={loading}
                       >
                         <i className="bi bi-arrow-down-circle me-2"></i>
-                        Previous ({previousAppointments.length})
+                        Previous ({activeTab === 'previous' ? appointments.length : '...'})
                       </button>
                     </div>
                   </div>
@@ -387,6 +422,7 @@ function Appointments() {
                         className="form-select"
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
+                        disabled={loading}
                       >
                         {statusOptions.map(option => (
                           <option key={option.value} value={option.value}>
@@ -394,6 +430,14 @@ function Appointments() {
                           </option>
                         ))}
                       </select>
+                      <button 
+                        className="btn btn-outline-secondary"
+                        onClick={() => fetchAppointments(activeTab)}
+                        disabled={loading}
+                        title="Refresh appointments"
+                      >
+                        <i className={`bi bi-arrow-clockwise ${loading ? 'spinner-border spinner-border-sm' : ''}`}></i>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -421,21 +465,17 @@ function Appointments() {
                 )}
               </h3>
               <span className="badge bg-primary fs-6">
-                {activeTab === 'upcoming' ? displayedUpcoming.length : displayedPrevious.length} 
+                {displayedAppointments.length} 
                 {filterStatus !== 'All' && ` ${filterStatus}`} appointments
               </span>
             </div>
 
             {/* Appointments Grid */}
             <div className="row g-4">
-              {activeTab === 'upcoming' 
-                ? displayedUpcoming.map(app => renderAppointmentCard(app))
-                : displayedPrevious.map(app => renderAppointmentCard(app))
-              }
+              {displayedAppointments.map(app => renderAppointmentCard(app))}
 
               {/* No Appointments Found */}
-              {((activeTab === 'upcoming' && displayedUpcoming.length === 0) || 
-                (activeTab === 'previous' && displayedPrevious.length === 0)) && (
+              {displayedAppointments.length === 0 && (
                 <div className="col-12">
                   <div className="text-center py-5">
                     <div className="mb-4">
