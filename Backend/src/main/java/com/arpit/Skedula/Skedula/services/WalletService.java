@@ -1,5 +1,7 @@
 package com.arpit.Skedula.Skedula.services;
 
+import com.arpit.Skedula.Skedula.dto.ResponseWalletDTO;
+import com.arpit.Skedula.Skedula.dto.WalletDTO;
 import com.arpit.Skedula.Skedula.entity.Appointment;
 import com.arpit.Skedula.Skedula.entity.User;
 import com.arpit.Skedula.Skedula.entity.Wallet;
@@ -21,6 +23,9 @@ public interface WalletService {
     Wallet findWalletById(Long id);
 
     Wallet getWalletByUserId(Long id);
+
+    ResponseWalletDTO getWallet();
+
 
 
 }

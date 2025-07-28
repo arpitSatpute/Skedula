@@ -1,11 +1,16 @@
 package com.arpit.Skedula.Skedula.services.Implementation;
 
+import com.arpit.Skedula.Skedula.dto.ResponseWalletDTO;
+import com.arpit.Skedula.Skedula.dto.UserDTO;
+import com.arpit.Skedula.Skedula.dto.WalletDTO;
 import com.arpit.Skedula.Skedula.entity.*;
 import com.arpit.Skedula.Skedula.entity.enums.TransactionType;
+import com.arpit.Skedula.Skedula.repository.UserRepository;
 import com.arpit.Skedula.Skedula.repository.WalletRepository;
 import com.arpit.Skedula.Skedula.services.WalletService;
 import com.arpit.Skedula.Skedula.services.WalletTransactionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +24,7 @@ public class WalletServiceImpl implements WalletService {
 
     private final WalletRepository walletRepository;
     private final WalletTransactionService walletTransactionService;
+    private final UserRepository userRepository;
 
 
     @Override
@@ -103,4 +109,30 @@ public class WalletServiceImpl implements WalletService {
     }
 
 
+    @Override
+    public ResponseWalletDTO getWallet() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+        Wallet wallet = findByUser(user);
+        return convertToResponseDTO(wallet, user);
+
+    }
+
+    private ResponseWalletDTO convertToResponseDTO(Wallet wallet, User user) {
+
+        UserDTO userDTO = new UserDTO();
+        userDTO.setId(user.getId());
+        userDTO.setEmail(user.getEmail());
+        userDTO.setName(user.getName());
+        userDTO.setPhone(user.getPhone());
+        userDTO.setRoles(user.getRoles());
+
+        ResponseWalletDTO responseWalletDTO = new ResponseWalletDTO();
+        responseWalletDTO.setId(wallet.getId());
+        responseWalletDTO.setUser(userDTO);
+        responseWalletDTO.setBalance(wallet.getBalance());
+        responseWalletDTO.setTransactions(walletTransactionService.convertToTransactionDTOs(wallet.getTransactions()));
+        return responseWalletDTO;
+    }
 }

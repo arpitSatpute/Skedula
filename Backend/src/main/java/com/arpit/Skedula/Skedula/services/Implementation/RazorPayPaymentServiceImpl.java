@@ -42,16 +42,22 @@ public class RazorPayPaymentServiceImpl implements RazorPayPaymentService {
 
     @Override
     public boolean isOwnerOfPayment(String email) {
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (user == null) {
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
             throw new ResourceNotFoundException("User not found in security context");
         }
-
-        return user.getEmail().equals(email);
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (currentEmail == null) {
+            throw new ResourceNotFoundException("User not found in security context");
+        }
+        return currentEmail.equals(email);
     }
 
     @Override
     public ResponseRazorPayAmountDTO createRazorpayPaymentOrder(RequestRazorPayAmountDTO requestRazorpayAmount) {
+
+        System.out.println("createRazorpayPaymentOrder");
+        System.out.println(razorPayKey);
+        System.out.println(razorPaySecret);
         try {
 
             // Validate user
@@ -62,10 +68,8 @@ public class RazorPayPaymentServiceImpl implements RazorPayPaymentService {
             if (requestRazorpayAmount.getAmount() == null || requestRazorpayAmount.getAmount().compareTo(BigDecimal.valueOf(50)) < 0) {
                 throw new IllegalArgumentException("Amount must be greater than or equal to 50");
             }
-
             // Create RazorpayAmount entity
             RazorpayAmount razorpayAmount = createRazorPayAmount(requestRazorpayAmount);
-
             // Initialize Razorpay client
             RazorpayClient razorpayClient = new RazorpayClient(razorPayKey, razorPaySecret);
 
@@ -85,12 +89,13 @@ public class RazorPayPaymentServiceImpl implements RazorPayPaymentService {
                     .amount(razorpayAmount.getAmount())
                     .razorpayOrderStatus(order.get("status"))
                     .build();
-            razorpayTransactionService.createNewRazorpayTransaction(razorPayTransaction);
+
 
             // Link transaction to RazorpayAmount
             if (razorpayAmount.getTransaction() == null) {
                 razorpayAmount.setTransaction(new ArrayList<>());
             }
+
             razorpayAmount.getTransaction().add(razorPayTransaction);
 
             // Add money to wallet

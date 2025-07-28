@@ -5,10 +5,7 @@ import com.arpit.Skedula.Skedula.dto.ResponseRazorPayAmountDTO;
 import com.arpit.Skedula.Skedula.services.RazorPayPaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -17,7 +14,7 @@ public class RazorPayController {
 
     private final RazorPayPaymentService razorPayPaymentService;
 
-    @PreAuthorize("@razorPayPaymentService.isOwnerOfPayment(#razorPayAmountDTO.getEmail())")
+//    @PreAuthorize("@razorPayPaymentService.isOwnerOfPayment(#email)")
     @PostMapping(value = "/pay", produces = "application/json")
     public ResponseRazorPayAmountDTO pay(@RequestBody RequestRazorPayAmountDTO razorPayAmountDTO) {
         return razorPayPaymentService.createRazorpayPaymentOrder(razorPayAmountDTO);

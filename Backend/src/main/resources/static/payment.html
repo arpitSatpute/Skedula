@@ -82,10 +82,11 @@
       "currency": response.data.currency,
       "name": "Skedula Pvt Ltd",
       "description": "Add to wallet",
-      "order_id": response.data.razorpayOrderId, // ✅ Correct Razorpay order ID
+      "order_id": response.data.razorpayOrderId,
       "handler": function (res) {
-        alert("Payment successful! Payment ID: " + res.razorpay_payment_id);
-        // send and handle this id in backend...
+        // Redirect to success page
+        alert("Payment successful! Order ID: " + res.razorpay_order_id);
+        window.location.href = "localhost:5174/";
       },
       "theme": {
         "color": "#3399cc"
