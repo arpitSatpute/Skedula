@@ -155,7 +155,7 @@ function Appointments() {
   // Approve handler
   const handleApprove = async (appointmentId) => {
     try {
-      const response = await apiClient.put(`/appointments/approve/business/${appointmentId}`)
+      const response = await apiClient.patch(`/appointments/approve/${appointmentId}`)
       setAppointments(prev =>
         prev.map(app =>
           app.id === appointmentId ? { ...app, status: 'Confirmed' } : app
