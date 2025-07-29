@@ -93,8 +93,8 @@ function Wallet() {
   }
 
   const handleAddMoney = async () => {
-    window.open(`${baseUrl}/payment.html`, '_blank', 'width=600,height=800,noopener,noreferrer');
-    window.location.href = `${Owner_Page}/`;
+    window.open(`${baseUrl}/payment.html`, '_blank');
+    // window.location.href = `${Owner_Page}/`;
     // navigate('add-money')
     
   }
@@ -105,12 +105,10 @@ function Wallet() {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'COMPLETED':
-        return <span className="badge bg-success">Completed</span>
-      case 'PENDING':
-        return <span className="badge bg-warning">Pending</span>
-      case 'FAILED':
-        return <span className="badge bg-danger">Failed</span>
+      case 'CREDIT':
+        return <span className="badge bg-success">CREDIT</span>
+      case 'DEBIT':
+        return <span className="badge bg-warning">DEBIT</span>
       default:
         return <span className="badge bg-secondary">Unknown</span>
     }
@@ -126,7 +124,7 @@ function Wallet() {
     const typeMatch = filterType === 'ALL' || txn.transactionType === filterType
     const statusMatch = filterStatus === 'ALL' || txn.status === filterStatus
     return typeMatch && statusMatch
-  }) || []
+  }).sort((a,b) => new Date(b.timeStamp) - new Date(a.timeStamp)) || []
 
   if (loading) {
     return (
@@ -296,23 +294,23 @@ function Wallet() {
                             {getTransactionIcon(txn.transactionType)}
                             <div>
                               <div className="fw-semibold">{txn.description}</div>
-                              <small className="text-muted">Ref: {txn.referenceId}</small>
+                              <small className="text-muted">Ref: {txn.transactionId}</small>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3">
                           <div>
-                            {new Date(txn.transactionDate).toLocaleDateString('en-IN')}
+                            {new Date(txn.timeStamp).toLocaleDateString('en-IN')}
                           </div>
                           <small className="text-muted">
-                            {new Date(txn.transactionDate).toLocaleTimeString('en-IN', {
+                            {new Date(txn.timeStamp).toLocaleTimeString('en-IN', {
                               hour: '2-digit',
                               minute: '2-digit'
                             })}
                           </small>
                         </td>
                         <td className="px-4 py-3">
-                          {getStatusBadge(txn.status)}
+                          {getStatusBadge(txn.transactionType)}
                         </td>
                         <td className="px-4 py-3 text-end">
                           <span className={`fw-bold ${txn.amount >= 0 ? 'text-success' : 'text-danger'}`}>
