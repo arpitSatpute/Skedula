@@ -24,6 +24,10 @@ public class RazorpayAmount {
 
     private String receiptOrderId;
 
+    private String razorpayOrderId;
+
     @OneToMany(mappedBy = "razorpay_amount", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RazorPayTransaction> transaction;
+
+
 }

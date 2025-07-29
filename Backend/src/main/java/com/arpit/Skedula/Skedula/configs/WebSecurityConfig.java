@@ -20,7 +20,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableMethodSecurity(securedEnabled = true)
 public class WebSecurityConfig {
 
-    private static final String[] PUBLIC_ROUTES = {"/auth/**", "/actuator/health", "/v2/api-docs/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/public/**", "/h2-console/**", "/razorpay/pay", "/payment.html", "/file/**"};
+    private static final String[] PUBLIC_ROUTES = {"/auth/**", "/actuator/health", "/v2/api-docs/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/public/**", "/h2-console/**", "/razorpay/**", "/razorpay/pay", "/razorpay/verify",  "/payment.html", "/file/**"};
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtAuthFilter jwtAuthFilter) throws Exception {

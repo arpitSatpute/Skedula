@@ -31,6 +31,27 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
+
+  async function verifyRazorpayPaymentAndAdd(paymentId, orderId, signature, email) {
+    console.log("---- Verifying Razorpay payment ----");
+    const response = await fetch('http://localhost:8080/razorpay/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        razorpayPaymentId: paymentId,
+        razorpayOrderId: orderId,
+        razorpaySignature:  signature,
+        email: email
+      })
+    });
+
+    const result = (await response.ok) ? "Payment verified successfully!" : "Payment verification failed!";
+    console.log(result);
+    return result;
+  }
+
   async function createOrder() {
     console.log("---- Creating order ----");
     const amount = document.getElementById('amount').value;
@@ -74,8 +95,6 @@
       console.error("Invalid response from backend");
       return;
     }
-
-
     const options = {
       "key": "rzp_test_1osnPBeF2xSAFe",
       "amount": response.data.amount,
@@ -85,12 +104,18 @@
       "order_id": response.data.razorpayOrderId,
       "handler": function (res) {
         // Redirect to success page
-        alert("Payment successful! Order ID: " + res.razorpay_order_id);
-        window.location.href = "localhost:5174/";
+        alert("Payment successful! Order ID: " + res.razorpay_order_id + " Signature: " + res.razorpay_signature + " Payment: " + res.razorpay_payment_id);
+        const response = verifyRazorpayPaymentAndAdd(res.razorpay_payment_id, res.razorpay_order_id, res.razorpay_signature, document.getElementById('email').value);
+        alert(response.text());
+
       },
       "theme": {
         "color": "#3399cc"
-      }
+      },
+      "redirectUrl" : {
+        "url": "http://localhost:5174/",
+        "method": "get"
+      },
     };
 
     console.log("Starting Razorpay payment with:", options);

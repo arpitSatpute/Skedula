@@ -1,9 +1,11 @@
 package com.arpit.Skedula.Skedula.controller;
 
 import com.arpit.Skedula.Skedula.dto.RequestRazorPayAmountDTO;
+import com.arpit.Skedula.Skedula.dto.RequestRazorpayPaymentVerifyDTO;
 import com.arpit.Skedula.Skedula.dto.ResponseRazorPayAmountDTO;
 import com.arpit.Skedula.Skedula.services.RazorPayPaymentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,5 +22,8 @@ public class RazorPayController {
         return razorPayPaymentService.createRazorpayPaymentOrder(razorPayAmountDTO);
     }
 
-
+    @PostMapping("/verify")
+    public ResponseEntity<Void> verifyPayment(@RequestBody RequestRazorpayPaymentVerifyDTO razorpayPaymentVerifyDTO) {
+        return ResponseEntity.ok(razorPayPaymentService.verifyRazorpayPayment(razorpayPaymentVerifyDTO));
+    }
 }
