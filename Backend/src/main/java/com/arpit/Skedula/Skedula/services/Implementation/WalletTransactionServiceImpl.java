@@ -37,7 +37,9 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
             responseWalletTransactionDTO.setTransactionId(walletTransaction.getTransactionId());
             responseWalletTransactionDTO.setAmount(walletTransaction.getAmount());
             responseWalletTransactionDTO.setTransactionType(walletTransaction.getTransactionType());
+            responseWalletTransactionDTO.setTimeStamp(walletTransaction.getTimeStamp());
             responseWalletTransactionDTOs.add(responseWalletTransactionDTO);
+
         }
         return responseWalletTransactionDTOs;
 
