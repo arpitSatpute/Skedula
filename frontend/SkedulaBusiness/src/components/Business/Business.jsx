@@ -37,12 +37,15 @@ const Business = () => {
 
   if (loading) {
     return (
-      <div className="container py-5">
-        <div className="text-center">
-          <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
-            <span className="visually-hidden">Loading business...</span>
+      <div className="bg-light min-vh-100 d-flex align-items-center">
+        <div className="container">
+          <div className="text-center">
+            <div className="spinner-border text-primary" role="status" style={{ width: '4rem', height: '4rem' }}>
+              <span className="visually-hidden">Loading business...</span>
+            </div>
+            <h4 className="mt-4 text-primary">Loading Your Business</h4>
+            <p className="text-muted">Please wait while we fetch your business information...</p>
           </div>
-          <p className="mt-3 text-muted">Loading your business information...</p>
         </div>
       </div>
     );
@@ -50,10 +53,21 @@ const Business = () => {
 
   if (error) {
     return (
-      <div className="container py-5">
-        <div className="alert alert-danger" role="alert">
-          <i className="bi bi-exclamation-triangle me-2"></i>
-          {error}
+      <div className="bg-light min-vh-100 d-flex align-items-center">
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-lg-6">
+              <div className="alert alert-danger shadow-lg border-0" role="alert">
+                <div className="d-flex align-items-center">
+                  <i className="bi bi-exclamation-triangle fs-2 me-3"></i>
+                  <div>
+                    <h5 className="alert-heading mb-1">Error Loading Business</h5>
+                    <p className="mb-0">{error}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -62,27 +76,34 @@ const Business = () => {
   // No business available - show add business option only
   if (!business) {
     return (
-      <div className="container py-4">
-        <div className="row justify-content-center">
-          <div className="col-lg-6">
-            <div className="text-center py-5">
-              <div className="mb-4">
-                <i className="bi bi-building display-1 text-primary opacity-50"></i>
-              </div>
-              <h2 className="mb-3">No Business Registered</h2>
-              <p className="text-muted mb-4 lead">
-                You haven't registered your business yet. Click below to get started.
-              </p>
+      <div className="bg-light min-vh-100">
+        <div className="container py-5">
+          <div className="row justify-content-center">
+            <div className="col-lg-8">
+              <div className="card border-0 shadow-lg">
+                <div className="card-body text-center py-5">
+                  <div className="mb-4">
+                    <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" 
+                         style={{ width: '120px', height: '120px' }}>
+                      <i className="bi bi-building text-primary" style={{ fontSize: '3rem' }}></i>
+                    </div>
+                  </div>
+                  <h2 className="fw-bold mb-3 text-dark">No Business Registered</h2>
+                  <p className="text-muted mb-4 lead px-4">
+                    Ready to take your business online? Register your business with Skedula and start managing appointments, services, and customers effortlessly.
+                  </p>
 
-              <Link to="/business/add" className="btn btn-primary btn-lg px-5">
-                <i className="bi bi-plus-circle me-2"></i>
-                Add Your Business
-              </Link>
-              
-              <div className="mt-4">
-                <small className="text-muted">
-                  Need help? <a href="/contact" className="text-decoration-none">Contact our support team</a>
-                </small>
+                  <Link to="/business/add" className="btn btn-primary btn-lg px-5 py-3 rounded-pill shadow-sm">
+                    <i className="bi bi-plus-circle me-2"></i>
+                    Register Your Business
+                  </Link>
+                  
+                  <div className="mt-4">
+                    <small className="text-muted">
+                      Need assistance? <a href="/contact" className="text-decoration-none fw-semibold">Contact our support team</a>
+                    </small>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -90,8 +111,8 @@ const Business = () => {
       </div>
     );
   }
-  const handleEditBusiness = () => {
 
+  const handleEditBusiness = () => {
     // Store business data with correct field names for AddBusiness to use
     const businessDataForEdit = {
       ...business,
@@ -104,7 +125,6 @@ const Business = () => {
     console.log('Storing business data for edit:', businessDataForEdit);
     sessionStorage.setItem('editBusiness', JSON.stringify(businessDataForEdit));
     navigate(`/business/${business.id}/edit`);
-
   }
 
   const handleRemoveBusinessClick = () => {
@@ -131,102 +151,61 @@ const Business = () => {
   };
 
   // Calculate statistics
-  const totalServices = (business.serviceOffered.length) ? business.serviceOffered.length : 0;
+  const totalServices = (business.serviceOffered?.length) ? business.serviceOffered.length : 0;
   const totalAppointments = (business.appointments && Array.isArray(business.appointments)) ? business.appointments.length : 0;
   const confirmedAppointments = (business.appointments && Array.isArray(business.appointments)) ? 
     business.appointments.filter(apt => apt.status === 'Confirmed').length : 0;
   const totalRevenue = business.serviceOffered?.reduce((sum, service) => sum + service.price, 0) || 0;
 
-  // Business available - show business dashboard with categorized data
+  // Business available - show business dashboard with enhanced design
   return (
-    <div className="container py-4">
-      {/* Header */}
-      <div className="row mb-4">
-        <div className="col">
-          <h2 className="mb-1">
-            <i className="bi bi-building me-2"></i>
-            {business.name}
-          </h2>
-         
-        </div>
-        <div className="col-auto">
-          <div onClick={handleEditBusiness} className="btn btn-primary">
-            <i className="bi bi-pencil me-2"></i>
-            Edit Business
-          </div>
-        </div>
-      </div>
-
-      {/* Category 1: Business Information */}
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="card border-0 shadow-sm">
-            <div className="card-header bg-primary text-white">
-              <h5 className="mb-0">
-                <i className="bi bi-info-circle me-2"></i>
-                Business Information
-              </h5>
-            </div>
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-8">
-                  <h6 className="text-primary mb-2">{business.name}</h6>
-                  <p className="text-muted mb-3">{business.description}</p>
-                  
-                  <div className="row">
-                    <div className="col-md-6">
-                      <div className="mb-2">
-                        <i className="bi bi-envelope text-primary me-2"></i>
-                        <strong>Email:</strong> {business.email}
+    <div className="bg-light min-vh-100">
+      <div className="container py-4" style={{ maxWidth: '1400px' }}>
+        {/* Enhanced Header with Gradient */}
+        <div className="row mb-5">
+          <div className="col-12">
+            <div className="card border-0 shadow-lg overflow-hidden">
+              <div className="position-relative">
+                <div className="bg-gradient p-5 text-white" style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                }}>
+                  <div className="row align-items-center">
+                    <div className="col-lg-8">
+                      <div className="d-flex align-items-center mb-3">
+                        <div className="bg-white bg-opacity-20 rounded-circle p-3 me-4">
+                          <i className="bi bi-building text-white fs-2"></i>
+                        </div>
+                        <div>
+                          <h1 className="fw-bold mb-1 text-black">{business.name}</h1>
+                          <p className="mb-0 opacity-85 fs-5 text-black">Business Dashboard</p>
+                        </div>
                       </div>
-                      <div className="mb-2">
-                        <i className="bi bi-telephone text-primary me-2"></i>
-                        <strong>Phone:</strong> {business.phone}
-                      </div>
-                      <div className="mb-2">
-                        <i className="bi bi-clock text-primary me-2"></i>
-                        <strong>Hours:</strong> {business.openTime} - {business.closeTime}
+                      <div className="row g-3">
+                        <div className="col-md-4">
+                          <div className="text-center p-3 bg-danger bg-opacity-10 rounded-3">
+                            <h3 className="fw-bold text-dark mb-1">{totalServices}</h3>
+                            <small className="text-dark opacity-75">Services</small>
+                          </div>
+                        </div>
+                        <div className="col-md-4">
+                          <div className="text-center p-3 bg-warning bg-opacity-10 rounded-3">
+                            <h3 className="fw-bold text-dark mb-1">{totalAppointments}</h3>
+                            <small className="text-dark opacity-75">Appointments</small>
+                          </div>
+                        </div>
+                        <div className="col-md-4">
+                          <div className="text-center p-3 bg-success bg-opacity-10 rounded-3">
+                            <h3 className="fw-bold text-dark mb-1">{confirmedAppointments}</h3>
+                            <small className="text-dark opacity-75">Confirmed</small>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="col-md-6">
-                      <div className="mb-2">
-                        <i className="bi bi-geo-alt text-primary me-2"></i>
-                        <strong>Address:</strong> {business.address}
-                      </div>
-                      <div className="mb-2">
-                        <i className="bi bi-building text-primary me-2"></i>
-                        <strong>City:</strong> {business.city}, {business.state}
-                      </div>
-                      <div className="mb-2">
-                        <i className="bi bi-globe text-primary me-2"></i>
-                        <strong>Country:</strong> {business.country} - {business.zipCode}
-                      </div>
-                    </div>
-                  </div>
-
-                  {business.mapLink && (
-                    <div className="mt-3">
-                      <a href={business.mapLink} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm">
-                        <i className="bi bi-map me-1"></i>
-                        View on Google Maps
-                      </a>
-                    </div>
-                  )}
-                </div>
-                <div className="col-md-4">
-                  <div className="bg-light rounded p-3">
-                    <h6 className="text-muted mb-3">Quick Stats</h6>
-                    <div className="d-flex justify-content-between mb-2">
-                      <span>Services:</span>
-                      <span className="fw-bold">{totalServices}</span>
-                    </div>
-                    <div className="d-flex justify-content-between mb-2">
-                      <span>Appointments:</span>
-                      <span className="fw-bold">{totalAppointments}</span>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span>Confirmed:</span>
-                      <span className="fw-bold text-success">{confirmedAppointments}</span>
+                    <div className="col-lg-4 text-end">
+                      <button onClick={handleEditBusiness} className="btn btn-light btn-lg px-4 py-3 rounded-pill shadow-sm">
+                        <i className="bi bi-pencil me-2"></i>
+                        Edit Business
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -234,134 +213,234 @@ const Business = () => {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Category 2: Legal & Registration Details */}
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="card border-0 shadow-sm">
-            <div className="card-header bg-success text-white">
-              <h5 className="mb-0">
-                <i className="bi bi-shield-check me-2"></i>
-                Legal & Registration Details
-              </h5>
-            </div>
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-4">
-                  <div className="text-center p-3 border rounded">
-                    <i className="bi bi-person-badge text-success fs-3 mb-2"></i>
-                    <h6>Owner Identity</h6>
-                    <p className="mb-0 fw-bold">{business.identity || 'Not provided'}</p>
+        {/* Enhanced Business Information */}
+        <div className="row mb-5">
+          <div className="col-12">
+            <div className="card border-0 shadow-lg">
+              <div className="card-header bg-white border-0 p-4">
+                <div className="d-flex align-items-center">
+                  <div className="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                    <i className="bi bi-info-circle text-primary fs-4"></i>
+                  </div>
+                  <div>
+                    <h4 className="fw-bold mb-1 text-dark">Business Information</h4>
+                    <p className="text-muted mb-0">Complete details about your business</p>
                   </div>
                 </div>
-                <div className="col-md-4">
-                  <div className="text-center p-3 border rounded">
-                    <i className="bi bi-file-earmark-text text-info fs-3 mb-2"></i>
-                    <h6>CRN Number</h6>
-                    <p className="mb-0 fw-bold">{business.crnnumber || 'Not provided'}</p>
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="text-center p-3 border rounded">
-                    <i className="bi bi-receipt text-warning fs-3 mb-2"></i>
-                    <h6>GST Number</h6>
-                    <p className="mb-0 fw-bold">{business.gstnumber || 'Not provided'}</p>
+              </div>
+              <div className="card-body p-4">
+                <div className="row">
+                  <div className="col-lg-8">
+                    <div className="mb-4">
+                      <h5 className="text-primary fw-bold mb-2">{business.name}</h5>
+                      <p className="text-muted fs-6 mb-4">{business.description}</p>
+                    </div>
+                    
+                    <div className="row g-4">
+                      <div className="col-md-6">
+                        <div className="d-flex align-items-center mb-3 p-3 bg-light rounded-3">
+                          <div className="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                            <i className="bi bi-envelope text-primary"></i>
+                          </div>
+                          <div>
+                            <small className="text-muted d-block">Email Address</small>
+                            <span className="fw-semibold">{business.email}</span>
+                          </div>
+                        </div>
+                        <div className="d-flex align-items-center mb-3 p-3 bg-light rounded-3">
+                          <div className="bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                            <i className="bi bi-telephone text-success"></i>
+                          </div>
+                          <div>
+                            <small className="text-muted d-block">Phone Number</small>
+                            <span className="fw-semibold">{business.phone}</span>
+                          </div>
+                        </div>
+                        <div className="d-flex align-items-center mb-3 p-3 bg-light rounded-3">
+                          <div className="bg-info bg-opacity-10 rounded-circle p-2 me-3">
+                            <i className="bi bi-clock text-info"></i>
+                          </div>
+                          <div>
+                            <small className="text-muted d-block">Business Hours</small>
+                            <span className="fw-semibold">{business.openTime} - {business.closeTime}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-md-6">
+                        <div className="d-flex align-items-center mb-3 p-3 bg-light rounded-3">
+                          <div className="bg-warning bg-opacity-10 rounded-circle p-2 me-3">
+                            <i className="bi bi-geo-alt text-warning"></i>
+                          </div>
+                          <div>
+                            <small className="text-muted d-block">Address</small>
+                            <span className="fw-semibold">{business.address}</span>
+                          </div>
+                        </div>
+                        <div className="d-flex align-items-center mb-3 p-3 bg-light rounded-3">
+                          <div className="bg-secondary bg-opacity-10 rounded-circle p-2 me-3">
+                            <i className="bi bi-building text-secondary"></i>
+                          </div>
+                          <div>
+                            <small className="text-muted d-block">City & State</small>
+                            <span className="fw-semibold">{business.city}, {business.state}</span>
+                          </div>
+                        </div>
+                        <div className="d-flex align-items-center mb-3 p-3 bg-light rounded-3">
+                          <div className="bg-danger bg-opacity-10 rounded-circle p-2 me-3">
+                            <i className="bi bi-globe text-danger"></i>
+                          </div>
+                          <div>
+                            <small className="text-muted d-block">Country & ZIP</small>
+                            <span className="fw-semibold">{business.country} - {business.zipCode}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {business.mapLink && (
+                      <div className="mt-4">
+                        <a href={business.mapLink} target="_blank" rel="noopener noreferrer" 
+                           className="btn btn-outline-primary rounded-pill px-4">
+                          <i className="bi bi-map me-2"></i>
+                          View on Google Maps
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="card border-0 shadow-sm">
-            <div className="card-header bg-primary text-white">
-              <h5 className="mb-0">
-                <i className="bi bi-shield-check me-2"></i>
-                Statistics
-              </h5>
-            </div>
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-6">
-                  <div className="text-center p-3 border rounded">
-                    <i className="bi bi-person-badge text-success fs-3 mb-2"></i>
-                    <h6>Services</h6>
-                    <p className="mb-0 fw-bold">{totalServices}</p>
+        {/* Enhanced Legal & Registration Details */}
+        <div className="row mb-5">
+          <div className="col-12">
+            <div className="card border-0 shadow-lg">
+              <div className="card-header bg-white border-0 p-4">
+                <div className="d-flex align-items-center">
+                  <div className="bg-success bg-opacity-10 rounded-circle p-3 me-3">
+                    <i className="bi bi-shield-check text-success fs-4"></i>
+                  </div>
+                  <div>
+                    <h4 className="fw-bold mb-1 text-dark">Legal & Registration Details</h4>
+                    <p className="text-muted mb-0">Official business registration information</p>
                   </div>
                 </div>
-                
-                <div className="col-md-6">
-                  <div className="text-center p-3 border rounded">
-                    <i className="bi bi-receipt text-warning fs-3 mb-2"></i>
-                    <h6>Appointment</h6>
-                    <p className="mb-0 fw-bold">{totalAppointments}</p>
+              </div>
+              <div className="card-body p-4">
+                <div className="row g-4">
+                  <div className="col-md-4">
+                    <div className="text-center p-4 border border-2 border-success border-opacity-25 rounded-4 h-100">
+                      <div className="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                           style={{ width: '60px', height: '60px' }}>
+                        <i className="bi bi-person-badge text-success fs-3"></i>
+                      </div>
+                      <h6 className="fw-bold text-dark mb-2">Owner Identity</h6>
+                      <p className="mb-0 text-muted fw-semibold">{business.identity || 'Not provided'}</p>
+                    </div>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="text-center p-4 border border-2 border-info border-opacity-25 rounded-4 h-100">
+                      <div className="bg-info bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                           style={{ width: '60px', height: '60px' }}>
+                        <i className="bi bi-file-earmark-text text-info fs-3"></i>
+                      </div>
+                      <h6 className="fw-bold text-dark mb-2">CRN Number</h6>
+                      <p className="mb-0 text-muted fw-semibold">{business.crnnumber || 'Not provided'}</p>
+                    </div>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="text-center p-4 border border-2 border-warning border-opacity-25 rounded-4 h-100">
+                      <div className="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                           style={{ width: '60px', height: '60px' }}>
+                        <i className="bi bi-receipt text-warning fs-3"></i>
+                      </div>
+                      <h6 className="fw-bold text-dark mb-2">GST Number</h6>
+                      <p className="mb-0 text-muted fw-semibold">{business.gstnumber || 'Not provided'}</p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-
-      {/* Quick Actions */}
-      <div className="row">
-        <div className="col-12">
-          <div className="card border-0 shadow-sm">
-            <div className="card-header bg-dark text-white">
-              <h5 className="mb-0">
-                <i className="bi bi-lightning me-2"></i>
-                Quick Actions
-              </h5>
-            </div>
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-3 mb-2">
-                  <button  onClick={() => {navigate(`/appointments/business/${business.id}`)}} className="btn btn-outline-primary w-100">
-                    <i className="bi bi-calendar-event me-2"></i>
-                    Manage Appointments
-                  </button>
+        {/* Enhanced Quick Actions */}
+        <div className="row">
+          <div className="col-12">
+            <div className="card border-0 shadow-lg">
+              <div className="card-header bg-white border-0 p-4">
+                <div className="d-flex align-items-center">
+                  <div className="bg-dark bg-opacity-10 rounded-circle p-3 me-3">
+                    <i className="bi bi-lightning text-dark fs-4"></i>
+                  </div>
+                  <div>
+                    <h4 className="fw-bold mb-1 text-dark">Quick Actions</h4>
+                    <p className="text-muted mb-0">Manage your business operations efficiently</p>
+                  </div>
                 </div>
-                <div className="col-md-3 mb-2">
-                  <Link to="/services" className="btn btn-outline-success w-100">
-                    <i className="bi bi-gear me-2"></i>
-                    Manage Services
-                  </Link>
-                </div>
-                <div className="col-md-3 mb-2">
-                  <button onClick={() => navigate(`/services/add/${business.id}`)} className="btn btn-outline-primary w-100">
-                    <i className="bi bi-plus me-2"></i>
-                    Add Services
-                  </button>
-                </div>
-                <div className="col-md-3 mb-2">
-                  <button onClick={() => setShowConfirmModal(true)} className="btn btn-outline-danger w-100">
-                    <i className="bi bi-trash me-2"></i>
-                    Remove Business
-                  </button>
+              </div>
+              <div className="card-body p-4">
+                <div className="row g-3">
+                  <div className="col-lg-3 col-md-6">
+                    <button onClick={() => navigate(`/appointments/business/${business.id}`)} 
+                            className="btn btn-outline-primary w-100 py-3 rounded-3 shadow-sm h-100">
+                      <div className="d-flex flex-column align-items-center">
+                        <i className="bi bi-calendar-event fs-3 mb-2"></i>
+                        <span className="fw-semibold">Manage Appointments</span>
+                        <small className="text-muted mt-1">View & organize bookings</small>
+                      </div>
+                    </button>
+                  </div>
+                  <div className="col-lg-3 col-md-6">
+                    <Link to="/services" className="btn btn-outline-success w-100 py-3 rounded-3 shadow-sm h-100 text-decoration-none">
+                      <div className="d-flex flex-column align-items-center">
+                        <i className="bi bi-gear fs-3 mb-2"></i>
+                        <span className="fw-semibold">Manage Services</span>
+                        <small className="text-muted mt-1">Edit existing services</small>
+                      </div>
+                    </Link>
+                  </div>
+                  <div className="col-lg-3 col-md-6">
+                    <button onClick={() => navigate(`/services/add/${business.id}`)} 
+                            className="btn btn-outline-info w-100 py-3 rounded-3 shadow-sm h-100">
+                      <div className="d-flex flex-column align-items-center">
+                        <i className="bi bi-plus-circle fs-3 mb-2"></i>
+                        <span className="fw-semibold">Add Services</span>
+                        <small className="text-muted mt-1">Create new offerings</small>
+                      </div>
+                    </button>
+                  </div>
+                  <div className="col-lg-3 col-md-6">
+                    <button onClick={() => setShowConfirmModal(true)} 
+                            className="btn btn-outline-danger w-100 py-3 rounded-3 shadow-sm h-100">
+                      <div className="d-flex flex-column align-items-center">
+                        <i className="bi bi-trash fs-3 mb-2"></i>
+                        <span className="fw-semibold">Remove Business</span>
+                        <small className="text-muted mt-1">Delete permanently</small>
+                      </div>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Add the confirmation modal */}
-      <ConfirmationModal
-        show={showConfirmModal}
-        onHide={() => setShowConfirmModal(false)}
-        onConfirm={handleConfirmRemove}
-        title="Remove Business"
-        message={`Are you sure you want to permanently remove "${business?.name}"? This action cannot be undone and will delete all associated data including services, appointments, and customer records.`}
-        confirmText="Yes, Remove Business"
-        cancelText="Cancel"
-        type="danger"
-      />
+        {/* Enhanced Confirmation Modal */}
+        <ConfirmationModal
+          show={showConfirmModal}
+          onHide={() => setShowConfirmModal(false)}
+          onConfirm={handleConfirmRemove}
+          title="Remove Business"
+          message={`Are you sure you want to permanently remove "${business?.name}"? This action cannot be undone and will delete all associated data including services, appointments, and customer records.`}
+          confirmText="Yes, Remove Business"
+          cancelText="Cancel"
+          type="danger"
+        />
+      </div>
     </div>
   );
 };

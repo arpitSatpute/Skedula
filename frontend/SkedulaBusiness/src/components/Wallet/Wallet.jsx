@@ -4,55 +4,6 @@ import apiClient from '../Auth/ApiClient.js'
 import 'bootstrap/dist/css/bootstrap.min.css'
 
 const Owner_Page = import.meta.env.VITE_FRONTEND_OWNER_URL;
-// Mock data for development
-// const mockWalletData = {
-//   user: {
-//     id: 1,
-//     name: "Arpit Satpute",
-//     email: "arpit@example.com",
-//     phone: "+1 234 567 890",
-//     profilePicture: null
-//   },
-//   balance: 150.75,
-//   transactions: [
-//     {
-//       id: 1,
-//       transactionDate: "2025-07-23T10:30:00",
-//       description: "Appointment Payment Received",
-//       amount: 85.00,
-//       transactionType: "CREDIT",
-//       status: "COMPLETED",
-//       referenceId: "TXN001"
-//     },
-//     {
-//       id: 2,
-//       transactionDate: "2025-07-22T14:15:00",
-//       description: "Service Commission Deducted",
-//       amount: -15.25,
-//       transactionType: "DEBIT",
-//       status: "COMPLETED",
-//       referenceId: "TXN002"
-//     },
-//     {
-//       id: 3,
-//       transactionDate: "2025-07-21T09:45:00",
-//       description: "Refund Processed",
-//       amount: 50.00,
-//       transactionType: "CREDIT",
-//       status: "COMPLETED",
-//       referenceId: "TXN003"
-//     },
-//     {
-//       id: 4,
-//       transactionDate: "2025-07-20T16:20:00",
-//       description: "Withdrawal to Bank",
-//       amount: -200.00,
-//       transactionType: "DEBIT",
-//       status: "PENDING",
-//       referenceId: "TXN004"
-//     }
-//   ]
-// }
 
 function Wallet() {
   const [walletData, setWalletData] = useState([]);
@@ -74,12 +25,10 @@ function Wallet() {
     setLoading(true)
     setError('')
 
-
     try {
       const response = await apiClient.get('/wallet/get');
       await setWalletData(response.data.data);
       console.log('Wallet data fetched successfully:', response.data.data);
-
     }
     catch (err) {
       console.error('Error fetching wallet data:', err)
@@ -88,36 +37,40 @@ function Wallet() {
     finally {
       setLoading(false)
     }
-
-    
   }
 
   const handleAddMoney = async () => {
     window.open(`${baseUrl}/payment.html`, '_blank');
-    // window.location.href = `${Owner_Page}/`;
-    // navigate('add-money')
-    
   }
 
   const handleWithdraw = async () => {
-    
+    // Implement withdraw logic
   }
 
   const getStatusBadge = (status) => {
     switch (status) {
       case 'CREDIT':
-        return <span className="badge bg-success">CREDIT</span>
+        return <span className="badge bg-success rounded-pill">CREDIT</span>
       case 'DEBIT':
-        return <span className="badge bg-warning">DEBIT</span>
+        return <span className="badge bg-danger rounded-pill">DEBIT</span>
       default:
-        return <span className="badge bg-secondary">Unknown</span>
+        return <span className="badge bg-secondary rounded-pill">Unknown</span>
     }
   }
 
-  const getTransactionIcon = (type) => {
+  const getTransactionIcon = (type, description) => {
+    if (description === 'payment received' || description === 'appointment') {
+      return <i className="bi bi-calendar-check text-success me-2 fs-5"></i>
+    }
+    if (description === 'refund') {
+      return <i className="bi bi-arrow-clockwise text-warning me-2 fs-5"></i>
+    }
+    if (description === 'commission' || description === 'fee') {
+      return <i className="bi bi-percent text-info me-2 fs-5"></i>
+    }
     return type === 'CREDIT' 
-      ? <i className="bi bi-arrow-down-circle text-success me-2"></i>
-      : <i className="bi bi-arrow-up-circle text-danger me-2"></i>
+      ? <i className="bi bi-arrow-down-circle text-success me-2 fs-5"></i>
+      : <i className="bi bi-arrow-up-circle text-danger me-2 fs-5"></i>
   }
 
   const filteredTransactions = walletData?.transactions?.filter(txn => {
@@ -125,6 +78,9 @@ function Wallet() {
     const statusMatch = filterStatus === 'ALL' || txn.status === filterStatus
     return typeMatch && statusMatch
   }).sort((a,b) => new Date(b.timeStamp) - new Date(a.timeStamp)) || []
+
+  // Calculate statistics
+  const totalTransactions = walletData?.transactions?.length || 0;
 
   if (loading) {
     return (
@@ -155,167 +111,187 @@ function Wallet() {
 
   return (
     <div className="bg-light min-vh-100">
-      <div className="container py-4" style={{ maxWidth: '900px' }}>
-        {/* Header */}
-        <div className="text-center mb-5">
-          <h2 className="fw-bold text-dark mb-2">
-            <i className="bi bi-wallet2 text-primary me-2"></i>
-            My Wallet
-          </h2>
-          <p className="text-muted">Manage your earnings and transactions</p>
-        </div>
-
-        {/* User Info & Balance Card */}
+      <div className="container py-4" style={{ maxWidth: '1200px' }}>
+        {/* Header with Gradient Background */}
         <div className="row mb-4">
-          <div className="col-md-6 mb-3">
-            <div className="card h-100 border-0 shadow-sm">
-              <div className="card-header bg-primary text-white">
-                <h6 className="mb-0">
-                  <i className="bi bi-person-circle me-2"></i>
-                  Account Details
-                </h6>
-              </div>
-              <div className="card-body">
-                <div className="d-flex align-items-center mb-3">
-                  <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
-                       style={{ width: '50px', height: '50px' }}>
-                    <i className="bi bi-person-fill text-white fs-4"></i>
+          <div className="col-12">
+            <div className="card border-0 shadow-lg overflow-hidden">
+              <div className="position-relative">
+                <div className="bg-gradient p-5 text-white" style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                }}>
+                  <div className="row align-items-center">
+                    <div className="col-md-8">
+                      <h2 className="fw-bold mb-2 text-black">
+                        <i className="bi bi-wallet2 me-3"></i>
+                        Skedula Wallet
+                      </h2>
+                      <p className="mb-0 opacity-75 text-dark">Manage your earnings, transactions, and payments</p>
+                    </div>
+                    <div className="col-md-4 text-end">
+                      <div className="d-flex gap-2 justify-content-end">
+                        <button 
+                          className="btn btn-light px-4"
+                          onClick={() => handleAddMoney()}
+                        >
+                          <i className="bi bi-plus-circle me-2"></i>
+                          Add Money
+                        </button>
+                        <button 
+                          className="btn btn-light px-4"
+                          onClick={() => setShowWithdrawModal(true)}
+                          disabled={walletData.balance <= 0}
+                        >
+                          <i className="bi bi-arrow-up-circle me-2"></i>
+                          Withdraw
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h6 className="mb-0">{walletData.user.name}</h6>
-                    <small className="text-muted">Business Owner</small>
-                  </div>
-                </div>
-                <div className="mb-2">
-                  <i className="bi bi-envelope text-primary me-2"></i>
-                  <small>{walletData.user.email}</small>
-                </div>
-                <div>
-                  <i className="bi bi-telephone text-primary me-2"></i>
-                  <small>{walletData.user.phone}</small>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-md-6 mb-3">
-            <div className="card h-100 border-0 shadow-sm">
-              <div className="card-header bg-success text-white">
-                <h6 className="mb-0">
-                  <i className="bi bi-currency-rupee me-2"></i>
-                  Current Balance
-                </h6>
-              </div>
-              <div className="card-body text-center">
-                <div className="mb-3">
-                  <span className="display-4 fw-bold text-success">₹{walletData.balance.toFixed(2)}</span>
-                </div>
-                <div className="d-grid gap-2">
-                  <button 
-                    className="btn btn-success"
-                    onClick={() => handleAddMoney()}
-                  >
-                    <i className="bi bi-plus-circle me-2"></i>
-                    Add Money
-                  </button>
-                  <button 
-                    className="btn btn-outline-danger"
-                    onClick={() => setShowWithdrawModal(true)}
-                    disabled={walletData.balance <= 0}
-                  >
-                    <i className="bi bi-arrow-up-circle me-2"></i>
-                    Withdraw
-                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="card mb-4 border-0 shadow-sm">
-          <div className="card-body">
+        {/* Balance and Stats Cards */}
+        <div className="row mb-4">
+          {/* Balance Card */}
+          <div className="col-lg-6 mb-3">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body text-center p-4">
+                <div className="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style={{ width: '80px', height: '80px' }}>
+                  <i className="bi bi-currency-rupee text-success fs-1"></i>
+                </div>
+                <h6 className="text-muted mb-2">Current Balance</h6>
+                <h2 className="fw-bold text-success mb-0">₹{walletData.balance?.toFixed(2)}</h2>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Transactions */}
+          <div className="col-lg-6 mb-3">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body text-center p-4">
+                <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style={{ width: '80px', height: '80px' }}>
+                  <i className="bi bi-list-ul text-primary fs-1"></i>
+                </div>
+                <h6 className="text-muted mb-2">Total Transactions</h6>
+                <h2 className="fw-bold text-primary mb-0">{totalTransactions}</h2>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Transaction Content */}
+        <div className="card border-0 shadow-sm">
+          {/* Header with Filters */}
+          <div className="card-header bg-white border-0 p-4">
             <div className="row align-items-center">
               <div className="col-md-6">
-                <h5 className="mb-3 mb-md-0">
-                  <i className="bi bi-clock-history text-primary me-2"></i>
+                <h4 className="fw-bold mb-0">
+                  <i className="bi bi-list-ul me-2"></i>
                   Transaction History
-                </h5>
+                </h4>
+                <p className="text-muted mb-0 small">All your wallet transactions</p>
               </div>
+              
+              {/* Filters */}
               <div className="col-md-6">
-                <div className="row g-2">
-                  <div className="col-6">
-                    <select 
-                      className="form-select form-select-sm"
-                      value={filterType}
-                      onChange={(e) => setFilterType(e.target.value)}
-                    >
-                      <option value="ALL">All Types</option>
-                      <option value="CREDIT">Credit</option>
-                      <option value="DEBIT">Debit</option>
-                    </select>
-                  </div>
-                  <div className="col-6">
-                    <select 
-                      className="form-select form-select-sm"
-                      value={filterStatus}
-                      onChange={(e) => setFilterStatus(e.target.value)}
-                    >
-                      <option value="ALL">All Status</option>
-                      <option value="COMPLETED">Completed</option>
-                      <option value="PENDING">Pending</option>
-                    </select>
-                  </div>
+                <div className="d-flex gap-2 justify-content-end">
+                  <select 
+                    className="form-select form-select-sm"
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                  >
+                    <option value="ALL">All Types</option>
+                    <option value="CREDIT">Credit Only</option>
+                    <option value="DEBIT">Debit Only</option>
+                  </select>
+                  <select 
+                    className="form-select form-select-sm"
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                  >
+                    <option value="ALL">All Status</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="PENDING">Pending</option>
+                  </select>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Transactions */}
-        <div className="card border-0 shadow-sm">
+          {/* Transaction List */}
           <div className="card-body p-0">
+            {/* Transaction Count Info */}
+            <div className="p-4 bg-light border-bottom">
+              <div className="row align-items-center">
+                <div className="col">
+                  <h6 className="mb-1 fw-bold">All Transactions</h6>
+                  <p className="text-muted mb-0 small">
+                    Complete history of all your wallet transactions
+                  </p>
+                </div>
+                <div className="col-auto">
+                  <span className="badge bg-primary bg-opacity-75 px-3 py-2">
+                    {filteredTransactions.length} transactions
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {filteredTransactions.length > 0 ? (
               <div className="table-responsive">
                 <table className="table table-hover mb-0">
                   <thead className="bg-light">
                     <tr>
-                      <th className="border-0 px-4 py-3">Transaction</th>
-                      <th className="border-0 px-4 py-3">Date</th>
-                      <th className="border-0 px-4 py-3">Status</th>
+                      <th className="border-0 px-4 py-3">Transaction Details</th>
+                      <th className="border-0 px-4 py-3">Date & Time</th>
+                      <th className="border-0 px-4 py-3">Type</th>
                       <th className="border-0 px-4 py-3 text-end">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredTransactions.map(txn => (
-                      <tr key={txn.id}>
-                        <td className="px-4 py-3">
+                      <tr key={txn.id} className="border-bottom">
+                        <td className="px-4 py-4">
                           <div className="d-flex align-items-center">
-                            {getTransactionIcon(txn.transactionType)}
+                            {getTransactionIcon(txn.transactionType, txn.description)}
                             <div>
-                              <div className="fw-semibold">{txn.description}</div>
-                              <small className="text-muted">Ref: {txn.transactionId}</small>
+                              <div className="fw-semibold text-dark">{txn.description}</div>
+                              <small className="text-muted">
+                                <i className="bi bi-hash me-1"></i>
+                                {txn.transactionId}
+                              </small>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3">
-                          <div>
-                            {new Date(txn.timeStamp).toLocaleDateString('en-IN')}
+                        <td className="px-4 py-4">
+                          <div className="text-dark fw-semibold">
+                            {new Date(txn.timeStamp).toLocaleDateString('en-IN', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
                           </div>
                           <small className="text-muted">
+                            <i className="bi bi-clock me-1"></i>
                             {new Date(txn.timeStamp).toLocaleTimeString('en-IN', {
                               hour: '2-digit',
                               minute: '2-digit'
                             })}
                           </small>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-4">
                           {getStatusBadge(txn.transactionType)}
                         </td>
-                        <td className="px-4 py-3 text-end">
-                          <span className={`fw-bold ${txn.amount >= 0 ? 'text-success' : 'text-danger'}`}>
+                        <td className="px-4 py-4 text-end">
+                          <div className={`fw-bold fs-5 ${txn.amount >= 0 ? 'text-success' : 'text-danger'}`}>
                             {txn.amount >= 0 ? '+' : ''}₹{Math.abs(txn.amount).toFixed(2)}
-                          </span>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -324,9 +300,22 @@ function Wallet() {
               </div>
             ) : (
               <div className="text-center py-5">
-                <i className="bi bi-receipt display-1 text-muted opacity-50 mb-3"></i>
-                <h5 className="text-muted">No transactions found</h5>
-                <p className="text-muted">No transactions match your current filters.</p>
+                <div className="mb-4">
+                  <i className="bi bi-receipt display-1 text-muted opacity-25"></i>
+                </div>
+                <h5 className="text-muted mb-2">No transactions found</h5>
+                <p className="text-muted">
+                  No transactions match your current filters.
+                </p>
+                <button 
+                  className="btn btn-outline-primary"
+                  onClick={() => {
+                    setFilterType('ALL');
+                    setFilterStatus('ALL');
+                  }}
+                >
+                  Clear Filters
+                </button>
               </div>
             )}
           </div>
@@ -336,46 +325,57 @@ function Wallet() {
         {showAddMoneyModal && (
           <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
             <div className="modal-dialog modal-dialog-centered">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">
-                    <i className="bi bi-plus-circle text-success me-2"></i>
-                    Add Money
+              <div className="modal-content border-0 shadow-lg">
+                <div className="modal-header bg-success text-white border-0">
+                  <h5 className="modal-title fw-bold">
+                    <i className="bi bi-plus-circle me-2"></i>
+                    Add Money to Wallet
                   </h5>
                   <button 
                     type="button" 
-                    className="btn-close"
+                    className="btn-close btn-close-white"
                     onClick={() => setShowAddMoneyModal(false)}
                   ></button>
                 </div>
-                <div className="modal-body">
+                <div className="modal-body p-4">
+                  <div className="text-center mb-4">
+                    <div className="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style={{ width: '80px', height: '80px' }}>
+                      <i className="bi bi-wallet text-success fs-1"></i>
+                    </div>
+                  </div>
                   <div className="mb-3">
-                    <label className="form-label">Amount (₹)</label>
+                    <label className="form-label fw-semibold">Amount (₹)</label>
                     <input
                       type="number"
-                      className="form-control"
-                      placeholder="Enter amount"
+                      className="form-control form-control-lg"
+                      placeholder="Enter amount to add"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       min="1"
                       step="0.01"
                     />
                   </div>
+                  <div className="alert alert-info">
+                    <i className="bi bi-info-circle me-2"></i>
+                    Secure payment processing via Razorpay
+                  </div>
                 </div>
-                <div className="modal-footer">
+                <div className="modal-footer border-0 p-4">
                   <button 
                     type="button" 
-                    className="btn btn-secondary"
+                    className="btn btn-outline-secondary px-4"
                     onClick={() => setShowAddMoneyModal(false)}
                   >
                     Cancel
                   </button>
                   <button 
                     type="button" 
-                    className="btn btn-success"
+                    className="btn btn-success px-4"
                     onClick={handleAddMoney}
                   >
-                    Add Money
+                    <i className="bi bi-credit-card me-2"></i>
+                    Proceed to Payment
                   </button>
                 </div>
               </div>
@@ -387,29 +387,29 @@ function Wallet() {
         {showWithdrawModal && (
           <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
             <div className="modal-dialog modal-dialog-centered">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">
-                    <i className="bi bi-arrow-up-circle text-danger me-2"></i>
+              <div className="modal-content border-0 shadow-lg">
+                <div className="modal-header bg-danger text-white border-0">
+                  <h5 className="modal-title fw-bold">
+                    <i className="bi bi-arrow-up-circle me-2"></i>
                     Withdraw Money
                   </h5>
                   <button 
                     type="button" 
-                    className="btn-close"
+                    className="btn-close btn-close-white"
                     onClick={() => setShowWithdrawModal(false)}
                   ></button>
                 </div>
-                <div className="modal-body">
-                  <div className="alert alert-info">
+                <div className="modal-body p-4">
+                  <div className="alert alert-warning">
                     <i className="bi bi-info-circle me-2"></i>
-                    Available Balance: ₹{walletData.balance}
+                    Available Balance: <strong>₹{walletData.balance}</strong>
                   </div>
                   <div className="mb-3">
-                    <label className="form-label">Amount (₹)</label>
+                    <label className="form-label fw-semibold">Amount (₹)</label>
                     <input
                       type="number"
-                      className="form-control"
-                      placeholder="Enter amount"
+                      className="form-control form-control-lg"
+                      placeholder="Enter amount to withdraw"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       min="1"
@@ -417,21 +417,26 @@ function Wallet() {
                       step="0.01"
                     />
                   </div>
+                  <div className="alert alert-info">
+                    <i className="bi bi-bank me-2"></i>
+                    Funds will be transferred to your registered bank account within 1-2 business days
+                  </div>
                 </div>
-                <div className="modal-footer">
+                <div className="modal-footer border-0 p-4">
                   <button 
                     type="button" 
-                    className="btn btn-secondary"
+                    className="btn btn-outline-secondary px-4"
                     onClick={() => setShowWithdrawModal(false)}
                   >
                     Cancel
                   </button>
                   <button 
                     type="button" 
-                    className="btn btn-danger"
+                    className="btn btn-danger px-4"
                     onClick={handleWithdraw}
                   >
-                    Withdraw
+                    <i className="bi bi-bank me-2"></i>
+                    Process Withdrawal
                   </button>
                 </div>
               </div>
