@@ -1,64 +1,99 @@
-import React, { useState } from 'react'
-import 'bootstrap/dist/css/bootstrap.min.css'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import apiClient from '../Auth/ApiClient.js';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import axios from 'axios';
 
-function AddMoney() {
-  const [amount, setAmount] = useState('')
-  const [currency, setCurrency] = useState('')
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
+const AddMoney = () => {
+  const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:8080';
+  const [formData, setFormData] = useState({
+    amount: '',
+    currency: 'INR',
+    email: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const userEmail = localStorage.getItem('userEmail') || '';
+    setFormData(prev => ({ ...prev, email: userEmail }));
+  }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.amount || formData.amount <= 0) {
+      newErrors.amount = 'Please enter a valid amount';
+    }
+    
+    if (!formData.email) {
+      newErrors.email = 'Please enter your email address';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const verifyRazorpayPaymentAndAdd = async (paymentId, orderId, signature, email) => {
+    try {
+      const response = await axios.post(`${baseUrl}/razorpay/verify`, {
+        razorpayPaymentId: paymentId,
+        razorpayOrderId: orderId,
+        razorpaySignature: signature,
+        email: email
+      });
+
+      const result = response.status === 200 ? "Payment verified successfully!" : "Payment verification failed!";
+      return result;
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      return "Payment verification failed!";
+    }
+  };
 
   const createOrder = async () => {
-    console.log("---- Creating order ----")
-    
-    if (!amount || !currency || !email) {
-      alert("Please fill all fields")
-      return null
-    }
+    const { amount, currency, email } = formData;
 
     try {
-      const response = await fetch('http://localhost:8080/razorpay/pay', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          amount: parseFloat(amount),
-          currency: currency,
-          email: email
-        })
-      })
-      
-      console.log("Request sent to backend:")
-      console.log(email)
+      const response = await axios.post(`${baseUrl}/razorpay/pay`, {
+        amount: parseFloat(amount),
+        currency: currency,
+        email: email
+      });
 
-      if (!response.ok) {
-        console.error("Failed to create order:", response.status, response.statusText)
-        alert("Failed to create order. Please try again.")
-        return null
-      }
-
-      const order = await response.json()
-      console.log("Order created:", order)
-      return order
+      return response.data;
     } catch (error) {
-      console.error("Error creating order:", error)
-      alert("Error creating order. Please try again.")
-      return null
+      console.error("Error creating order:", error);
+      throw error;
     }
-  }
+  };
 
-  const handlePayment = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
     
     try {
-      const response = await createOrder()
-      console.log("Response from createOrder:", response)
+      const response = await createOrder();
       
       if (!response || !response.data || !response.data.razorpayOrderId) {
-        console.error("Invalid response from backend")
-        alert("Invalid response from backend")
-        return
+        throw new Error("Invalid response from backend");
       }
 
       const options = {
@@ -68,201 +103,138 @@ function AddMoney() {
         "name": "Skedula Pvt Ltd",
         "description": "Add to wallet",
         "order_id": response.data.razorpayOrderId,
-        "handler": function (res) {
-          alert("Payment successful! Payment ID: " + res.razorpay_payment_id)
-          // Redirect back to wallet or close window
-          if (window.opener) {
-            window.opener.location.reload() // Refresh parent window
-            window.close() // Close current window
-          } else {
-            window.location.href = '/wallet' // Redirect to wallet
-          }
-        },
-        "modal": {
-          "ondismiss": function() {
-            console.log("Payment cancelled by user")
+        "handler": async function (res) {
+          try {
+            alert(`Payment successful!`);
+            const verificationResult = await verifyRazorpayPaymentAndAdd(
+              res.razorpay_payment_id, 
+              res.razorpay_order_id, 
+              res.razorpay_signature, 
+              formData.email
+            );
+            alert(verificationResult);
+            navigate('/wallet');
+          } catch (error) {
+            alert("Payment completed but verification failed. Please contact support.");
           }
         },
         "theme": {
-          "color": "#3399cc"
+          "color": "#007bff"
+        },
+        "modal": {
+          "ondismiss": function() {
+            setLoading(false);
+          }
         }
-      }
+      };
 
-      console.log("Starting Razorpay payment with:", options)
-      
-      // Load Razorpay script dynamically
-      if (!window.Razorpay) {
-        const script = document.createElement('script')
-        script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-        script.onload = () => {
-          const rzp = new window.Razorpay(options)
-          rzp.open()
-        }
-        document.head.appendChild(script)
-      } else {
-        const rzp = new window.Razorpay(options)
-        rzp.open()
-      }
+      const rzp = new window.Razorpay(options);
+      rzp.open();
     } catch (error) {
-      console.error("Error in payment process:", error)
-      alert("Error in payment process. Please try again.")
+      alert("Failed to initiate payment. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="bg-light min-vh-100">
-      <div className="container py-5">
-        <div className="row justify-content-center">
-          <div className="col-md-6">
-            <div className="card shadow-lg border-0">
-              <div className="card-header bg-primary text-white text-center py-4">
-                <h2 className="mb-0">
-                  <i className="bi bi-wallet2 me-2"></i>
-                  Add Money to Wallet
-                </h2>
-                <p className="mb-0 opacity-75">RazorPay Secure Payment</p>
-              </div>
-              
-              <div className="card-body p-4">
-                <form onSubmit={handlePayment}>
-                  {/* Amount Field */}
-                  <div className="mb-4">
-                    <label htmlFor="amount" className="form-label fw-semibold">
-                      <i className="bi bi-currency-rupee text-success me-2"></i>
-                      Amount
-                    </label>
-                    <div className="input-group">
-                      <span className="input-group-text bg-success text-white">₹</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="form-control form-control-lg"
-                        id="amount"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        placeholder="Enter amount"
-                        min="1"
-                        required
-                      />
-                    </div>
-                    <small className="text-muted">Minimum amount: ₹1</small>
-                  </div>
+    <div className="container py-4" style={{ maxWidth: '500px' }}>
+      {/* Simple Header */}
+      <div className="d-flex align-items-center justify-content-between mb-4">
+        <h3 className="mb-0">Add Money</h3>
+        <button 
+          onClick={() => navigate('/wallet')} 
+          className="btn btn-outline-secondary btn-sm"
+        >
+          ← Back
+        </button>
+      </div>
 
-                  {/* Currency Field */}
-                  <div className="mb-4">
-                    <label htmlFor="currency" className="form-label fw-semibold">
-                      <i className="bi bi-globe text-info me-2"></i>
-                      Currency
-                    </label>
-                    <select
-                      className="form-select form-select-lg"
-                      id="currency"
-                      value={currency}
-                      onChange={(e) => setCurrency(e.target.value)}
-                      required
-                    >
-                      <option value="" disabled>Select currency</option>
-                      <option value="INR">INR - Indian Rupee</option>
-                    </select>
-                  </div>
-
-                  {/* Email Field */}
-                  <div className="mb-4">
-                    <label htmlFor="email" className="form-label fw-semibold">
-                      <i className="bi bi-envelope text-warning me-2"></i>
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      className="form-control form-control-lg"
-                      id="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter registered email carefully"
-                      required
-                    />
-                    <small className="text-muted">Please enter your registered email address</small>
-                  </div>
-
-                  {/* Payment Summary */}
-                  {amount && currency && (
-                    <div className="alert alert-info mb-4">
-                      <h6 className="alert-heading mb-2">
-                        <i className="bi bi-info-circle me-2"></i>
-                        Payment Summary
-                      </h6>
-                      <div className="d-flex justify-content-between">
-                        <span>Amount:</span>
-                        <strong>₹{parseFloat(amount || 0).toFixed(2)}</strong>
-                      </div>
-                      <div className="d-flex justify-content-between">
-                        <span>Currency:</span>
-                        <strong>{currency}</strong>
-                      </div>
-                      <div className="d-flex justify-content-between">
-                        <span>Payment Gateway:</span>
-                        <strong>RazorPay</strong>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Submit Button */}
-                  <div className="d-grid gap-2">
-                    <button
-                      type="submit"
-                      className="btn btn-primary btn-lg"
-                      disabled={loading || !amount || !currency || !email}
-                    >
-                      {loading ? (
-                        <>
-                          <div className="spinner-border spinner-border-sm me-2" role="status">
-                            <span className="visually-hidden">Loading...</span>
-                          </div>
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <i className="bi bi-credit-card me-2"></i>
-                          Proceed to Pay ₹{parseFloat(amount || 0).toFixed(2)}
-                        </>
-                      )}
-                    </button>
-                    
-                    {/* Cancel/Back Button */}
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      onClick={() => {
-                        if (window.opener) {
-                          window.close()
-                        } else {
-                          window.history.back()
-                        }
-                      }}
-                      disabled={loading}
-                    >
-                      <i className="bi bi-arrow-left me-2"></i>
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              {/* Security Info */}
-              <div className="card-footer bg-light text-center">
-                <small className="text-muted">
-                  <i className="bi bi-shield-check text-success me-1"></i>
-                  Secured by RazorPay | 256-bit SSL Encryption
-                </small>
-              </div>
+      {/* Simple Form Card */}
+      <div className="card border-0 shadow-sm">
+        <div className="card-body p-4">
+          <form onSubmit={handleSubmit}>
+            {/* Amount */}
+            <div className="mb-3">
+              <label className="form-label">Amount (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                className={`form-control ${errors.amount ? 'is-invalid' : ''}`}
+                name="amount"
+                placeholder="Enter amount"
+                value={formData.amount}
+                onChange={handleInputChange}
+                min="1"
+                required
+              />
+              {errors.amount && (
+                <div className="invalid-feedback">{errors.amount}</div>
+              )}
             </div>
-          </div>
+
+            {/* Currency */}
+            <div className="mb-3">
+              <label className="form-label">Currency</label>
+              <select
+                className="form-select"
+                name="currency"
+                value={formData.currency}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="INR">INR - Indian Rupee</option>
+              </select>
+            </div>
+
+            {/* Email */}
+            <div className="mb-4">
+              <label className="form-label">Email</label>
+              <input
+                type="email"
+                className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                name="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+              />
+              {errors.email && (
+                <div className="invalid-feedback">{errors.email}</div>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className="btn btn-primary w-100"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2"></span>
+                  Processing...
+                </>
+              ) : (
+                `Proceed to Pay ${formData.amount ? `₹${formData.amount}` : ''}`
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Simple Footer */}
+        <div className="card-footer bg-light text-center">
+          <small className="text-muted">
+            <i className="bi bi-shield-check me-1"></i>
+            Secured by Razorpay
+          </small>
         </div>
       </div>
-    </div>
-  )
-}
 
-export default AddMoney
+      {/* Razorpay Script */}
+      <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    </div>
+  );
+};
+
+export default AddMoney;
