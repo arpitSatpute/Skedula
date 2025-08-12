@@ -2,9 +2,11 @@ import React, { useContext, useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
+import apiClient from './ApiClient';
 const Login = () => {
 
   const [email, setEmail] = useState('');
+  const [role, setRole] = useState("CUSTOMER");
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -15,11 +17,12 @@ const Login = () => {
     e.preventDefault();
     
       console.log("Entered Login");
-      await login(email, password);
+      await login(email, password, role);
       console.log("Done Login");
+      const response = await apiClient.get(`customer/get/currentCustomer`);
+      console.log("Customer data:", response.data.data);
+      localStorage.setItem('customer', JSON.stringify(response.data.data));
       navigate('/');
-    
-    
   }
 
   return (

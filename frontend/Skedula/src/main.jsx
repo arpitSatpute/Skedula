@@ -16,7 +16,7 @@ import Profiles from './components/User/Profile.jsx'
 import Contact from './components/Contact.jsx'
 import BookAppointment from './components/Appointments/BookAppointment.jsx'
 import Login from './components/Auth/Login.jsx'
-import SignUp from './components/Auth/SignUp.jsx'
+import SignUp from './components/Auth/Signup.jsx'
 import CustomerDashboard from './components/Dashboard/CustomerDashboard.jsx'
 import Protected from './components/Auth/Protected.jsx'
 import { AuthProvider } from './components/Auth/AuthContext.jsx'
@@ -60,9 +60,9 @@ const router = createBrowserRouter([
       },
       
       // Protected routes grouped under a single Protected wrapper
-      {
-        element: <Protected authenticated={true} />,
-        children: [
+      // {
+      //   element: <Protected authenticated={true} />,
+      //   children: [
           {
             path: "/wallet",
             element: <Wallet />
@@ -81,7 +81,7 @@ const router = createBrowserRouter([
           },
           
           {
-            path: "/appointments/book",
+            path: "/appointments/book/:serviceId/:businessId",
             element: <BookAppointment />
           },
           {
@@ -91,15 +91,16 @@ const router = createBrowserRouter([
         ]
       }
       
-    ]
-  }
+  //   ]
+  // }
 ])
 
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <AuthProvider>  
+    <AuthProvider>
       <RouterProvider router={router} />
     </AuthProvider>
-  </StrictMode>,
+  </StrictMode>
 )
+

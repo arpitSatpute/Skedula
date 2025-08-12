@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
+import apiClient from '../Auth/ApiClient'
+
 
 // …existing imports…
 
@@ -27,9 +28,23 @@ function Appointments() {
   const [loading, setLoading]           = useState(true)
   const [error, setError]               = useState(null)
 
-  useEffect(() => {
-    setAppointments(dummyAppointments)
-    setLoading(false)
+  useEffect( () => {
+    const fetchData = async () => {
+      try {
+        const customerId = JSON.parse(localStorage.getItem('customer'))?.id;
+        console.log("Customer ID:", customerId);
+        const response = await apiClient.get(`/appointments/get/customer/${customerId}`);
+        console.log("Appointments data:", response.data.data);
+        setAppointments(response.data.data);
+        setLoading(false);
+      }
+      catch (err) {
+        console.error("Error fetching appointments:", err);
+        setError(err.response?.data?.message || 'Failed to load appointments');
+        setLoading(false);
+      }
+    }
+    fetchData();
   }, [])
 
   if (loading) return <div>Loading appointments…</div>
@@ -82,8 +97,8 @@ function Appointments() {
             }}>
               {new Date(app.date).toLocaleString()}
             </h3>
-            <p style={{ margin: '6px 0' }}><strong>Service:</strong> {app.service}</p>
-            <p style={{ margin: '6px 0' }}><strong>Status:</strong> {app.status}</p>
+            <p style={{ margin: '6px 0' }}><strong>Service:</strong> {app.serviceOffered}</p>
+            <p style={{ margin: '6px 0' }}><strong>Status:</strong> {app.appointmentStatus}</p>
             <p style={{ margin: '6px 0' }}><strong>Notes:</strong> {app.notes}</p>
           </div>
         ))}
