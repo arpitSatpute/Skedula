@@ -1,10 +1,12 @@
 package com.arpit.Skedula.Skedula.controller;
 
 import com.arpit.Skedula.Skedula.dto.AppointmentDTO;
+import com.arpit.Skedula.Skedula.entity.Appointment;
 import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
 import com.arpit.Skedula.Skedula.entity.enums.Role;
 import com.arpit.Skedula.Skedula.services.AppointmentService;
 import lombok.RequiredArgsConstructor;
+import okhttp3.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -102,7 +104,7 @@ public class AppointmentController {
     }
 
 
-    @PreAuthorize("@customerService.isOwnerOfProfile(#customerId)")
+//    @PreAuthorize("@customerService.isOwnerOfProfile(#customerId)")
     @GetMapping("/get/customer/{customerId}")
     public ResponseEntity<List<AppointmentDTO>> getAllAppointmentsByCustomerId(@PathVariable Long customerId) {
         return ResponseEntity.ok(appointmentService.getAppointmentByCustomerId(customerId));
@@ -139,5 +141,10 @@ public class AppointmentController {
         }
         return ResponseEntity.ok(appointmentService.getAppointmentsBeforeDate(date, businessId));
     }
+//
+//    @GetMapping("/get/customer/{customerId")
+//    public ResponseEntity<List<AppointmentDTO>> getAppointmentByCustomerId(@PathVariable Long customerId) {
+//        return ResponseEntity.ok(appointmentService.getAppointmentByCustomerId(customerId));
+//    }
 
 }

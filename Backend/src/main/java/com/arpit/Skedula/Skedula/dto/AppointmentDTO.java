@@ -24,7 +24,7 @@ public class AppointmentDTO {
 
     private AppointmentStatus appointmentStatus;
 
-    @Size(max = 5000, message = "Notes cannot exceed 500 characters")
+    @Size(max = 5000, message = "Notes cannot exceed 5000 characters")
     private String notes;
 
     // BusinessServiceOffered ID

@@ -31,13 +31,22 @@ public class CustomerServiceImpl implements CustomerService {
     private final AppointmentRepository appointmentRepository;
 
     @Override
-    public CustomerDTO createCustomer(UserDTO userDTO) {
+    public CustomerDTO createCustomer(User user) {
         Customer customer = new Customer();
-        customer.setUser(modelMapper.map(userDTO, User.class));
+        customer.setUser(user);
         customer.setCustomerId(generateCustomerId());
         customer.setAppointments(null);
         customerRepository.save(customer);
-        return modelMapper.map(customer, CustomerDTO.class);
+        return entityToDTO(customer, user.getId());
+    }
+
+
+    @Override
+    public CustomerDTO getCurrentCustomer() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Customer customer = customerRepository.findByUser_Email(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found for email: " + email));
+        return entityToDTO(customer, customer.getUser().getId());
     }
 
     @Override
@@ -90,4 +99,14 @@ public class CustomerServiceImpl implements CustomerService {
         }
         return customerId;
     }
+
+    private CustomerDTO entityToDTO(Customer customer, Long userId) {
+        CustomerDTO dto = new CustomerDTO();
+        dto.setId(customer.getId());
+        dto.setCustomerId(customer.getCustomerId());
+        dto.setUser(userId);
+        dto.setAppointments(customer.getAppointments());
+        return dto;
+    }
+
 }

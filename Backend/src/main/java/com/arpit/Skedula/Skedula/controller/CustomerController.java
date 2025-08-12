@@ -35,6 +35,11 @@ public class CustomerController {
         return ResponseEntity.ok(customerService.getCustomer(pageOffset, pageSize));
     }
 
+    @GetMapping("/get/currentCustomer")
+    public ResponseEntity<CustomerDTO> getCurrentCustomer() {
+        return ResponseEntity.ok(customerService.getCurrentCustomer()); // Assuming 1L is the current customer ID, replace with actual logic to get current customer
+    }
+
 
 
     // Create / Register Customer // Public Routes  // Done while signup

@@ -86,9 +86,11 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
 
 
     @Override
-    public Page<BusinessServiceOfferedDTO> getAllServices(Integer pageOffset, Integer pageSize) {
-        return businessServiceOfferedRepository.findAll(PageRequest.of(pageOffset, pageSize))
-                .map(service -> modelMapper.map(service, BusinessServiceOfferedDTO.class));
+    public List<BusinessServiceOfferedDTO> getAllServices() {
+        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findAll();
+        return services.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override

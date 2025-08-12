@@ -308,6 +308,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         result.setDate(newAppointment.getAppointmentDate());
         result.setAppointmentStatus(newAppointment.getAppointmentStatus());
         result.setNotes(newAppointment.getNotes());
+        result.setBusinessId(newAppointment.getServiceOffered().getBusiness().getId());
         return result;
     }
 

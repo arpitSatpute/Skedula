@@ -12,7 +12,7 @@ import java.util.List;
 @Service
 public interface BusinessServiceOfferedService {
 
-    Page<BusinessServiceOfferedDTO> getAllServices(Integer pageOffset, Integer pageSize);
+    List<BusinessServiceOfferedDTO> getAllServices();
 
     BusinessServiceOfferedDTO createService(OnBoardBusinessServiceOfferedDTO businessServiceOfferedDTO);
 

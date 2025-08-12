@@ -9,6 +9,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 
 @RestController
 @RequestMapping(path = "/public")
@@ -33,9 +35,8 @@ public class PublicController {
 
     // Get Services By Paging
     @GetMapping("/getAllServices")
-    public ResponseEntity<Page<BusinessServiceOfferedDTO>> getAllServices(@RequestParam(defaultValue = "0") Integer pageOffset,
-                                                                          @RequestParam(defaultValue = "10", required = false) Integer pageSize) {
-        return ResponseEntity.ok(businessServiceOfferedService.getAllServices(pageOffset, pageSize));
+    public ResponseEntity<List<BusinessServiceOfferedDTO>> getAllServices()  {
+        return ResponseEntity.ok(businessServiceOfferedService.getAllServices());
     }
 
     // Get Business By City By State By Country BY Keyword

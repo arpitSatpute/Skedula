@@ -86,7 +86,7 @@ public class AuthServiceImpl implements AuthService {
 
         // Create associated entity based on role
         if (signupDto.getRole() == Role.CUSTOMER) {
-            customerService.createCustomer(userDTO);
+            customerService.createCustomer(savedUser);
         }
 
         return userDTO;

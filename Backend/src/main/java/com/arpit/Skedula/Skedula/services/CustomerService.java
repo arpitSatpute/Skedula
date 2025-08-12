@@ -2,6 +2,7 @@ package com.arpit.Skedula.Skedula.services;
 
 import com.arpit.Skedula.Skedula.dto.CustomerDTO;
 import com.arpit.Skedula.Skedula.dto.UserDTO;
+import com.arpit.Skedula.Skedula.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Service;
 @Service
 public interface CustomerService {
 
-    CustomerDTO createCustomer(UserDTO userDTO);
+    CustomerDTO createCustomer(User user);
 
     CustomerDTO getCustomerById(Long id);
 
@@ -19,4 +20,5 @@ public interface CustomerService {
 
     boolean isOwnerOfAppointment(Long appointmentId);
 
+    CustomerDTO getCurrentCustomer();
 }
