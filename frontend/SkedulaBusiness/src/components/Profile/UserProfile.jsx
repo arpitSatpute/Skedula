@@ -38,10 +38,10 @@ const UserProfile = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      completed: 'bg-success',
-      confirmed: 'bg-primary',
-      pending: 'bg-warning',
-      cancelled: 'bg-danger'
+      DONE: 'bg-success',
+      BOOKED: 'bg-primary',
+      PENDING: 'bg-warning',
+      CANCELLED: 'bg-danger'
     };
     return `badge ${badges[status] || 'bg-secondary'}`;
   };
@@ -238,8 +238,11 @@ const UserProfile = () => {
                               {new Date(appointment.date).toLocaleDateString('en-IN')}
                             </td>
                             <td className="px-4 py-3">
-                              <span className={getStatusBadge(appointment.status)}>
-                                {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                              <span className={getStatusBadge(appointment.appointmentStatus)}>
+                                {appointment.appointmentStatus ? 
+                                  appointment.appointmentStatus.charAt(0).toUpperCase() + appointment.appointmentStatus.slice(1) : 
+                                  'Unknown'
+                                }
                               </span>
                             </td>
                           </tr>

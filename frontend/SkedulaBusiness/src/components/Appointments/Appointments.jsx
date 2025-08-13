@@ -5,8 +5,8 @@ import apiClient from '../Auth/ApiClient'
 import ConfirmationModal from '../ConfirmationModel/ConfirmationModel.jsx'
 
 const dummyAppointments = [
-  { id: 1, date: '2025-07-25T10:00:00Z', service: 'Haircut',      status: 'Confirmed', notes: 'Customer prefers a trim.' },
-  { id: 2, date: '2025-07-30T14:30:00Z', service: 'Massage',      status: 'Pending',   notes: 'First-time customer.' },
+  { id: 1, date: '2025-07-25T10:00:00Z', service: 'Haircut',      status: 'BOOKED', notes: 'Customer prefers a trim.' },
+  { id: 2, date: '2025-07-30T14:30:00Z', service: 'Massage',      status: 'PENDING',   notes: 'First-time customer.' },
   { id: 3, date: '2025-07-03T09:15:00Z', service: 'Consultation', status: 'Cancelled', notes: 'Rescheduled by user.' },
   { id: 4, date: '2025-07-04T11:00:00Z', service: 'Manicure',     status: 'Done',      notes: 'Follow-up in two weeks.' },
   { id: 5, date: '2025-07-28T15:45:00Z', service: 'Facial',       status: 'Rejected',  notes: 'Overbooking issue.' }
@@ -14,35 +14,35 @@ const dummyAppointments = [
 
 function getStatusDetails(status) {
   switch (status) {
-    case 'Pending':    
+    case 'PENDING':    
       return { 
         color: 'warning', 
         bgColor: 'warning',
         icon: 'bi-clock',
         textColor: 'text-warning'
       }
-    case 'Confirmed':  
+    case 'BOOKED':  
       return { 
         color: 'success', 
         bgColor: 'success',
         icon: 'bi-check-circle',
         textColor: 'text-success'
       }
-    case 'Done':       
+    case 'DONE':       
       return { 
         color: 'primary', 
         bgColor: 'primary',
         icon: 'bi-check-circle-fill',
         textColor: 'text-primary'
       }
-    case 'Cancelled':  
+    case 'CANCELLED':  
       return { 
         color: 'secondary', 
         bgColor: 'secondary',
         icon: 'bi-x-circle',
         textColor: 'text-secondary'
       }
-    case 'Rejected':   
+    case 'REJECTED':   
       return { 
         color: 'danger', 
         bgColor: 'danger',
@@ -70,11 +70,11 @@ function Appointments() {
 
   const statusOptions = [
     { value: 'All', label: 'All Appointments', icon: 'bi-list' },
-    { value: 'Pending', label: 'Pending', icon: 'bi-clock' },
-    { value: 'Confirmed', label: 'Confirmed', icon: 'bi-check-circle' },
+    { value: 'PENDING', label: 'PENDING', icon: 'bi-clock' },
+    { value: 'BOOKED', label: 'BOOKED', icon: 'bi-check-circle' },
     { value: 'Done', label: 'Completed', icon: 'bi-check-circle-fill' },
-    { value: 'Cancelled', label: 'Cancelled', icon: 'bi-x-circle' },
-    { value: 'Rejected', label: 'Rejected', icon: 'bi-x-circle-fill' }
+    { value: 'CANCELLED', label: 'Cancelled', icon: 'bi-x-circle' },
+    { value: 'REJECTED', label: 'Rejected', icon: 'bi-x-circle-fill' }
   ]
 
   // Function to fetch appointments based on tab and service
@@ -111,7 +111,7 @@ function Appointments() {
       const response = await apiClient.get(apiUrl)
       
       // For now, using dummy data - replace with response.data.data when API is ready
-      setAppointments(dummyAppointments)
+      setAppointments(response.data.data)
       // setAppointments(response.data.data || [])
       
       console.log(`${tabType} appointments loaded:`, response.data.data)
@@ -152,13 +152,27 @@ function Appointments() {
     }
   }
 
+  const handleReject = async (appointmentId) => {
+    try {
+      const response = await apiClient.patch(`/appointments/reject/${appointmentId}`)
+      setAppointments(prev =>
+        prev.map(app =>
+          app.id === appointmentId ? { ...app, status: 'REJECTED' } : app
+        )
+      )
+    } catch (err) {
+      console.error('Cancel failed', err)
+      setError('Failed to cancel appointment')
+    }
+  }
+
   // Approve handler
   const handleApprove = async (appointmentId) => {
     try {
-      const response = await apiClient.patch(`/appointments/approve/${appointmentId}`)
+      await apiClient.patch(`/appointments/approve/${appointmentId}`)
       setAppointments(prev =>
         prev.map(app =>
-          app.id === appointmentId ? { ...app, status: 'Confirmed' } : app
+          app.id === appointmentId ? { ...app, status: 'BOOKED' } : app
         )
       )
     } catch (err) {
@@ -170,7 +184,7 @@ function Appointments() {
   // Mark Done handler
   const handleMarkDone = async (appointmentId) => {
     try {
-      const response = await apiClient.put(`/appointments/done/business/${appointmentId}`)
+      const response = await apiClient.patch(`/appointments/done/${appointmentId}`)
       setAppointments(prev =>
         prev.map(app =>
           app.id === appointmentId ? { ...app, status: 'Done' } : app
@@ -216,18 +230,18 @@ function Appointments() {
   // Apply status filter (no need to separate by time since API handles it)
   const displayedAppointments = filterStatus === 'All' 
     ? appointments 
-    : appointments.filter(a => a.status === filterStatus)
+    : appointments.filter(a => a.appointmentStatus === filterStatus)
 
   // Get counts for the dropdown
   const getStatusCount = (status) => {
     if (status === 'All') {
       return appointments.length
     }
-    return appointments.filter(a => a.status === status).length
+    return appointments.filter(a => a.appointmentStatus === status).length
   }
 
   const renderAppointmentCard = (app) => {
-    const statusDetails = getStatusDetails(app.status)
+    const statusDetails = getStatusDetails(app.appointmentStatus)
     return (
       <div className="col-lg-6 col-md-6 mb-4" key={app.id}>
         <div className="card h-100 shadow-sm border-0 rounded-3 overflow-hidden hover-lift">
@@ -237,12 +251,10 @@ function Appointments() {
               <div className="d-flex align-items-center">
                 <i className={`bi ${statusDetails.icon} ${statusDetails.textColor} fs-5 me-2`}></i>
                 <span className={`badge bg-${statusDetails.color} px-2 py-1`}>
-                  {app.status}
+                  {app.appointmentStatus}
                 </span>
               </div>
-              <small className="text-muted">
-                <i className="bi bi-hash"></i>{app.id}
-              </small>
+              
             </div>
           </div>
 
@@ -259,13 +271,7 @@ function Appointments() {
                   day: 'numeric'
                 })}
               </h5>
-              <p className="text-muted mb-0">
-                <i className="bi bi-clock text-info me-2"></i>
-                {new Date(app.date).toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </p>
+              
             </div>
 
             {/* Service Info */}
@@ -275,7 +281,7 @@ function Appointments() {
                   <div className="d-flex align-items-center">
                     <i className="bi bi-gear text-success fs-4 me-3"></i>
                     <div>
-                      <h6 className="fw-bold mb-0">{app.service}</h6>
+                      <h6 className="fw-bold mb-0">{app.serviceoffered}</h6>
                       <small className="text-muted">Service Type</small>
                     </div>
                   </div>
@@ -296,7 +302,7 @@ function Appointments() {
 
             {/* Action Buttons - Only show for upcoming appointments */}
             <div className="d-grid gap-2">
-              {activeTab === 'upcoming' && app.status === 'Pending' && (
+              {activeTab === 'upcoming' && app.appointmentStatus === 'PENDING' && (
                 <div className="row g-2">
                   <div className="col-6">
                     <button 
@@ -309,7 +315,7 @@ function Appointments() {
                   </div>
                   <div className="col-6">
                     <button
-                      onClick={() => handleCancel(app.id)}
+                      onClick={() => handleReject(app.id)}
                       className="btn btn-outline-danger btn-sm w-100"
                     >
                       <i className="bi bi-x-circle me-1"></i>
@@ -319,7 +325,7 @@ function Appointments() {
                 </div>
               )}
 
-              {activeTab === 'upcoming' && app.status === 'Confirmed' && (
+              {activeTab === 'upcoming' && app.appointmentStatus === 'BOOKED' && (
                 <div className="row g-2">
                   <div className="col-6">
                     <button 
@@ -343,7 +349,7 @@ function Appointments() {
               )}
 
               {/* No actions for previous appointments or completed statuses */}
-              {(activeTab === 'previous' || !['Pending', 'Confirmed'].includes(app.status)) && (
+              {(activeTab === 'previous' || !['PENDING', 'BOOKED'].includes(app.appointmentStatus)) && (
                 <button className="btn btn-outline-secondary btn-sm" disabled>
                   <i className="bi bi-info-circle me-1"></i>
                   {activeTab === 'previous' ? 'Past appointment' : 'No actions available'}
@@ -353,18 +359,7 @@ function Appointments() {
           </div>
 
           {/* Card Footer */}
-          <div className="card-footer bg-transparent border-0 px-4 pb-3">
-            <div className="d-flex justify-content-between align-items-center text-muted small">
-              <span>
-                <i className="bi bi-person me-1"></i>
-                Appointment #{app.id}
-              </span>
-              <span>
-                <i className="bi bi-calendar-event me-1"></i>
-                {new Date(app.date).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
+         
         </div>
       </div>
     )
