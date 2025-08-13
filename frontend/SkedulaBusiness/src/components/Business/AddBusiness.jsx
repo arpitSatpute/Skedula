@@ -46,8 +46,8 @@ function AddBusiness() {
     zipCode: '',
     mapLink: '',
     identity: '',
-    crnnumber: '', // Changed from CRNNumber
-    gstnumber: '', // Changed from GSTNumber
+    crnnumber: '',
+    gstnumber: '',
     openTime: '',
     closeTime: ''
   })
@@ -56,7 +56,28 @@ function AddBusiness() {
   const [isLoadingBusiness, setIsLoadingBusiness] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  
+  // Helper function to safely extract error message
+  const getErrorMessage = (error) => {
+    if (typeof error === 'string') {
+      return error;
+    }
+    
+    if (error && typeof error === 'object') {
+      // Handle various error object structures
+      if (error.message) return error.message;
+      if (error.error) return error.error;
+      if (error.status && error.message) return `${error.status}: ${error.message}`;
+      if (error.subErrors && Array.isArray(error.subErrors)) {
+        return error.subErrors.map(subError => 
+          typeof subError === 'string' ? subError : subError.message || 'Validation error'
+        ).join(', ');
+      }
+      return 'An unexpected error occurred';
+    }
+    
+    return 'An unexpected error occurred';
+  };
+
   useEffect(() => {
     if (!isEdit || !id) return;
 
@@ -78,8 +99,8 @@ function AddBusiness() {
           zipCode: businessData.zipCode || '',
           mapLink: businessData.mapLink || '',
           identity: businessData.identity || '',
-          crnnumber: businessData.crnnumber || '', // Backend field name
-          gstnumber: businessData.gstnumber || '', // Backend field name
+          crnnumber: businessData.crnnumber || '',
+          gstnumber: businessData.gstnumber || '',
           openTime: businessData.openTime || '',
           closeTime: businessData.closeTime || ''
         });
@@ -143,9 +164,15 @@ function AddBusiness() {
       console.error('Error saving business:', error);
       console.error('Error response:', error.response?.data);
       
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.error || 
-                          'Failed to save business. Please try again.';
+      // Safely extract error message
+      let errorMessage = 'Failed to save business. Please try again.';
+      
+      if (error.response?.data) {
+        errorMessage = getErrorMessage(error.response.data);
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setCustomError(errorMessage);
     } finally {
       setLoading(false);
@@ -202,7 +229,7 @@ function AddBusiness() {
               {customError && (
                 <div className="alert alert-danger alert-dismissible" role="alert">
                   <i className="bi bi-exclamation-triangle me-2"></i>
-                  {customError}
+                  {getErrorMessage(customError)}
                   <button 
                     type="button" 
                     className="btn-close" 

@@ -50,23 +50,12 @@ const stats = [
 
 const testimonials = [
   {
-    name: "Sarah Johnson",
-    role: "Salon Owner",
-    image: "https://via.placeholder.com/80x80/6366f1/ffffff?text=SJ",
-    text: "Skedula transformed how I manage my salon. Bookings increased by 40% in just 2 months!"
+    name: "Arpit Satpute",
+    role: "Skedula Owner",
+    image: "https://media.licdn.com/dms/image/v2/D5603AQEKN5XUsSsskQ/profile-displayphoto-shrink_400_400/B56ZPY7RI2HIAk-/0/1734511236530?e=1758153600&v=beta&t=oLq6RL86DurcEb1fXQlSqi-YYk7LMH7UTs3a01SA4qg",
+    text: "Made Skedula to allow customers to reach registered businesses and book services easily. Use wisely..."
   },
-  {
-    name: "Mike Chen",
-    role: "Fitness Trainer",
-    image: "https://via.placeholder.com/80x80/8b5cf6/ffffff?text=MC",
-    text: "The scheduling system is incredible. My clients love the easy booking process."
-  },
-  {
-    name: "Dr. Emily Davis",
-    role: "Dental Clinic",
-    image: "https://via.placeholder.com/80x80/06b6d4/ffffff?text=ED",
-    text: "Professional, reliable, and user-friendly. Exactly what our practice needed."
-  }
+  
 ];
 
 const Home = () => {
@@ -91,12 +80,11 @@ const Home = () => {
             <div className="col-lg-6">
               <div className="pe-lg-5">
                 <h1 className="display-3 fw-bold mb-4">
-                  Schedule Smarter with 
-                  <span className="text-primary"> Skedula</span>
+                  Business Smarter with 
+                  <span className="text-primary"> Skedula Business</span>
                 </h1>
                 <p className="lead text-muted mb-4 fs-5">
-                  The all-in-one platform that connects businesses and customers through seamless appointment scheduling, 
-                  service management, and business discovery.
+  Put your business in front of thousands of potential customers — for FREE. Turn searchers into paying clients with our powerful platform.
                 </p>
                 
                 {/* Key Benefits */}
@@ -135,34 +123,10 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* CTA Buttons */}
-                <div className="d-flex flex-column flex-sm-row gap-3 mb-4">
-                  <button 
-                    className="btn btn-primary btn-lg px-4 py-3" 
-                    onClick={() => navigate("/profile")}
-                  >
-                    <i className="bi bi-rocket me-2"></i>
-                    Profile
-                  </button>
-                  <button 
-                    className="btn btn-outline-primary btn-lg px-4 py-3" 
-                    onClick={() => navigate("/login")}
-                  >
-                    <i className="bi bi-play-circle me-2"></i>
-                    Get Into
-                  </button>
-                </div>
+               
 
                 {/* Trust Indicators */}
-                <div className="d-flex align-items-center text-muted">
-                  <small className="me-3">Trusted by 10,000+ businesses</small>
-                  <div className="d-flex">
-                    {[...Array(5)].map((_, i) => (
-                      <i key={i} className="bi bi-star-fill text-warning me-1"></i>
-                    ))}
-                    <small className="ms-2">4.9/5 rating</small>
-                  </div>
-                </div>
+                
               </div>
             </div>
             
@@ -212,11 +176,7 @@ const Home = () => {
                       <i className="bi bi-check-lg text-white"></i>
                     </div>
                   </div>
-                  <div className="position-absolute top-0 end-0 translate-middle">
-                    <div className="bg-warning rounded-circle p-3 shadow">
-                      <i className="bi bi-star-fill text-white"></i>
-                    </div>
-                  </div>
+                  
                 </div>
               </div>
             </div>
@@ -357,7 +317,7 @@ const Home = () => {
       {/* Call to Action */}
       <section className="py-5 position-relative overflow-hidden">
         <div className="position-absolute top-0 start-0 w-100 h-100" style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+          background: 'linear-gradient(135deg, #667eea 0%, #0325e4ff 100%)'
         }}></div>
         
         <div className="container position-relative">
@@ -365,30 +325,23 @@ const Home = () => {
             <div className="col-lg-8">
               <h2 className="display-5 fw-bold mb-4">Ready to Transform Your Business?</h2>
               <p className="lead mb-4">
-                Join over 10,000 businesses already using Skedula to streamline their operations and delight their customers.
+                Join Skedula to streamline the operations and delight our customers.
               </p>
               <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center">
                 <button 
                   className="btn btn-light btn-lg px-5 py-3" 
                   onClick={() => navigate("/signup")}
                 >
-                  <i className="bi bi-rocket me-2"></i>
-                  Start Free Trial
+                  Join Us
                 </button>
                 <button 
                   className="btn btn-outline-light btn-lg px-5 py-3" 
                   onClick={() => navigate("/login")}
                 >
-                  <i className="bi bi-telephone me-2"></i>
-                  Contact Sales
+                  Login
                 </button>
               </div>
-              <p className="mt-4 mb-0 opacity-75">
-                <small>
-                  <i className="bi bi-check-circle me-2"></i>
-                  No credit card required • 30-day free trial • Cancel anytime
-                </small>
-              </p>
+              
             </div>
           </div>
         </div>

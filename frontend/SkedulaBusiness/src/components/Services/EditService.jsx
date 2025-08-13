@@ -1,7 +1,7 @@
 import React from 'react'
 import { Form, useNavigate, useParams } from 'react-router-dom';
 import { useState } from 'react';   
-
+import apiClient from '../Auth/ApiClient';
 
 function EditService() {
 
@@ -28,23 +28,63 @@ function EditService() {
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setSuccess(null);
+
+        // Validate required fields
+        if (!formData.name || !formData.description || !formData.duration || 
+            !formData.price || !formData.totalSlots) {
+            setError('Please fill in all required fields');
+            setLoading(false);
+            return;
+        }
+
         try {
-            const data = new FormData();
-            for (const key in formData) {
-                data.append(key, formData[key]);
-            }
-            const response = await apiClient.put(`/services-offered/update/${serviceId}`, data);
+            // Send as JSON instead of FormData
+            const requestData = {
+                name: formData.name,
+                description: formData.description,
+                duration: parseInt(formData.duration), // Ensure it's a number
+                price: parseFloat(formData.price), // Ensure it's a number
+                totalSlots: parseInt(formData.totalSlots), // Ensure it's a number
+                business: formData.business
+            };
+            
+            console.log('Sending request data:', requestData);
+            
+            const response = await apiClient.put(`/services-offered/update/${serviceId}`, requestData);
             console.log('Service updated:', response.data);
             setSuccess('Service updated successfully!');
+            
+            // Clear localStorage after successful update
+            localStorage.removeItem('serviceData');
+            
+            // Optionally navigate back after a delay
+            setTimeout(() => {
+                navigate(`/businesses`);
+            }, 2000);
+            
         } catch (err) {
             console.error('Error updating service:', err);
-            setError('Failed to update service.');
+            console.error('Error response:', err.response?.data);
+            
+            // Better error handling
+            let errorMessage = 'Failed to update service.';
+            if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            } else if (err.response?.data?.error) {
+                errorMessage = err.response.data.error;
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+            
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
     }
 
     const navigate = useNavigate();
+    
     return (
     <div className="container-fluid py-4">
       <div className="row justify-content-center">
@@ -88,7 +128,7 @@ function EditService() {
                 <div className="alert alert-info" role="alert">
                   <div className="d-flex align-items-center">
                     <div className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
-                    <span>Creating service...</span>
+                    <span>Updating service...</span>
                   </div>
                 </div>
               )}
@@ -109,6 +149,7 @@ function EditService() {
                       onChange={(e) => handleInputChange('name', e.target.value)}
                       placeholder="Enter service name"
                       disabled={loading}
+                      required
                     />
                   </div>
 
@@ -122,6 +163,9 @@ function EditService() {
                       onChange={(e) => handleInputChange('description', e.target.value)}
                       placeholder="Describe your service in detail..."
                       disabled={loading}
+                      required
+                      minLength="50"
+                      maxLength="5000"
                     />
                     <div className="form-text">
                       {formData.description.length}/5000 characters
@@ -145,6 +189,7 @@ function EditService() {
                       placeholder="30"
                       min="5"
                       disabled={loading}
+                      required
                     />
                     <div className="form-text">Minimum 5 minutes</div>
                   </div>
@@ -160,6 +205,7 @@ function EditService() {
                       placeholder="500.00"
                       min="0.01"
                       disabled={loading}
+                      required
                     />
                   </div>
 
@@ -173,6 +219,7 @@ function EditService() {
                       placeholder="10"
                       min="1"
                       disabled={loading}
+                      required
                     />
                     <div className="form-text">Available booking slots</div>
                   </div>
@@ -193,7 +240,7 @@ function EditService() {
                   <button
                     type="submit"
                     className="btn btn-primary"
-                    disabled={loading}
+                    disabled={loading || !formData.name || !formData.description || !formData.duration || !formData.price || !formData.totalSlots}
                   >
                     {loading ? (
                       <>
@@ -202,7 +249,7 @@ function EditService() {
                       </>
                     ) : (
                       <>
-                        <i className="bi bi-plus-circle me-2"></i>
+                        <i className="bi bi-pencil me-2"></i>
                         Update Service
                       </>
                     )}
