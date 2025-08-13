@@ -1,119 +1,283 @@
-import React, { useState, useEffect } from 'react'
-import axios from 'axios'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import apiClient from '../Auth/ApiClient'
 
 function Profile() {
-  const [user, setUser]         = useState(null)
-  const [wallet, setWallet]     = useState(null)
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState(null)
-  const navigate                = useNavigate()
+  const [userData, setUserData] = useState({
+    user: null,
+    customer: null,
+    loading: true,
+    error: null
+  })
+  const [activeTab, setActiveTab] = useState('details')
+  
+  const navigate = useNavigate()
 
-  useEffect(() => {
-    setLoading(true)
-    Promise.all([
-      axios.get('/api/user/me'),
-      axios.get('/api/wallet')
-    ])
-      .then(([userRes, walletRes]) => {
-        setUser(userRes.data)
-        setWallet(walletRes.data)
+  const loadUserProfile = useCallback(async () => {
+    try {
+      setUserData(prev => ({ ...prev, loading: true, error: null }))
+      
+      const [customerResult, userResult] = await Promise.allSettled([
+        apiClient.get('/customer/get/currentCustomer'),
+        apiClient.get('/user/getCurrentUser')
+      ])
+      
+      setUserData({
+        customer: customerResult.status === 'fulfilled' ? customerResult.value.data.data : null,
+        user: userResult.status === 'fulfilled' ? userResult.value.data.data : null,
+        loading: false,
+        error: null
       })
-      .catch(err => {
-        console.error(err)
-        setError('Failed to load profile')
-      })
-      .finally(() => setLoading(false))
+    } catch (error) {
+      setUserData(prev => ({
+        ...prev,
+        loading: false,
+        error: 'Unable to load profile. Please try again.'
+      }))
+    }
   }, [])
 
-  if (loading) return <div>Loading profile…</div>
-  if (error)   return <div style={{ color: 'red' }}>{error}</div>
-  // guard against missing data
-  if (!user || !wallet) return null
+  useEffect(() => {
+    loadUserProfile()
+  }, [loadUserProfile])
+
+  const ProfileField = React.memo(({ icon, label, value, iconColor = 'text-primary' }) => (
+    <div className="col-lg-6 mb-4">
+      <div className="card border-0 shadow-sm h-100">
+        <div className="card-body p-4">
+          <div className="d-flex align-items-center mb-3">
+            <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+                 style={{ width: '50px', height: '50px' }}>
+              <i className={`bi ${icon} ${iconColor} fs-5`}></i>
+            </div>
+            <div className="flex-grow-1">
+              <h6 className="mb-0 text-dark fw-semibold">{label}</h6>
+              <p className="mb-0 text-muted">
+                {value || <em className="text-muted">Not provided</em>}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  ))
+
+  const quickActions = useMemo(() => [
+    {
+      title: 'Book Services',
+      icon: 'bi-plus-circle-fill',
+      className: 'btn-primary',
+      onClick: () => navigate('/services')
+    },
+    {
+      title: 'My Appointments',
+      icon: 'bi-calendar-event-fill',
+      className: 'btn-success',
+      onClick: () => navigate('/appointments')
+    },
+    {
+      title: 'Wallet',
+      icon: 'bi-wallet2',
+      className: 'btn-info',
+      onClick: () => navigate('/wallet')
+    }
+  ], [navigate])
+
+  const profileFields = useMemo(() => {
+    if (!userData.user && !userData.customer) return []
+    
+    return [
+      {
+        icon: 'bi-person',
+        label: 'Full Name',
+        value: userData.user?.name,
+        iconColor: 'text-primary'
+      },
+      {
+        icon: 'bi-envelope',
+        label: 'Email Address',
+        value: userData.user?.email,
+        iconColor: 'text-success'
+      },
+      {
+        icon: 'bi-telephone',
+        label: 'Phone Number',
+        value: userData.user?.phone,
+        iconColor: 'text-info'
+      },
+      {
+        icon: 'bi-hash',
+        label: 'Customer ID',
+        value: userData.customer?.customerId ? `#${userData.customer.customerId}` : 'Not assigned',
+        iconColor: 'text-warning'
+      }
+    ]
+  }, [userData.user, userData.customer])
+
+  const LoadingSpinner = () => (
+    <div className="bg-light min-vh-100">
+      <div className="container py-5">
+        <div className="text-center">
+          <div className="spinner-border text-primary" style={{ width: '3rem', height: '3rem' }}>
+            <span className="visually-hidden">Loading profile...</span>
+          </div>
+          <p className="mt-3 text-muted">Loading your profile...</p>
+        </div>
+      </div>
+    </div>
+  )
+
+  const ErrorDisplay = () => (
+    <div className="bg-light min-vh-100">
+      <div className="container py-5">
+        <div className="alert alert-danger text-center">
+          <i className="bi bi-exclamation-circle fs-1 mb-3"></i>
+          <h5>{userData.error}</h5>
+          <button className="btn btn-primary mt-3" onClick={loadUserProfile}>
+            <i className="bi bi-arrow-clockwise me-2"></i>
+            Try Again
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  if (userData.loading) return <LoadingSpinner />
+  if (userData.error) return <ErrorDisplay />
+
+  const { user, customer } = userData
 
   return (
-    <div style={{
-      maxWidth: '800px',
-      margin: '40px auto',
-      padding: '24px',
-      fontFamily: 'Arial, sans-serif',
-      color: '#333'
-    }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '32px' }}>
-        My Profile
-      </h1>
-
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '24px'
-      }}>
-        {/* User Info */}
-        <div style={{
-          padding: '20px',
-          border: '1px solid #ddd',
-          borderRadius: '8px',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
-        }}>
-          <h2 style={{ marginBottom: '12px' }}>Account Info</h2>
-          <p><strong>Name:</strong> {user.name}</p>
-          <p><strong>Email:</strong> {user.email}</p>
-          <p><strong>Phone:</strong> {user.phone || '—'}</p>
+    <div className="bg-light min-vh-100">
+      <div className="container py-4">
+        
+        {/* Profile Header */}
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="position-relative">
+              <div className="position-absolute w-100 h-100 rounded-4" style={{
+                background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                opacity: 0.1
+              }}></div>
+              
+              <div className="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div className="card-body p-4 p-md-5">
+                  <div className="text-center">
+                    {/* Profile Avatar */}
+                    <div className="position-relative d-inline-block mb-4">
+                      <div className="bg-gradient rounded-circle d-flex align-items-center justify-content-center text-white shadow-lg mx-auto" 
+                           style={{
+                             width: '120px', 
+                             height: '120px', 
+                             fontSize: '3rem',
+                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                           }}>
+                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </div>
+                      <span className="position-absolute bottom-0 end-0 bg-success rounded-circle border border-4 border-white d-flex align-items-center justify-content-center" 
+                            style={{width: '35px', height: '35px'}}>
+                        <i className="bi bi-check-lg text-white"></i>
+                      </span>
+                    </div>
+                    
+                    {/* User Name */}
+                    <h1 className="display-5 fw-bold text-dark mb-3">{user?.name || 'Welcome'}</h1>
+                    
+                    {/* Customer Badge */}
+                    <div className="mb-4">
+                      <span className="badge bg-primary bg-gradient px-4 py-2 fs-6 rounded-pill">
+                        <i className="bi bi-person-badge me-2"></i>
+                        Customer ID: #{customer?.customerId || 'Not assigned'}
+                      </span>
+                    </div>
+                    
+                    
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Wallet */}
-        <div style={{
-          padding: '20px',
-          border: '1px solid #ddd',
-          borderRadius: '8px',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
-        }}>
-          <h2 style={{ marginBottom: '12px' }}>Wallet</h2>
-          <p style={{ fontSize: '1.5rem', margin: '16px 0' }}>
-            ${wallet?.balance != null
-               ? wallet.balance.toFixed(2)
-               : '0.00'}
-          </p>
-
-          <button
-            onClick={() => navigate('/wallet/add')}
-            style={{
-              padding: '10px 16px',
-              backgroundColor: '#1976d2',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Add Money
-          </button>
+        {/* Quick Actions Section */}
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="card border-0 shadow-sm">
+              <div className="card-header bg-transparent border-0 p-4">
+                <h5 className="fw-semibold text-dark mb-0">
+                  <i className="bi bi-lightning-fill text-warning me-2"></i>
+                  Quick Actions
+                </h5>
+              </div>
+              <div className="card-body p-4">
+                <div className="row g-3">
+                  {quickActions.map((action, index) => (
+                    <div key={index} className="col-lg-4 col-md-6">
+                      <button 
+                        className={`btn ${action.className} w-100 py-3`}
+                        onClick={action.onClick}
+                      >
+                        <i className={`${action.icon} fs-4 mb-2 d-block`}></i>
+                        <span className="fw-semibold">{action.title}</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Appointments */}
-        <div style={{
-          gridColumn: '1 / -1',
-          padding: '20px',
-          border: '1px solid #ddd',
-          borderRadius: '8px',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
-        }}>
-          <h2 style={{ marginBottom: '12px' }}>Appointments</h2>
-          <p>You have <strong>{user.appointmentCount}</strong> upcoming appointments.</p>
-          <button
-            onClick={() => navigate('/appointments')}
-            style={{
-              padding: '10px 16px',
-              backgroundColor: '#388e3c',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            View Appointments
-          </button>
+        {/* Navigation Tabs */}
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="card border-0 shadow-sm">
+              <div className="card-body p-0">
+                <nav className="nav nav-pills nav-fill">
+                  <button
+                    className={`nav-link rounded-0 py-3 ${activeTab === 'details' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('details')}
+                  >
+                    <i className="bi-card-text me-2"></i>
+                    Personal Details
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Profile Details */}
+        {activeTab === 'details' && (
+          <div className="row">
+            {/* Personal Information */}
+            <div className="col-lg-12 mb-8">
+              <div className="card border-0 shadow-sm">
+                <div className="card-header bg-transparent border-0 p-4">
+                  <h5 className="fw-semibold text-dark mb-0">
+                    <i className="bi bi-person-lines-fill text-primary me-2"></i>
+                    Personal Information
+                  </h5>
+                </div>
+                <div className="card-body p-4">
+                  <div className="row">
+                    {profileFields.map((field, index) => (
+                      <ProfileField
+                        key={index}
+                        icon={field.icon}
+                        label={field.label}
+                        value={field.value}
+                        iconColor={field.iconColor}
+                      />
+                    ))}
+                    
+                    
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
