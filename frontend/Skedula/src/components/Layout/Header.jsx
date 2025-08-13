@@ -3,7 +3,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../Auth/AuthContext";
 
-const Header = () => {
+function Header({ isLoggedIn, onLogin, onLogout, isDarkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const { user, logout } = useContext(AuthContext);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -87,7 +87,7 @@ const Header = () => {
   };
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <nav className={`navbar navbar-expand-lg ${isDarkMode ? 'navbar-dark bg-dark' : 'navbar-light bg-light'} shadow-sm`}>
       <div className="container">
         {/* Brand Logo */}
         <Link className="navbar-brand fw-bold fs-3" to="/">
