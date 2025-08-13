@@ -21,8 +21,5 @@ public class UserController {
         return ResponseEntity.ok(userService.getCurrentUser());
     }
 
-    @GetMapping("/get/{id}")
-    public ResponseEntity<UserDTO> getUserById(Long id) {
-        return ResponseEntity.ok(userService.getUserById(id));
-    }
+
 }

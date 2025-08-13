@@ -35,7 +35,6 @@ public class BusinessServiceOfferedController {
     }
 
     // Update Details By ID
-    @PreAuthorize("@businessService.isOwnerOfService(#id)")
     @PutMapping("/update/{id}")
     public ResponseEntity<BusinessServiceOfferedDTO> updateService(@PathVariable Long id, @RequestBody OnBoardBusinessServiceOfferedDTO serviceOfferedDTO) {
         return ResponseEntity.ok(businessServiceOfferedService.updateService(id, serviceOfferedDTO));

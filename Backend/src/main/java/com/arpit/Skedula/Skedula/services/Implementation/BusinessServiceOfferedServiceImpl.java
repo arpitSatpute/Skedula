@@ -157,6 +157,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
 
     @Override
     public BusinessServiceOfferedDTO updateService(Long id, OnBoardBusinessServiceOfferedDTO serviceOfferedDTO) {
+        System.out.println(serviceOfferedDTO);
         BusinessServiceOffered existingService = businessServiceOfferedRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
 
@@ -165,7 +166,9 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         existingService.setPrice(serviceOfferedDTO.getPrice());
         existingService.setTotalSlots(serviceOfferedDTO.getTotalSlots());
         existingService.setDuration(serviceOfferedDTO.getDuration());
-
+        Business business = businessRepository.findById(serviceOfferedDTO.getBusiness())
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + serviceOfferedDTO.getBusiness()));
+        existingService.setBusiness(business);
         businessServiceOfferedRepository.save(existingService);
 
         return convertToDTO(existingService);
