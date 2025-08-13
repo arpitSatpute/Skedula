@@ -30,7 +30,7 @@ public class WalletTransaction {
 
     private String transactionId;
 
-    @OneToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Appointment appointment;
 
     @ManyToOne(fetch = FetchType.LAZY)

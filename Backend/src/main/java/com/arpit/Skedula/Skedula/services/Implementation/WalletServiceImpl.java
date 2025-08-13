@@ -80,7 +80,7 @@ public class WalletServiceImpl implements WalletService {
 
         // Can cause difficulty while getting transaction using transaction id
 
-        // walletTransactionService.createNewWalletTransaction(walletTransaction);
+        walletTransactionService.createNewWalletTransaction(walletTransaction);
 
         wallet.getTransactions().add(walletTransaction);
 

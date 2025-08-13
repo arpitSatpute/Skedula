@@ -65,27 +65,29 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional
     public AppointmentDTO approveAppointment(Long id) {
-        AppointmentDTO appointment = getAppointmentById(id);
+        AppointmentDTO appointmentDTO = getAppointmentById(id);
 
-        BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(appointment.getServiceOffered())
-                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + appointment.getServiceOffered()));
-        Customer customer = customerRepository.findById(appointment.getBookedBy()).orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointment.getBookedBy()));
+        BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(appointmentDTO.getServiceOffered())
+                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + appointmentDTO.getServiceOffered()));
+        Customer customer = customerRepository.findById(appointmentDTO.getBookedBy())
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointmentDTO.getBookedBy()));
 
-        appointment.setAppointmentStatus(AppointmentStatus.BOOKED);
-        Appointment result = convertToEntity(appointment, serviceOffered, customer);
+        appointmentDTO.setAppointmentStatus(AppointmentStatus.BOOKED);
+        Appointment result = convertToEntity(appointmentDTO, serviceOffered, customer);
+
+        // Save the appointment first
+        Appointment savedAppointment = appointmentRepository.save(result);
 
         // Wallet Transaction
-        paymentService.createNewPayment(result);
-        paymentService.processPayment(result);
+        paymentService.createNewPayment(savedAppointment);
+        paymentService.processPayment(savedAppointment);
 
-        appointmentRepository.save(result);
-
-        return convertToDTO(result);
-
+        // Return the saved appointment as DTO
+        return convertToDTO(savedAppointment);
     }
 
+
     @Override
-    @Transactional
     public AppointmentDTO rejectAppointment(Long id) {
         AppointmentDTO appointment = getAppointmentById(id);
 
@@ -314,11 +316,13 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private Appointment convertToEntity(AppointmentDTO appointmentDTO, BusinessServiceOffered serviceOffered, Customer customer) {
         Appointment appointment = new Appointment();
+        appointment.setId(appointmentDTO.getId());
         appointment.setAppointmentDate(appointmentDTO.getDate());
         appointment.setNotes(appointmentDTO.getNotes());
         appointment.setAppointmentStatus(appointmentDTO.getAppointmentStatus());
         appointment.setServiceOffered(serviceOffered);
         appointment.setBookedBy(customer);
+        appointment.setBusiness(serviceOffered.getBusiness());
         return appointment;
     }
 }

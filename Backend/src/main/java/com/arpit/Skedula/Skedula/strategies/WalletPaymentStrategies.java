@@ -35,7 +35,7 @@ public class WalletPaymentStrategies {
         Business business = payment.getAppointment().getBusiness();
         Customer customer = payment.getAppointment().getBookedBy();
 
-        Wallet customerWallet = walletRepository.findByUserId(customer.getId())
+        Wallet customerWallet = walletRepository.findByUserId(customer.getUser().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer wallet not found"));
 
 

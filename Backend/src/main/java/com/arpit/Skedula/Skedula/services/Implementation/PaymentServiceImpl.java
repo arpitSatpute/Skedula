@@ -2,6 +2,7 @@ package com.arpit.Skedula.Skedula.services.Implementation;
 
 import com.arpit.Skedula.Skedula.entity.Appointment;
 import com.arpit.Skedula.Skedula.entity.Payment;
+import com.arpit.Skedula.Skedula.entity.enums.PaymentStatus;
 import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.PaymentRepository;
 import com.arpit.Skedula.Skedula.services.PaymentService;
@@ -28,6 +29,7 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = Payment.builder()
                 .appointment(appointment)
                 .amount(appointment.getServiceOffered().getPrice())
+                .paymentStatus(PaymentStatus.PENDING)
                 .build();
         return paymentRepository.save(payment);
     }

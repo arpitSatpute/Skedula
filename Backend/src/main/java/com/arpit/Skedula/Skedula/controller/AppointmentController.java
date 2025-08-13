@@ -29,7 +29,7 @@ public class AppointmentController {
     }
 
     // Get By id
-    @PreAuthorize("@customerService.isOwnerOfAppointment(#id) || @businessService.isOwnerOfAppointment(#id)")
+//    @PreAuthorize("@customerService.isOwnerOfAppointment(#id) || @businessService.isOwnerOfAppointment(#id)")
     @GetMapping("/get/{id}")
     public ResponseEntity<AppointmentDTO> getAppointmentById(@PathVariable Long id) {
         return ResponseEntity.ok(appointmentService.getAppointmentById(id));
@@ -43,7 +43,7 @@ public class AppointmentController {
     }
 
     // Cancel Appointment By Owner
-    @PreAuthorize("@businessService.isOwnerOfAppointment(#id)")
+//    @PreAuthorize("@businessService.isOwnerOfAppointment(#id)")
     @PutMapping("/cancel/business/{id}")
     public ResponseEntity<AppointmentDTO> cancelAppointmentByOwner(@PathVariable Long id) {
         return ResponseEntity.ok(appointmentService.cancelAppointmentByOwner(id));
@@ -79,25 +79,25 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentService.getAllAppointmentByStatusRoleUserIdDate(status, role, userId, date));
     }
 
-    @PreAuthorize("@businessService.isOwnerOfAppointment(#id)")
+//    @PreAuthorize("@businessService.isOwnerOfAppointment(#id)")
     @PatchMapping("/approve/{id}")
     public ResponseEntity<AppointmentDTO> approveAppointment(@PathVariable Long id) {
         return ResponseEntity.ok(appointmentService.approveAppointment(id));
     }
 
-    @PreAuthorize("@businessService.isOwnerOfAppointment(#id)")
+//    @PreAuthorize("@businessService.isOwnerOfAppointment(#id)")
     @PatchMapping("/reject/{id}")
     public ResponseEntity<AppointmentDTO> rejectAppointment(@PathVariable Long id) {
         return ResponseEntity.ok(appointmentService.rejectAppointment(id));
     }
 
-    @PreAuthorize("@businessService.isOwnerOfAppointment(#id)")
+//    @PreAuthorize("@businessService.isOwnerOfAppointment(#id)")
     @PatchMapping("/done/{id}")
     public ResponseEntity<AppointmentDTO> doneAppointment(@PathVariable Long id) {
         return ResponseEntity.ok(appointmentService.doneAppointment(id));
     }
 
-    @PreAuthorize("@businessService.isOwnerOfProfile(#businessId)")
+//    @PreAuthorize("@businessService.isOwnerOfProfile(#businessId)")
     @GetMapping("/request/pending/{businessId}")
     public ResponseEntity<List<AppointmentDTO>> getPendingAppointmentRequest(@PathVariable Long businessId) {
         return ResponseEntity.ok(appointmentService.getPendingAppointmentRequest(businessId));
