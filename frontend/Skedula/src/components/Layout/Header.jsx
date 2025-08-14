@@ -121,9 +121,9 @@ function Header({ isLoggedIn, onLogin, onLogout, isDarkMode, toggleDarkMode }) {
                   </Link>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link fw-semibold" to="/appointments">
+                  <Link className="nav-link fw-semibold" to="/businesses">
                     <i className="bi bi-building me-1"></i>
-                    Appointments
+                    Business
                   </Link>
                 </li>
                 <li className="nav-item">
@@ -162,26 +162,21 @@ function Header({ isLoggedIn, onLogin, onLogout, isDarkMode, toggleDarkMode }) {
                         Profile
                       </Link>
                     </li>
-                    {currentUser?.role === 'OWNER' && (
-                      <li>
-                        <Link className="dropdown-item" to="/businesses">
-                          <i className="bi bi-building me-2 text-warning"></i>
-                          My Businesses
-                        </Link>
-                      </li>
-                    )}
+                    
+                    <li>
+                      <Link className="dropdown-item" to="/appointments">
+                        <i className="bi bi-person me-2 text-primary"></i>
+                        Appointments
+                      </Link>
+                    </li>
+                    
                     <li>
                       <Link className="dropdown-item" to="/wallet">
                         <i className="bi bi-wallet me-2 text-info"></i>
                         Wallet
                       </Link>
                     </li>
-                    <li>
-                      <Link className="dropdown-item" to="/settings">
-                        <i className="bi bi-gear me-2 text-secondary"></i>
-                        Settings
-                      </Link>
-                    </li>
+
                     <li><hr className="dropdown-divider" /></li>
                     <li>
                       <button 
@@ -205,11 +200,18 @@ function Header({ isLoggedIn, onLogin, onLogout, isDarkMode, toggleDarkMode }) {
                   <a className="nav-link fw-semibold" href="#features">Features</a>
                 </li>
                 <li className="nav-item">
-                  <a className="nav-link fw-semibold" href="#about">About</a>
+                  <Link className="nav-link fw-semibold" to="/services">
+                    <i className="bi bi-gear me-1"></i>
+                    Services
+                  </Link>
                 </li>
                 <li className="nav-item">
-                  <a className="nav-link fw-semibold" href="#testimonials">Reviews</a>
+                  <Link className="nav-link fw-semibold" to="/businesses">
+                    <i className="bi bi-building me-1"></i>
+                    Businesses
+                  </Link>
                 </li>
+               
                 <li className="nav-item">
                   <Link className="nav-link fw-semibold" to="/contact">Contact</Link>
                 </li>

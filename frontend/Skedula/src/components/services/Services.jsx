@@ -41,6 +41,10 @@ function Services() {
       navigate(`/appointments/book/${service.id}/${service.business}`);
   }
 
+  const handleViewBusiness = () => {
+      navigate(`/businesses/${service.business}`);
+  }
+
   if (loading) {
     return (
       <div className="container py-5">
@@ -121,26 +125,18 @@ function Services() {
               </div>
 
               {/* Service Stats */}
-              <div className="row mb-4">
-                <div className="col-12">
-                  <div className="bg-primary bg-opacity-10 rounded-3 p-3">
-                    <div className="row text-center">
-                      <div className="col-4">
-                        <div className="text-primary fw-bold">50+</div>
-                        <small className="text-muted">Bookings</small>
-                      </div>
-                      <div className="col-4">
-                        <div className="text-warning fw-bold">4.8 ⭐</div>
-                        <small className="text-muted">Rating</small>
-                      </div>
-                      <div className="col-4">
-                        <div className="text-success fw-bold">95%</div>
-                        <small className="text-muted">Satisfaction</small>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+               
+                <small className="text-muted">
+                  <button
+                    className="btn btn-outline-info btn-lg w-100 rounded-3"
+                    onClick={handleViewBusiness}
+                    disabled={loading}
+                  >
+                    <i className="bi bi-eye me-2"></i>
+                    View Business
+                  </button>
+                </small>
+              
 
               {/* Action Buttons */}
               
@@ -155,7 +151,7 @@ function Services() {
                     onClick={handleBookAppointments}
                     disabled={loading}
                   >
-                    <i className="bi bi-trash me-2"></i>
+                    <i className="bi bi-plus-circle-fill me-2"></i>
                     Book Appointments
                   </button>
                 </small>

@@ -5,7 +5,7 @@ import App from './App.jsx'
 import Layout from './components/Layout/Layout.jsx'
 import Home from './components/Home.jsx'
 import ListBusiness from './components/business/ListBusiness.jsx'
-import BusinessDetails from './components/business/Business.jsx'
+import Business from './components/business/Business.jsx'
 import ListServices from './components/services/ListServices.jsx'
 import Services from './components/services/Services.jsx'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
@@ -46,10 +46,7 @@ const router = createBrowserRouter([
         path: "/businesses",
         element: <ListBusiness />
       },
-      {
-        path: "/businesses/:id",
-        element: <BusinessDetails />
-      },
+      
       {
         path: "/services",
         element: <ListServices />
@@ -60,12 +57,16 @@ const router = createBrowserRouter([
       },
       
       // Protected routes grouped under a single Protected wrapper
-      // {
-      //   element: <Protected authenticated={true} />,
-      //   children: [
+      {
+        element: <Protected authenticated={true} />,
+        children: [
           {
             path: "/wallet",
             element: <Wallet />
+          },
+          {
+            path: "/businesses/:id",
+            element: <Business />
           },
           {
             path: "/services/:id",
@@ -91,8 +92,8 @@ const router = createBrowserRouter([
         ]
       }
       
-  //   ]
-  // }
+    ]
+  }
 ])
 
 
