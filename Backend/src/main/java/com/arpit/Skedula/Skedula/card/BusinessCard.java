@@ -2,6 +2,8 @@ package com.arpit.Skedula.Skedula.card;
 
 import lombok.*;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Date;
 
 @Data
@@ -28,7 +30,7 @@ public class BusinessCard {
     // Share Link of Google Map
     private String mapLink;
 
-    private Date openTime;
-    private Date closeTime;
+    private LocalTime openTime;
+    private LocalTime closeTime;
 
 }

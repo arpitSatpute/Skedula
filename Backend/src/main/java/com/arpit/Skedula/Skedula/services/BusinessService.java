@@ -1,5 +1,6 @@
 package com.arpit.Skedula.Skedula.services;
 
+import com.arpit.Skedula.Skedula.card.BusinessCard;
 import com.arpit.Skedula.Skedula.dto.BusinessDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -9,9 +10,9 @@ import org.springframework.stereotype.Service;
 public interface BusinessService{
 
 
-    Page<BusinessDTO> getAllBusiness(Integer pageOffset, Integer pageSize);
+    Page<BusinessCard> getAllBusiness(Integer pageOffset, Integer pageSize);
 
-    BusinessDTO getBusinessById(Long id);
+    BusinessCard getBusinessById(Long id);
 
     BusinessDTO register(BusinessDTO businessDTO);
 

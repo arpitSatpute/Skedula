@@ -1,5 +1,6 @@
 package com.arpit.Skedula.Skedula.services.Implementation;
 
+import com.arpit.Skedula.Skedula.card.BusinessServiceOfferedCard;
 import com.arpit.Skedula.Skedula.dto.BusinessServiceOfferedDTO;
 import com.arpit.Skedula.Skedula.dto.OnBoardBusinessServiceOfferedDTO;
 import com.arpit.Skedula.Skedula.entity.Business;
@@ -186,6 +187,19 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<BusinessServiceOfferedCard> getServiceByBusinessId(Long businessId) {
+
+        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_Id(businessId);
+        if (services == null || services.isEmpty()) {
+            throw new ResourceNotFoundException("No services found for business with id: " + businessId);
+        }
+        return services.stream()
+                .map(this::convertToCard)
+                .collect(Collectors.toList());
+
+    }
+
     public BusinessServiceOfferedDTO convertToDTO(BusinessServiceOffered services) {
         BusinessServiceOfferedDTO dto = new BusinessServiceOfferedDTO();
         dto.setId(services.getId());
@@ -198,6 +212,19 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         dto.setBusiness(services.getBusiness().getId());
 
         return dto;
+    }
+
+    private BusinessServiceOfferedCard convertToCard(BusinessServiceOffered services) {
+        BusinessServiceOfferedCard card = new BusinessServiceOfferedCard();
+        card.setId(services.getId());
+        card.setName(services.getName());
+        card.setDescription(services.getDescription());
+        card.setPrice(services.getPrice());
+        card.setTotalSlots(services.getTotalSlots());
+        card.setDuration(services.getDuration());
+        card.setImageUrl(services.getImageUrl());
+
+        return card;
     }
 
     private BusinessServiceOffered convertToEntity(BusinessServiceOfferedDTO dto) {

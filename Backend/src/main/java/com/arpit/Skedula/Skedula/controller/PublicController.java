@@ -1,5 +1,7 @@
 package com.arpit.Skedula.Skedula.controller;
 
+import com.arpit.Skedula.Skedula.card.BusinessCard;
+import com.arpit.Skedula.Skedula.card.BusinessServiceOfferedCard;
 import com.arpit.Skedula.Skedula.dto.BusinessDTO;
 import com.arpit.Skedula.Skedula.dto.BusinessServiceOfferedDTO;
 import com.arpit.Skedula.Skedula.services.BusinessService;
@@ -22,13 +24,13 @@ public class PublicController {
 
     // Get All Businesses
     @GetMapping("/getAllBusiness")
-    public ResponseEntity<Page<BusinessDTO>> getAllBusiness(@RequestParam(defaultValue = "0") Integer pageOffset,
-                                                            @RequestParam(defaultValue = "10", required = false) Integer pageSize) {
+    public ResponseEntity<Page<BusinessCard>> getAllBusiness(@RequestParam(defaultValue = "0") Integer pageOffset,
+                                                             @RequestParam(defaultValue = "10", required = false) Integer pageSize) {
         return ResponseEntity.ok(businessService.getAllBusiness(pageOffset, pageSize));
     }
 
     @GetMapping("/getBusiness/{id}")
-    public ResponseEntity<BusinessDTO> getBusiness(@PathVariable Long id) {
+    public ResponseEntity<BusinessCard> getBusiness(@PathVariable Long id) {
         return ResponseEntity.ok(businessService.getBusinessById(id));
     }
 
@@ -57,6 +59,11 @@ public class PublicController {
                                                                                @RequestParam(defaultValue = "0") Integer pageOffset,
                                                                                @RequestParam(defaultValue = "10", required = false) Integer pageSize) {
         return ResponseEntity.ok(businessServiceOfferedService.getServiceByKeyword(pageOffset, pageSize, Keyword));
+    }
+
+    @GetMapping("/getServiceByBusinessId/{id}")
+    public ResponseEntity<List<BusinessServiceOfferedCard>> getServiceByBusinessId(@PathVariable Long id) {
+        return ResponseEntity.ok(businessServiceOfferedService.getServiceByBusinessId(id));
     }
 
 }

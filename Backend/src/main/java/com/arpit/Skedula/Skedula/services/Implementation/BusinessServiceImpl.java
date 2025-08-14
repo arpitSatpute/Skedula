@@ -1,5 +1,6 @@
 package com.arpit.Skedula.Skedula.services.Implementation;
 
+import com.arpit.Skedula.Skedula.card.BusinessCard;
 import com.arpit.Skedula.Skedula.dto.AppointmentDTO;
 import com.arpit.Skedula.Skedula.dto.BusinessDTO;
 import com.arpit.Skedula.Skedula.dto.BusinessServiceOfferedDTO;
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -46,17 +48,19 @@ public class BusinessServiceImpl implements BusinessService {
 
 
     @Override
-    public Page<BusinessDTO> getAllBusiness(Integer pageOffset, Integer pageSize){
-
-        return businessRepository.findAll(PageRequest.of(pageOffset, pageSize)).map(business -> modelMapper.map(business, BusinessDTO.class));
-
+    public Page<BusinessCard> getAllBusiness(Integer pageOffset, Integer pageSize) {
+        Page<Business> businessPage = businessRepository.findAll(PageRequest.of(pageOffset, pageSize));
+        List<BusinessCard> card = businessPage.stream()
+                .map(this::convertToCard)
+                .collect(Collectors.toList());
+        return new PageImpl<>(card, businessPage.getPageable(), businessPage.getTotalElements());
     }
 
     @Override
-    public BusinessDTO getBusinessById(Long id) {
+    public BusinessCard getBusinessById(Long id) {
         Business business = businessRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Business not found with id: " + id));
-        return convertToDTO(business);
+        return convertToCard(business);
     }
 
 
@@ -255,6 +259,26 @@ public class BusinessServiceImpl implements BusinessService {
         return businessDTO;
 
     }
+
+    private BusinessCard convertToCard(Business business) {
+        BusinessCard businessCard = new BusinessCard();
+        businessCard.setId(business.getId());
+        businessCard.setName(business.getName());
+        businessCard.setDescription(business.getDescription());
+        businessCard.setAddress(business.getAddress());
+        businessCard.setCity(business.getCity());
+        businessCard.setState(business.getState());
+        businessCard.setCountry(business.getCountry());
+        businessCard.setPhone(business.getPhone());
+        businessCard.setEmail(business.getEmail());
+        businessCard.setZipCode(business.getZipCode());
+        businessCard.setMapLink(business.getMapLink());
+        businessCard.setOpenTime(business.getOpenTime());
+        businessCard.setCloseTime(business.getCloseTime());
+
+        return businessCard;
+    }
+
 
 
 

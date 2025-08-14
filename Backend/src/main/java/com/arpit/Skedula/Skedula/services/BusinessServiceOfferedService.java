@@ -1,5 +1,6 @@
 package com.arpit.Skedula.Skedula.services;
 
+import com.arpit.Skedula.Skedula.card.BusinessServiceOfferedCard;
 import com.arpit.Skedula.Skedula.dto.BusinessServiceOfferedDTO;
 import com.arpit.Skedula.Skedula.dto.OnBoardBusinessServiceOfferedDTO;
 import com.arpit.Skedula.Skedula.entity.BusinessServiceOffered;
@@ -31,4 +32,6 @@ public interface BusinessServiceOfferedService {
     List<BusinessServiceOfferedDTO> getServiceByUser();
 
     BusinessServiceOfferedDTO convertToDTO(BusinessServiceOffered services);
+
+    List<BusinessServiceOfferedCard> getServiceByBusinessId(Long id);
 }

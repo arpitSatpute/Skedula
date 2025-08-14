@@ -32,11 +32,11 @@ public class BusinessController {
     }
 
     // Get Business by ID
-    @PreAuthorize("@businessService.isOwnerOfProfile(#id)")
-    @GetMapping("/get/{id}")
-    public ResponseEntity<BusinessDTO> getBusinessById(@PathVariable Long id) {
-        return ResponseEntity.ok(businessService.getBusinessById(id));
-    }
+//    @PreAuthorize("@businessService.isOwnerOfProfile(#id)")
+//    @GetMapping("/get/{id}")
+//    public ResponseEntity<BusinessDTO> getBusinessById(@PathVariable Long id) {
+//        return ResponseEntity.ok(businessService.getBusinessById(id));
+//    }
 
     @PreAuthorize("@businessService.isOwnerOfProfile(#id)")
     @DeleteMapping("/remove/{id}")
