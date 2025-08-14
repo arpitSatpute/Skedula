@@ -65,9 +65,9 @@ const router = createBrowserRouter([
       //   ]
       // },
       // Protected routes that require authentication
-      // {
-      //   element: <Protected />,
-      //   children: [
+      {
+        element: <Protected />,
+        children: [
           {
             path: "/profile",
             element: <UserProfile />
@@ -119,8 +119,8 @@ const router = createBrowserRouter([
         ]
       }
     ]
-//   }
-// ]
+  }
+]
 )
 
 createRoot(document.getElementById('root')).render(

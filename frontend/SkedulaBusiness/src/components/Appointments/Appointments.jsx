@@ -4,13 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import apiClient from '../Auth/ApiClient'
 import ConfirmationModal from '../ConfirmationModel/ConfirmationModel.jsx'
 
-const dummyAppointments = [
-  { id: 1, date: '2025-07-25T10:00:00Z', service: 'Haircut',      status: 'BOOKED', notes: 'Customer prefers a trim.' },
-  { id: 2, date: '2025-07-30T14:30:00Z', service: 'Massage',      status: 'PENDING',   notes: 'First-time customer.' },
-  { id: 3, date: '2025-07-03T09:15:00Z', service: 'Consultation', status: 'Cancelled', notes: 'Rescheduled by user.' },
-  { id: 4, date: '2025-07-04T11:00:00Z', service: 'Manicure',     status: 'Done',      notes: 'Follow-up in two weeks.' },
-  { id: 5, date: '2025-07-28T15:45:00Z', service: 'Facial',       status: 'Rejected',  notes: 'Overbooking issue.' }
-]
+
 
 function getStatusDetails(status) {
   switch (status) {
@@ -146,6 +140,7 @@ function Appointments() {
           app.id === appointmentId ? { ...app, status: 'Cancelled' } : app
         )
       )
+      window.location.reload();
     } catch (err) {
       console.error('Cancel failed', err)
       setError('Failed to cancel appointment')
@@ -160,6 +155,7 @@ function Appointments() {
           app.id === appointmentId ? { ...app, status: 'REJECTED' } : app
         )
       )
+      window.location.reload();
     } catch (err) {
       console.error('Cancel failed', err)
       setError('Failed to cancel appointment')
@@ -175,6 +171,8 @@ function Appointments() {
           app.id === appointmentId ? { ...app, status: 'BOOKED' } : app
         )
       )
+      console.log('Appointment approved successfully')
+      window.location.reload(); // Reload to reflect changes
     } catch (err) {
       console.error('Approve failed', err)
       setError('Failed to approve appointment')
@@ -190,6 +188,8 @@ function Appointments() {
           app.id === appointmentId ? { ...app, status: 'Done' } : app
         )
       )
+      window.location.reload(); // Reload to reflect changes
+
     } catch (err) {
       console.error('Mark done failed', err)
       setError('Failed to mark appointment as done')
