@@ -48,18 +48,18 @@ public class AppointmentServiceImpl implements AppointmentService {
         Long total = serviceOffered.getTotalSlots();
 
         // Getting count of already available services, date and status
-        Long booked = appointmentRepository.countByServiceOffered_IdAndAppointmentDateAndAppointmentStatus(appointmentDTO.getServiceOffered(), appointmentDTO.getDate(), appointmentDTO.getAppointmentStatus());
+        Long booked = appointmentRepository.countByServiceOffered_IdAndAppointmentDateAndAppointmentStatus(appointmentDTO.getServiceOffered(), appointmentDTO.getDate(), AppointmentStatus.BOOKED);
         Customer customer = customerRepository.findById(appointmentDTO.getBookedBy())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointmentDTO.getBookedBy()));
-        if(booked < total) {
-            Appointment newAppointment = convertToEntity(appointmentDTO, serviceOffered, customer);
-            newAppointment.setAppointmentStatus(AppointmentStatus.PENDING);
-
-            appointmentRepository.save(newAppointment);
-            AppointmentDTO result = convertToDTO(newAppointment);
-            return result;
+        if(booked >= total) {
+            throw new RuntimeException("No slots available for the selected service on the given date.");
         }
-        return null;
+        Appointment newAppointment = convertToEntity(appointmentDTO, serviceOffered, customer);
+        newAppointment.setAppointmentStatus(AppointmentStatus.PENDING);
+
+        appointmentRepository.save(newAppointment);
+        AppointmentDTO result = convertToDTO(newAppointment);
+        return result;
     }
 
     @Override
@@ -71,6 +71,12 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + appointmentDTO.getServiceOffered()));
         Customer customer = customerRepository.findById(appointmentDTO.getBookedBy())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointmentDTO.getBookedBy()));
+        Long booked = appointmentRepository.countByServiceOffered_IdAndAppointmentDateAndAppointmentStatus(appointmentDTO.getServiceOffered(), appointmentDTO.getDate(), AppointmentStatus.BOOKED);
+        Long total = serviceOffered.getTotalSlots();
+
+        if(booked >= total) {
+            throw new RuntimeException("No slots available for the selected service on the given date.");
+        }
 
         appointmentDTO.setAppointmentStatus(AppointmentStatus.BOOKED);
         Appointment result = convertToEntity(appointmentDTO, serviceOffered, customer);
@@ -297,6 +303,16 @@ public class AppointmentServiceImpl implements AppointmentService {
         Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
         List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateBefore(businessId, date);
+        return appointments.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AppointmentDTO> getAppointmentBydate(LocalDate date, Long businessId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
+        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDate(businessId, date);
         return appointments.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());

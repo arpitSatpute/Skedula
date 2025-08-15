@@ -96,7 +96,7 @@ public class AuthServiceImpl implements AuthService {
     public String refreshToken(String refreshToken) {
         Long userId = jwtService.getUserIdFromToken(refreshToken);
         User user = userService.getUserById(userId);
-        return jwtService.generateAccessToken(user);
+        return jwtService.generateRefreshToken(user);
     }
 
     @Override

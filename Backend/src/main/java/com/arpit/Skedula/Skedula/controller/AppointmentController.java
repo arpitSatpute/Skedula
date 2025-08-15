@@ -141,7 +141,15 @@ public class AppointmentController {
         }
         return ResponseEntity.ok(appointmentService.getAppointmentsBeforeDate(date, businessId));
     }
-//
+
+    @GetMapping("/get/date/{date}/{businessId}")
+    public ResponseEntity<List<AppointmentDTO>> getAppointmentsByDate(@PathVariable LocalDate date, @PathVariable Long businessId) {
+        if (date == null || businessId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(appointmentService.getAppointmentBydate(date, businessId));
+    }
+
 //    @GetMapping("/get/customer/{customerId")
 //    public ResponseEntity<List<AppointmentDTO>> getAppointmentByCustomerId(@PathVariable Long customerId) {
 //        return ResponseEntity.ok(appointmentService.getAppointmentByCustomerId(customerId));

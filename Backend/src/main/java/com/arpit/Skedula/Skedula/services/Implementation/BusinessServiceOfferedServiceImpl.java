@@ -192,7 +192,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
 
         List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_Id(businessId);
         if (services == null || services.isEmpty()) {
-            throw new ResourceNotFoundException("No services found for business with id: " + businessId);
+            return null;
         }
         return services.stream()
                 .map(this::convertToCard)

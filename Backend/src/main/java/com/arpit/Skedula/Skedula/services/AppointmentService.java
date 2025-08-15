@@ -46,4 +46,6 @@ public interface AppointmentService {
     List<AppointmentDTO> getAppointmentsOnAndAfterDate(LocalDate date, Long businessId);
 
     List<AppointmentDTO> getAppointmentsBeforeDate(LocalDate date, Long businessId);
+
+    List<AppointmentDTO> getAppointmentBydate(LocalDate date, Long businessId);
 }
