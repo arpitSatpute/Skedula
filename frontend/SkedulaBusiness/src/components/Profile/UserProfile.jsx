@@ -46,6 +46,20 @@ const UserProfile = () => {
     return `badge ${badges[status] || 'bg-secondary'}`;
   };
 
+  const totalAppointments = business?.appointments?.length || 0;
+  const totalServices = business?.serviceOffered?.length || 0;
+  const totalAppointmentsCompleted = business?.appointments?.filter(a => a.appointmentStatus === 'DONE').length || 0;
+  const totalAppointmentsCancelled = business?.appointments?.filter(a => a.appointmentStatus === 'CANCELLED').length || 0;
+  const totalCustomerServed = business?.appointments ?
+    [...new Set(
+    business.appointments
+      .map(appointment => appointment.bookedBy)
+      .filter(Boolean)
+  )].length 
+  : 0;
+
+  const completionRate = (totalAppointmentsCompleted/(totalAppointments - totalAppointmentsCancelled) * 100).toFixed(2) || 0;
+
   if (loading) {
     return (
       <div className="container py-5">
@@ -161,8 +175,7 @@ const UserProfile = () => {
                 <nav className="nav nav-pills nav-fill">
                   {[
                     { id: 'overview', label: 'Overview', icon: 'bi-grid' },
-                    { id: 'business', label: 'Business Details', icon: 'bi-building' },
-                    // { id: 'services', label: 'Services', icon: 'bi-list-check' },
+                    
                     { id: 'statistics', label: 'Statistics', icon: 'bi-graph-up' }
                   ].map(tab => (
                     <button
@@ -228,7 +241,10 @@ const UserProfile = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {business.appointments.map(appointment => (
+                        {business.appointments
+                        .sort((a, b) => b.id - a.id) // Sort by date (newest first)
+                        .slice(0, 5)
+                        .map(appointment => (
                           <tr key={appointment.id}>
                             <td className="px-4 py-3">
                               <div className="fw-semibold">{appointment.service}</div>
@@ -291,311 +307,9 @@ const UserProfile = () => {
             </div>
           </div>
         )}
-{activeTab === 'business' && (
-  <div className="row">
-    {/* Business Hero Section */}
-    <div className="col-12 mb-4">
-      <div className="card border-0 shadow-lg overflow-hidden">
-        {/* Gradient Header */}
-        <div className="bg-gradient position-relative" style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          height: '150px'
-        }}>
-          <div className="position-absolute bottom-0 start-0 w-100 p-4">
-            <div className="row align-items-end">
-              <div className="col-auto">
-                <div className="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-lg" 
-                     style={{width: '80px', height: '80px'}}>
-                  <i className="bi bi-building text-primary fs-1"></i>
-                </div>
-              </div>
-              <div className="col">
-                <h2 className="text-black fw-bold mb-1">{business.name}</h2>
-                <p className="text-dark mb-0">{business.description}</p>
-              </div>
-              <div className="col-auto">
-                <div className="d-flex gap-2">
-                  <span className="badge bg-success bg-opacity-90 px-3 py-2">
-                    <i className="bi bi-check-circle me-1"></i>
-                    Verified Business
-                  </span>
-                  {business.rating && (
-                    <span className="badge bg-warning bg-opacity-90 px-3 py-2">
-                      <i className="bi bi-star-fill me-1"></i>
-                      {business.rating} Rating
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    {/* Business Details Cards */}
-    <div className="col-lg-8 mb-4">
-      <div className="row g-4">
-        {/* Contact Information */}
-        <div className="col-12">
-          <div className="card border-0 shadow-sm h-100">
-            <div className="card-header bg-primary text-white border-0">
-              <h5 className="mb-0">
-                <i className="bi bi-telephone me-2"></i>
-                Contact Information
-              </h5>
-            </div>
-            <div className="card-body p-4">
-              <div className="row g-4">
-                <div className="col-md-6">
-                  <div className="d-flex align-items-center p-3 bg-light rounded-3">
-                    <div className="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
-                      <i className="bi bi-envelope text-primary fs-5"></i>
-                    </div>
-                    <div>
-                      <small className="text-muted d-block mb-1">Business Email</small>
-                      <span className="fw-semibold">{business.email}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="col-md-6">
-                  <div className="d-flex align-items-center p-3 bg-light rounded-3">
-                    <div className="bg-success bg-opacity-10 rounded-circle p-3 me-3">
-                      <i className="bi bi-telephone text-success fs-5"></i>
-                    </div>
-                    <div>
-                      <small className="text-muted d-block mb-1">Business Phone</small>
-                      <span className="fw-semibold">{business.phone}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Location Information */}
-        <div className="col-12">
-          <div className="card border-0 shadow-sm h-100">
-            <div className="card-header bg-info text-white border-0">
-              <h5 className="mb-0">
-                <i className="bi bi-geo-alt me-2"></i>
-                Location & Address
-              </h5>
-            </div>
-            <div className="card-body p-4">
-              <div className="row align-items-center">
-                <div className="col-md-8">
-                  <div className="d-flex align-items-start">
-                    <div className="bg-info bg-opacity-10 rounded-circle p-3 me-3 mt-1">
-                      <i className="bi bi-map text-info fs-5"></i>
-                    </div>
-                    <div>
-                      <h6 className="fw-semibold mb-2">Business Address</h6>
-                      <p className="mb-1">{business.address}</p>
-                      <p className="mb-1">{business.city}, {business.state} {business.zipCode}</p>
-                      <p className="mb-0 text-muted">{business.country}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="col-md-4 text-end">
-                  {business.mapLink && (
-                    <a 
-                      href={business.mapLink} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="btn btn-outline-info btn-lg"
-                    >
-                      <i className="bi bi-map me-2"></i>View on Map
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Business Hours */}
-        <div className="col-12">
-          <div className="card border-0 shadow-sm h-100">
-            <div className="card-header bg-warning text-dark border-0">
-              <h5 className="mb-0">
-                <i className="bi bi-clock me-2"></i>
-                Business Hours
-              </h5>
-            </div>
-            <div className="card-body p-4">
-              <div className="row align-items-center">
-                <div className="col-auto">
-                  <div className="bg-warning bg-opacity-10 rounded-circle p-3">
-                    <i className="bi bi-clock-history text-warning fs-4"></i>
-                  </div>
-                </div>
-                <div className="col">
-                  <div className="d-flex align-items-center justify-content-between">
-                    <div>
-                      <h6 className="fw-semibold mb-1">Operating Hours</h6>
-                      <p className="text-muted mb-0">Monday - Sunday</p>
-                    </div>
-                    <div className="text-end">
-                      <h5 className="fw-bold text-warning mb-0">
-                        {business.openTime} - {business.closeTime}
-                      </h5>
-                      <small className="text-muted">Open Today</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    {/* Legal & Compliance Information */}
-    <div className="col-lg-4 mb-4">
-      <div className="card border-0 shadow-sm h-100">
-        <div className="card-header bg-dark text-white border-0">
-          <h5 className="mb-0">
-            <i className="bi bi-shield-check me-2"></i>
-            Legal & Compliance
-          </h5>
-        </div>
-        <div className="card-body p-4">
-          {/* Legal Information Items */}
-          <div className="space-y-4">
-            {/* Owner Identity */}
-            <div className="mb-4">
-              <div className="d-flex align-items-center mb-3">
-                <div className="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
-                  <i className="bi bi-person-badge text-primary"></i>
-                </div>
-                <div>
-                  <small className="text-muted d-block">Owner Identity</small>
-                  <span className="fw-bold font-monospace">{business.identity}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* CRN Number */}
-            <div className="mb-4">
-              <div className="d-flex align-items-center mb-3">
-                <div className="bg-success bg-opacity-10 rounded-circle p-2 me-3">
-                  <i className="bi bi-file-earmark-text text-success"></i>
-                </div>
-                <div>
-                  <small className="text-muted d-block">CRN Number</small>
-                  <span className="fw-bold font-monospace">{business.crnnumber}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* GST Number */}
-            <div className="mb-4">
-              <div className="d-flex align-items-center mb-3">
-                <div className="bg-warning bg-opacity-10 rounded-circle p-2 me-3">
-                  <i className="bi bi-receipt text-warning"></i>
-                </div>
-                <div>
-                  <small className="text-muted d-block">GST Number</small>
-                  <span className="fw-bold font-monospace">{business.gstnumber}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Verification Status */}
-          <div className="mt-4 pt-3 border-top">
-            <div className="d-flex align-items-center justify-content-center">
-              <div className="text-center">
-                <div className="bg-success bg-opacity-10 rounded-circle p-3 d-inline-flex mb-2">
-                  <i className="bi bi-patch-check-fill text-success fs-4"></i>
-                </div>
-                <h6 className="fw-semibold text-success mb-1">Verified Business</h6>
-                <small className="text-muted">All documents verified</small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    {/* Quick Actions */}
-    <div className="col-12">
-      <div className="card border-0 shadow-sm">
-        <div className="card-body p-4">
-          <div className="row align-items-center">
-            <div className="col">
-              <h6 className="mb-1">Manage Your Business</h6>
-              <p className="text-muted mb-0">Update business information, manage services, and view analytics</p>
-            </div>
-            <div className="col-auto">
-              <div className="d-flex gap-2">
-                <button className="btn btn-outline-primary">
-                  <i className="bi bi-pencil me-2"></i>
-                  Edit Business
-                </button>
-                <button className="btn btn-outline-success">
-                  <i className="bi bi-plus-circle me-2"></i>
-                  Add Service
-                </button>
-                <button className="btn btn-primary">
-                  <i className="bi bi-graph-up me-2"></i>
-                  View Analytics
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-
-        {/* {activeTab === 'services' && (
-          <div className="row">
-            <div className="col-12">
-              <div className="card border-0 shadow-sm">
-                <div className="card-header bg-success text-white">
-                  <h5 className="mb-0">
-                    <i className="bi bi-scissors me-2"></i>
-                    Services Offered
-                  </h5>
-                </div>
-                <div className="card-body">
-                  <div className="row g-4">
-                    {business.serviceOffered.map((service) => (
-                      <div key={service.id} className="col-lg-4 col-md-6">
-                        <div className="card border-0 shadow-sm h-100">
-                          <div className="card-body p-4">
-                            <div className="d-flex justify-content-between align-items-start mb-3">
-                              <h5 className="card-title">{service.name}</h5>
-                              {service.popular && (
-                                <span className="badge bg-danger">Popular</span>
-                              )}
-                            </div>
-                            <div className="d-flex justify-content-between align-items-center">
-                              <div>
-                                <div className="h4 text-success mb-1">₹{service.price}</div>
-                                <small className="text-muted">
-                                  <i className="bi bi-clock me-1"></i>
-                                  {service.duration}
-                                </small>
-                              </div>
-                              <button className="btn btn-outline-primary btn-sm">
-                                <i className="bi bi-calendar-plus"></i>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )} */}
 
         {activeTab === 'statistics' && (
           <div className="row">
@@ -616,7 +330,7 @@ const UserProfile = () => {
                              style={{ width: '60px', height: '60px' }}>
                           <i className="bi bi-calendar-check text-primary fs-4"></i>
                         </div>
-                        <h3 className="text-primary">{business.appointments.length}</h3>
+                        <h3 className="text-primary">{totalAppointments}</h3>
                         <p className="text-muted mb-0">Total Appointments</p>
                       </div>
                     </div>
@@ -626,7 +340,7 @@ const UserProfile = () => {
                              style={{ width: '60px', height: '60px' }}>
                           <i className="bi bi-check-circle text-success fs-4"></i>
                         </div>
-                        <h3 className="text-success">{business.appointments.length}</h3>
+                        <h3 className="text-success">{totalAppointmentsCompleted}</h3>
                         <p className="text-muted mb-0">Completed</p>
                       </div>
                     </div>
@@ -636,7 +350,7 @@ const UserProfile = () => {
                              style={{ width: '60px', height: '60px' }}>
                           <i className="bi bi-people text-warning fs-4"></i>
                         </div>
-                        <h3 className="text-warning">{business.appointments.length}</h3>
+                        <h3 className="text-warning">{totalCustomerServed}</h3>
                         <p className="text-muted mb-0">Customers Served</p>
                       </div>
                     </div>
@@ -646,8 +360,8 @@ const UserProfile = () => {
                              style={{ width: '60px', height: '60px' }}>
                           <i className="bi bi-star text-info fs-4"></i>
                         </div>
-                        <h3 className="text-info">{business.appointments.length}</h3>
-                        <p className="text-muted mb-0">Average Rating</p>
+                        <h3 className="text-info">{totalServices}</h3>
+                        <p className="text-muted mb-0">Services</p>
                       </div>
                     </div>
                   </div>
@@ -660,11 +374,11 @@ const UserProfile = () => {
                       <div className="progress mb-3" style={{ height: '10px' }}>
                         <div 
                           className="progress-bar bg-success" 
-                          style={{ width: `${90}` }}
+                          style={{ width: `${completionRate}%` }}
                         ></div>
                       </div>
                       <small className="text-muted">
-                        {95}% completion rate
+                        {completionRate}% completion rate
                       </small>
                     </div>
                     <div className="col-md-6">

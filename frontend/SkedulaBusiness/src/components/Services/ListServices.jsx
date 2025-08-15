@@ -163,18 +163,7 @@ const ListServices = () => {
             </div>
 
             {/* Card Footer */}
-            <div className="card-footer bg-transparent border-0 px-4 pb-4 pt-0">
-              <div className="d-flex align-items-center justify-content-between text-muted small">
-                <span>
-                  <i className="bi bi-people me-1"></i>
-                  50+ bookings
-                </span>
-                <span>
-                  <i className="bi bi-star-fill text-warning me-1"></i>
-                  4.8 rating
-                </span>
-              </div>
-            </div>
+            
           </div>
         </div>
       ))}

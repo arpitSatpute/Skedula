@@ -77,40 +77,82 @@ function AddBusiness() {
     
     return 'An unexpected error occurred';
   };
-
+  
   useEffect(() => {
+    console.log('AddBusiness useEffect triggered', { isEdit, id });
+    
     if (!isEdit || !id) return;
 
-    try {
-      const storedBusiness = sessionStorage.getItem('editBusiness');
-      if (storedBusiness) {
-        const businessData = JSON.parse(storedBusiness);
-        console.log('Loading business data for edit:', businessData);
+    const loadBusinessData = async () => {
+      setIsLoadingBusiness(true);
+      
+      try {
+        // Check sessionStorage first
+        const storedBusiness = sessionStorage.getItem('editBusiness');
+        console.log('Stored business data:', storedBusiness);
         
-        setFormData({
-          name: businessData.name || '',
-          description: businessData.description || '',
-          email: businessData.email || '',
-          phone: businessData.phone || '',
-          address: businessData.address || '',
-          city: businessData.city || '',
-          state: businessData.state || '',
-          country: businessData.country || '',
-          zipCode: businessData.zipCode || '',
-          mapLink: businessData.mapLink || '',
-          identity: businessData.identity || '',
-          crnnumber: businessData.crnnumber || '',
-          gstnumber: businessData.gstnumber || '',
-          openTime: businessData.openTime || '',
-          closeTime: businessData.closeTime || ''
-        });
-        
-        sessionStorage.removeItem('editBusiness');
+        if (storedBusiness && storedBusiness !== 'null') {
+          const businessData = JSON.parse(storedBusiness);
+          console.log('Loading business data for edit:', businessData);
+          
+          setFormData({
+            name: businessData.name || '',
+            description: businessData.description || '',
+            email: businessData.email || '',
+            phone: businessData.phone || '',
+            address: businessData.address || '',
+            city: businessData.city || '',
+            state: businessData.state || '',
+            country: businessData.country || '',
+            zipCode: businessData.zipCode || '',
+            mapLink: businessData.mapLink || '',
+            identity: businessData.identity || '',
+            crnnumber: businessData.crnnumber || '',
+            gstnumber: businessData.gstnumber || '',
+            openTime: businessData.openTime || '',
+            closeTime: businessData.closeTime || ''
+          });
+          
+          // Clear sessionStorage after successful load
+          sessionStorage.removeItem('editBusiness');
+        } else {
+          // Fallback: Fetch from API if no sessionStorage data
+          console.log('No data in sessionStorage, fetching from API...');
+          const response = await apiClient.get(`/business/get/${id}`);
+          const businessData = response.data.data;
+          
+          console.log('Fetched business data from API:', businessData);
+          
+          setFormData({
+            name: businessData.name || '',
+            description: businessData.description || '',
+            email: businessData.email || '',
+            phone: businessData.phone || '',
+            address: businessData.address || '',
+            city: businessData.city || '',
+            state: businessData.state || '',
+            country: businessData.country || '',
+            zipCode: businessData.zipCode || '',
+            mapLink: businessData.mapLink || '',
+            identity: businessData.identity || '',
+            crnnumber: businessData.crnnumber || '',
+            gstnumber: businessData.gstnumber || '',
+            openTime: businessData.openTime || '',
+            closeTime: businessData.closeTime || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error loading business data:', error);
+        setCustomError('Error loading business data. Please try again.');
+      } finally {
+        setIsLoadingBusiness(false);
       }
-    } catch (error) {
-      console.error('Error loading business data:', error);
-      setCustomError('Error loading business data');
-    }
+    };
+
+    // Add a small delay to ensure sessionStorage is set
+    const timeoutId = setTimeout(loadBusinessData, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, [id, isEdit])
 
   const handleInputChange = (field, value) => {

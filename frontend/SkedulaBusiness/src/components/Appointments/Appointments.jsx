@@ -4,8 +4,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 import apiClient from '../Auth/ApiClient'
 import ConfirmationModal from '../ConfirmationModel/ConfirmationModel.jsx'
 
-
-
 function getStatusDetails(status) {
   switch (status) {
     case 'PENDING':    
@@ -58,9 +56,10 @@ function Appointments() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filterStatus, setFilterStatus] = useState('All')
-  const [activeTab, setActiveTab] = useState('upcoming') // 'upcoming' or 'previous'
+  const [activeTab, setActiveTab] = useState('upcoming')
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]) // Default to today
   const navigate = useNavigate()
-  const { id, serviceId } = useParams() 
+  const { id, serviceId } = useParams()
 
   const statusOptions = [
     { value: 'All', label: 'All Appointments', icon: 'bi-list' },
@@ -71,19 +70,20 @@ function Appointments() {
     { value: 'REJECTED', label: 'Rejected', icon: 'bi-x-circle-fill' }
   ]
 
-  // Function to fetch appointments based on tab and service
-  const fetchAppointments = async (tabType = activeTab, date) => {
-
-
+  // Function to fetch appointments based on tab, date and service
+  const fetchAppointments = async (tabType = activeTab, date = selectedDate) => {
     setLoading(true)
     setError(null)
     
     try {
-      console.log(date);
+      console.log('Fetching appointments for date:', date);
       let apiUrl = ''
       
       // Determine API endpoint based on tab type and service
-      if (!serviceId) {
+      if (tabType === null) {
+        apiUrl = `/appointments/get/date/${date}/${id}`
+      }
+      else if (!serviceId) {
         if (tabType === 'upcoming') {
           apiUrl = `/appointments/get/upcoming/${date}/${id}`
           console.log(apiUrl);
@@ -91,10 +91,7 @@ function Appointments() {
           apiUrl = `/appointments/get/previous/${date}/${id}`
           console.log(apiUrl);
         }
-        // All business appointments   
-        
-      } 
-      else {
+      } else {
         // Service-specific appointments
         apiUrl = `/appointments/get/business/service/${id}/${serviceId}`  
         console.log(apiUrl);
@@ -103,12 +100,9 @@ function Appointments() {
       console.log(`Fetching ${tabType} appointments from:`, apiUrl)
       
       const response = await apiClient.get(apiUrl)
+      setAppointments((response.data.data).reverse())
       
-      // For now, using dummy data - replace with response.data.data when API is ready
-      setAppointments(response.data.data)
-      // setAppointments(response.data.data || [])
-      
-      console.log(`${tabType} appointments loaded:`, response.data.data)
+      console.log(`${tabType} appointments loaded for ${date}:`, response.data.data)
       
     } catch (err) {
       console.error(`Error fetching ${tabType} appointments:`, err)
@@ -120,15 +114,39 @@ function Appointments() {
 
   // Initial load when component mounts or dependencies change
   useEffect(() => {
-    const date = new Date().toISOString().split('T')[0] // Get current date in YYYY-MM-DD format;
-    fetchAppointments(activeTab, date)
+    fetchAppointments(activeTab, selectedDate)
   }, [id, serviceId]) // Only depend on id and serviceId for initial load
 
   // Handle tab change
   const handleTabChange = (newTab) => {
     setActiveTab(newTab)
     setFilterStatus('All') // Reset filter when changing tabs
-    fetchAppointments(newTab) // Fetch new data for the selected tab
+    fetchAppointments(newTab, selectedDate) // Fetch new data for the selected tab with current date
+  }
+
+  // Handle date change
+  const handleDateChange = (newDate) => {
+    setSelectedDate(newDate)
+    setFilterStatus('All') // Reset filter when changing date
+    fetchAppointments(null, newDate) // Fetch appointments for the new date
+  }
+
+  // Quick date selection functions
+  const setToday = () => {
+    const today = new Date().toISOString().split('T')[0]
+    handleDateChange(today)
+  }
+
+  const setTomorrow = () => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    handleDateChange(tomorrow.toISOString().split('T')[0])
+  }
+
+  const setYesterday = () => {
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    handleDateChange(yesterday.toISOString().split('T')[0])
   }
 
   // Cancel handler
@@ -172,7 +190,7 @@ function Appointments() {
         )
       )
       console.log('Appointment approved successfully')
-      window.location.reload(); // Reload to reflect changes
+      window.location.reload();
     } catch (err) {
       console.error('Approve failed', err)
       setError('Failed to approve appointment')
@@ -188,8 +206,7 @@ function Appointments() {
           app.id === appointmentId ? { ...app, status: 'Done' } : app
         )
       )
-      window.location.reload(); // Reload to reflect changes
-
+      window.location.reload();
     } catch (err) {
       console.error('Mark done failed', err)
       setError('Failed to mark appointment as done')
@@ -203,7 +220,7 @@ function Appointments() {
           <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
             <span className="visually-hidden">Loading {activeTab} appointments...</span>
           </div>
-          <p className="mt-3 text-muted">Loading your {activeTab} appointments...</p>
+          <p className="mt-3 text-muted">Loading your {activeTab} appointments for {new Date(selectedDate).toLocaleDateString()}...</p>
         </div>
       </div>
     )
@@ -217,7 +234,7 @@ function Appointments() {
           {error}
           <button 
             className="btn btn-outline-danger btn-sm ms-3"
-            onClick={() => fetchAppointments(activeTab)}
+            onClick={() => fetchAppointments(activeTab, selectedDate)}
           >
             <i className="bi bi-arrow-clockwise me-1"></i>
             Retry
@@ -227,7 +244,7 @@ function Appointments() {
     )
   }
 
-  // Apply status filter (no need to separate by time since API handles it)
+  // Apply status filter
   const displayedAppointments = filterStatus === 'All' 
     ? appointments 
     : appointments.filter(a => a.appointmentStatus === filterStatus)
@@ -254,7 +271,6 @@ function Appointments() {
                   {app.appointmentStatus}
                 </span>
               </div>
-              
             </div>
           </div>
 
@@ -271,7 +287,6 @@ function Appointments() {
                   day: 'numeric'
                 })}
               </h5>
-              
             </div>
 
             {/* Service Info */}
@@ -357,9 +372,6 @@ function Appointments() {
               )}
             </div>
           </div>
-
-          {/* Card Footer */}
-         
         </div>
       </div>
     )
@@ -377,14 +389,97 @@ function Appointments() {
           <p className="text-muted">Manage and track all your service appointments</p>
         </div>
 
+        {/* Date Selection Section */}
+        <div className="row justify-content-center mb-4">
+          <div className="col-lg-10">
+            <div className="card border-0 shadow-sm">
+              <div className="card-body p-4">
+                <div className="row align-items-center">
+                  {/* Date Picker */}
+                  <div className="col-md-6 mb-3 mb-md-0">
+                    <label className="form-label fw-semibold text-dark">
+                      <i className="bi bi-calendar-date me-2"></i>
+                      Select Date
+                    </label>
+                    <input
+                      type="date"
+                      className="form-control form-control-lg"
+                      value={selectedDate}
+                      onChange={(e) => handleDateChange(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  {/* Quick Date Buttons */}
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold text-dark">
+                      <i className="bi bi-lightning me-2"></i>
+                      Quick Select
+                    </label>
+                    <div className="d-flex gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        className={`btn ${selectedDate === new Date().toISOString().split('T')[0] ? 'btn-primary' : 'btn-outline-primary'} btn-sm`}
+                        onClick={setToday}
+                        disabled={loading}
+                      >
+                        <i className="bi bi-calendar-day me-1"></i>
+                        Today
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn ${selectedDate === new Date(Date.now() + 86400000).toISOString().split('T')[0] ? 'btn-primary' : 'btn-outline-primary'} btn-sm`}
+                        onClick={setTomorrow}
+                        disabled={loading}
+                      >
+                        <i className="bi bi-calendar-plus me-1"></i>
+                        Tomorrow
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn ${selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0] ? 'btn-primary' : 'btn-outline-primary'} btn-sm`}
+                        onClick={setYesterday}
+                        disabled={loading}
+                      >
+                        <i className="bi bi-calendar-minus me-1"></i>
+                        Yesterday
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Selected Date Display */}
+                <div className="mt-3 p-3 bg-primary bg-opacity-10 rounded-3">
+                  <div className="d-flex align-items-center justify-content-between">
+                    <div>
+                      <h6 className="mb-0 text-primary fw-bold">
+                        <i className="bi bi-calendar-check me-2"></i>
+                        Viewing appointments for: {new Date(selectedDate).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </h6>
+                    </div>
+                    <span className="badge bg-primary fs-6">
+                      {appointments.length} appointments
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Tabs and Filter Section */}
         <div className="row justify-content-center mb-4">
           <div className="col-lg-10">
-            <div className="card border-0 shadow-sm w-auto">
-              <div className="card-body p-4 d-flex flex-column justify-content-between">
-                <div className="row align-items-center justify-content-center">
+            <div className="card border-0 shadow-sm">
+              <div className="card-body p-4">
+                <div className="row align-items-center">
                   {/* Tabs */}
-                  <div className="col-md-6 mb-3 mb-md-0 upcoming-previous-tabs">
+                  <div className="col-md-6 mb-3 mb-md-0">
                     <div className="btn-group w-100" role="group">
                       <button
                         type="button"
@@ -407,7 +502,7 @@ function Appointments() {
                     </div>
                   </div>
 
-                  {/* Status Filter Dropdown */}
+                  {/* Status Filter and Refresh */}
                   <div className="col-md-6">
                     <div className="input-group">
                       <span className="input-group-text bg-primary text-white border-primary">
@@ -427,7 +522,7 @@ function Appointments() {
                       </select>
                       <button 
                         className="btn btn-outline-secondary"
-                        onClick={() => fetchAppointments(activeTab)}
+                        onClick={() => fetchAppointments(activeTab, selectedDate)}
                         disabled={loading}
                         title="Refresh appointments"
                       >
@@ -481,19 +576,28 @@ function Appointments() {
                     </h4>
                     <p className="text-muted">
                       {filterStatus === 'All' 
-                        ? `You have no ${activeTab} appointments.`
-                        : `No ${activeTab} appointments with status "${filterStatus}".`
+                        ? `You have no ${activeTab} appointments for ${new Date(selectedDate).toLocaleDateString()}.`
+                        : `No ${activeTab} appointments with status "${filterStatus}" for ${new Date(selectedDate).toLocaleDateString()}.`
                       }
                     </p>
-                    {filterStatus !== 'All' && (
+                    <div className="d-flex gap-2 justify-content-center flex-wrap">
+                      {filterStatus !== 'All' && (
+                        <button 
+                          className="btn btn-outline-primary"
+                          onClick={() => setFilterStatus('All')}
+                        >
+                          <i className="bi bi-funnel me-2"></i>
+                          Show All {activeTab} Appointments
+                        </button>
+                      )}
                       <button 
-                        className="btn btn-outline-primary"
-                        onClick={() => setFilterStatus('All')}
+                        className="btn btn-outline-secondary"
+                        onClick={setToday}
                       >
-                        <i className="bi bi-arrow-clockwise me-2"></i>
-                        Show All {activeTab} Appointments
+                        <i className="bi bi-calendar-day me-2"></i>
+                        View Today's Appointments
                       </button>
-                    )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -501,6 +605,17 @@ function Appointments() {
           </div>
         </div>
       </div>
+
+      <style>{`
+        .hover-lift:hover {
+          transform: translateY(-2px);
+          transition: transform 0.2s ease-in-out;
+        }
+        
+        .card {
+          transition: all 0.2s ease-in-out;
+        }
+      `}</style>
     </div>
   )
 }

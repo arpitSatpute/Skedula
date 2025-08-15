@@ -146,27 +146,7 @@ function Services() {
                 </div>
               </div>
 
-              {/* Service Stats */}
-              <div className="row mb-4">
-                <div className="col-12">
-                  <div className="bg-primary bg-opacity-10 rounded-3 p-3">
-                    <div className="row text-center">
-                      <div className="col-4">
-                        <div className="text-primary fw-bold">50+</div>
-                        <small className="text-muted">Bookings</small>
-                      </div>
-                      <div className="col-4">
-                        <div className="text-warning fw-bold">4.8 ⭐</div>
-                        <small className="text-muted">Rating</small>
-                      </div>
-                      <div className="col-4">
-                        <div className="text-success fw-bold">95%</div>
-                        <small className="text-muted">Satisfaction</small>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+             
 
               {/* Action Buttons */}
               <div className="row g-3">

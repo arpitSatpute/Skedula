@@ -123,8 +123,21 @@ const Business = () => {
     };
     
     console.log('Storing business data for edit:', businessDataForEdit);
-    sessionStorage.setItem('editBusiness', JSON.stringify(businessDataForEdit));
-    navigate(`/business/${business.id}/edit`);
+    
+    // Store with a unique key and timestamp
+    const dataWithMeta = {
+      ...businessDataForEdit,
+      _timestamp: Date.now(),
+      _businessId: business.id
+    };
+    
+    sessionStorage.setItem('editBusiness', JSON.stringify(dataWithMeta));
+    sessionStorage.setItem(`editBusiness_${business.id}`, JSON.stringify(dataWithMeta));
+    
+    console.log('Stored data verification:', sessionStorage.getItem('editBusiness'));
+    
+    // Use replace instead of navigate to avoid history issues
+    navigate(`/business/${business.id}/edit`, { replace: true });
   }
 
   const handleRemoveBusinessClick = () => {

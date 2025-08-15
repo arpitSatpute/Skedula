@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
+import apiClient from './ApiClient';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -12,7 +13,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  const { login } = useContext(AuthContext);  
+  const { login } = useContext(AuthContext)  
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -21,8 +22,11 @@ const Login = () => {
     
     try {
       console.log("Entered Login");
+      console.log("Login Data:", { email, password, role });
       await login(email, password, role);
       console.log("Done Login");
+
+      
       navigate('/');
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
