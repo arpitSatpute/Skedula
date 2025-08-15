@@ -15,7 +15,7 @@ function Wallet() {
   const [filterType, setFilterType] = useState('ALL'); // ALL, CREDIT, DEBIT
   const [filterStatus, setFilterStatus] = useState('ALL'); // ALL, COMPLETED, PENDING
   const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   useEffect(() => {
     fetchWalletData()

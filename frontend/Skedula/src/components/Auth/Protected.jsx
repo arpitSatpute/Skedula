@@ -2,62 +2,108 @@ import React, { useContext, useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 import apiClient from "./ApiClient";
+import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 
 const Protected = () => {
   const { isAuthenticated, loading, setIsAuthenticated, setLoading, setUser } = useContext(AuthContext);
   const [localLoading, setLocalLoading] = useState(true);
+  const [refreshAttempted, setRefreshAttempted] = useState(false);
   const location = useLocation();
+  const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
 
   console.log("Protected Route - Auth State:", { 
     isAuthenticated, 
     loading, 
     localLoading, 
-    path: location.pathname 
+    path: location.pathname,
+    refreshAttempted
   });
-
-  // Refresh Token Function
-  const refreshToken = async () => {
-    try {
-      console.log("Attempting to refresh token...");
-      const refreshTokenValue = localStorage.getItem("refreshToken");
-      
-      if (!refreshTokenValue) {
-        console.log("No refresh token found");
-        return false;
-      }
-
-      const response = await apiClient.post("/auth/refresh", { 
-        token: refreshTokenValue 
-      });
-      
-      const { accessToken, user } = response.data.data;
-      
-      // Update tokens and user data
-      localStorage.setItem("accessToken", accessToken);
-      if (user) {
-        localStorage.setItem("customer", JSON.stringify(user));
-        setUser(user);
-      }
-      
-      setIsAuthenticated(true);
-      console.log("Token refreshed successfully");
-      return true;
-    } catch (error) {
-      console.error("Failed to refresh token:", error);
-      clearAuthData();
-      return false;
-    }
-  };
 
   // Clear all authentication data
   const clearAuthData = () => {
+    console.log("Clearing all auth data");
     localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
     localStorage.removeItem("customer");
-    localStorage.removeItem("token"); // Legacy token if exists
+    localStorage.removeItem("token");
+    localStorage.removeItem("userRole");
+    
     setIsAuthenticated(false);
     setUser(null);
+    setRefreshAttempted(false);
+  };
+
+  // Refresh Token Function - Gets new accessToken using refresh token from cookies
+  const refreshToken = async () => {
+    console.log("Entered Refresh Token Process");
+    
+    if (refreshAttempted) {
+      console.log("Refresh already attempted, skipping");
+      return false;
+    }
+
+    try {
+      setRefreshAttempted(true);
+      console.log("Attempting to refresh token...");
+      
+      const currentAccessToken = localStorage.getItem("accessToken");
+      if (!currentAccessToken) {
+        console.log("No access token found in localStorage");
+        setRefreshAttempted(false);
+        return false;
+      }
+      
+      console.log("Access token found in localStorage, proceeding with refresh");
+      
+      // Call refresh API - backend expects refreshToken from cookies
+      const response = await axios.post(`${baseUrl}/auth/refresh`, {}, {
+        withCredentials: true, // Send cookies with the request (includes refreshToken)
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log("Token refresh response:", response.data);
+      
+      // Handle response - backend returns new accessToken
+      let newAccessToken = response.data.data?.accessToken;
+      
+      if (newAccessToken) {
+        // Replace the expired token with new one
+        localStorage.setItem("accessToken", newAccessToken);
+        console.log("New access token stored successfully, replaced expired token");
+        
+        // Validate the new token by getting user data
+        const isValidSession = await validateUserSession();
+        if (isValidSession) {
+          setIsAuthenticated(true);
+          console.log("Token refreshed and session validated successfully");
+          setRefreshAttempted(false);
+          return true;
+        } else {
+          console.log("New token validation failed, session not valid");
+          setRefreshAttempted(false);
+          return false;
+        }
+      } else {
+        console.log("No access token in refresh response");
+        console.log("Full response:", response.data);
+        setRefreshAttempted(false);
+        return false;
+      }
+      
+    } catch (error) {
+      console.error("Refresh token failed:", error.response?.status, error.response?.data);
+      setRefreshAttempted(false);
+      
+      // If refresh token is invalid/expired, clear all auth data
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        console.log("Refresh token expired or invalid, clearing auth data");
+        clearAuthData();
+      }
+      
+      return false;
+    }
   };
 
   // Validate user session with backend
@@ -65,14 +111,38 @@ const Protected = () => {
     try {
       const response = await apiClient.get("/user/getCurrentUser");
       if (response.data && response.data.data) {
-        setUser(response.data.data);
+        const userData = response.data.data;
+        setUser(userData);
+        localStorage.setItem("customer", JSON.stringify(userData));
         setIsAuthenticated(true);
+        console.log("User session validated successfully");
         return true;
       }
       return false;
     } catch (error) {
-      console.error("Session validation failed:", error);
+      console.error("Session validation failed:", error.response?.status);
       return false;
+    }
+  };
+
+  // Check if token is expired
+  const isTokenExpired = (token) => {
+    try {
+      const decoded = jwtDecode(token);
+      const currentTime = Date.now() / 1000;
+      const isExpired = decoded.exp < currentTime;
+      
+      console.log("Token expiry check:", {
+        tokenExp: decoded.exp,
+        currentTime,
+        isExpired,
+        expiresInMinutes: Math.floor((decoded.exp - currentTime) / 60)
+      });
+      
+      return isExpired;
+    } catch (error) {
+      console.error("Error decoding token:", error);
+      return true;
     }
   };
 
@@ -82,101 +152,51 @@ const Protected = () => {
     setLoading(true);
 
     try {
-      // Check for tokens in localStorage
       const accessToken = localStorage.getItem("accessToken");
-      const refreshTokenValue = localStorage.getItem("refreshToken");
-      const legacyToken = localStorage.getItem("token"); // For backward compatibility
-      const customerData = localStorage.getItem("customer");
 
-      console.log("Checking auth tokens:", {
-        hasAccessToken: !!accessToken,
-        hasRefreshToken: !!refreshTokenValue,
-        hasLegacyToken: !!legacyToken,
-        hasCustomer: !!customerData
+      console.log("Checking auth status:", {
+        hasAccessToken: !!accessToken
       });
 
-      // If no tokens at all, user is not authenticated
-      if (!accessToken && !refreshTokenValue && !legacyToken) {
-        console.log("No authentication tokens found");
+      // If no access token
+      if (!accessToken) {
+        console.log("No access token found");
         setIsAuthenticated(false);
         return;
       }
 
-      // Check legacy token first (for backward compatibility)
-      if (legacyToken && !accessToken) {
-        try {
-          const decoded = jwtDecode(legacyToken);
-          const currentTime = Date.now() / 1000;
-
-          if (decoded.exp > currentTime) {
-            // Legacy token is still valid
-            localStorage.setItem("accessToken", legacyToken);
-            if (customerData) {
-              setUser(JSON.parse(customerData));
-            }
-            setIsAuthenticated(true);
-            console.log("Using valid legacy token");
-            return;
-          }
-        } catch (error) {
-          console.error("Error with legacy token:", error);
-          localStorage.removeItem("token");
-        }
-      }
-
-      // Check access token
-      if (accessToken) {
-        try {
-          const decoded = jwtDecode(accessToken);
-          const currentTime = Date.now() / 1000;
-          const bufferTime = 60; // 1 minute buffer before expiry
-
-          console.log("Token expiry check:", {
-            tokenExp: decoded.exp,
-            currentTime,
-            isExpired: decoded.exp < currentTime,
-            expiresInMinutes: Math.floor((decoded.exp - currentTime) / 60)
-          });
-
-          // Token is still valid (with buffer)
-          if (decoded.exp > (currentTime + bufferTime)) {
-            // Validate session with backend to ensure user still exists
-            const isValidSession = await validateUserSession();
-            if (isValidSession) {
-              setIsAuthenticated(true);
-              console.log("Access token is valid and session confirmed");
-              return;
-            } else {
-              console.log("Token valid but session invalid, clearing auth");
-              clearAuthData();
-              return;
-            }
-          }
-
-          // Token is expired or about to expire, try to refresh
-          console.log("Access token expired or expiring soon, attempting refresh");
-          const refreshed = await refreshToken();
-          if (refreshed) {
-            console.log("Token refreshed successfully");
-            return;
-          }
-        } catch (error) {
-          console.error("Error processing access token:", error);
-        }
-      }
-
-      // If we have refresh token but no valid access token, try to refresh
-      if (refreshTokenValue && !accessToken) {
-        console.log("No access token but refresh token exists, attempting refresh");
+      // Check if current access token is expired - DON'T remove it immediately
+      if (isTokenExpired(accessToken)) {
+        console.log("Access token expired, keeping it and attempting refresh");
+        
         const refreshed = await refreshToken();
-        if (refreshed) {
+        if (!refreshed) {
+          console.log("Refresh failed for expired token, now clearing auth data");
+          clearAuthData();
           return;
         }
+        
+        console.log("Token refreshed successfully after expiration");
+        return;
       }
 
-      // If all else fails, clear auth data
-      console.log("All authentication attempts failed, clearing auth data");
-      clearAuthData();
+      // Access token is valid, validate session
+      console.log("Access token is valid, validating session");
+      const sessionValid = await validateUserSession();
+      if (!sessionValid) {
+        console.log("Session invalid, attempting refresh");
+        
+        const refreshed = await refreshToken();
+        if (!refreshed) {
+          clearAuthData();
+        } else {
+          // Try validating session again with new token
+          const retrySessionValid = await validateUserSession();
+          if (!retrySessionValid) {
+            clearAuthData();
+          }
+        }
+      }
 
     } catch (error) {
       console.error("Auth check error:", error);
@@ -187,23 +207,12 @@ const Protected = () => {
     }
   };
 
-  // Check authentication whenever the component mounts or route changes
+  // Check authentication when component mounts or route changes
   useEffect(() => {
     console.log(`Protected route accessed: ${location.pathname}`);
+    setRefreshAttempted(false); // Reset refresh attempt for new route
     checkAuthStatus();
-  }, [location.pathname]); // Re-check on every route change
-
-  // Periodic token validation (every 5 minutes)
-  useEffect(() => {
-    if (isAuthenticated) {
-      const interval = setInterval(() => {
-        console.log("Periodic auth check...");
-        checkAuthStatus();
-      }, 5 * 60 * 1000); // 5 minutes
-
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated]);
+  }, [location.pathname]);
 
   // Show loading spinner while checking authentication
   if (loading || localLoading) {
@@ -241,7 +250,6 @@ const Protected = () => {
   }
 
   console.log(`Access granted to ${location.pathname}`);
-  // If authenticated, render the protected route
   return <Outlet />;
 };
 

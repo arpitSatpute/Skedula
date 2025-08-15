@@ -49,7 +49,7 @@ function BookAppointment() {
       
     } catch (err) {
       console.error('Booking error:', err)
-      setError(err.response?.data?.message || 'Failed to book appointment.')
+      setError(err.response?.data?.error?.message || 'Failed to book appointment.')
     } finally {
       setLoading(false)
     }

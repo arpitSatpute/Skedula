@@ -38,10 +38,13 @@ const Business = () => {
       try {
         const response = await axios.get(`${baseURl}/public/getServiceByBusinessId/${id}`);
         console.log("Services loaded:", response.data.data);
-        setServices(response.data.data);
+        setServices(response.data.data || []);
       } catch (error) {
-        console.error("Error loading services:", error);
-        setError(error.response?.data?.message || 'Failed to load services');
+        console.log(error);
+        if (error.status === 404) {
+          setServices([]);
+        }
+        
       } finally {
         setLoading(false);
       }

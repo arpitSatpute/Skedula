@@ -9,7 +9,6 @@ function Services() {
   const [service, setService] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [showConfirmModal, setShowConfirmModal] = useState(false); // Add this state
   const {id} = useParams();
   const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
   const navigate = useNavigate();

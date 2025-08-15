@@ -13,23 +13,22 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = () => {
       try {
-        const customer = localStorage.getItem('customer');
+        
         const accessToken = localStorage.getItem('accessToken');
-        const legacyToken = localStorage.getItem('token');
 
-        if ((accessToken || legacyToken) && customer) {
+        if (accessToken) {
           setUser(JSON.parse(customer));
           setIsAuthenticated(true);
           console.log('AuthContext - Initialized with existing session');
         } else {
           setIsAuthenticated(false);
-          setUser(null);
+          // setUser(null);
           console.log('AuthContext - No existing session found');
         }
       } catch (error) {
         console.error('AuthContext - Initialization error:', error);
         setIsAuthenticated(false);
-        setUser(null);
+        // setUser(null);
       } finally {
         setLoading(false);
       }
@@ -54,7 +53,7 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
       console.log('AuthContext - Login successful');
       
-      return response.data;
+      return response.data.data;
     } catch (error) {
       console.error('AuthContext - Login failed:', error);
       throw error;
