@@ -26,7 +26,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,6 +74,7 @@ public class BusinessServiceImpl implements BusinessService {
         if(isExist){
             throw new RuntimeException("Business with name: " + businessDTO.getName() + " already exists");
         }
+        businessDTO.setBusinessId(generateBusinessId());
         Business business = convertToEntity(businessDTO, user);
         businessRepository.save(business);
         BusinessDTO result = convertToDTO(business);
@@ -90,6 +90,7 @@ public class BusinessServiceImpl implements BusinessService {
 
         // Do not allow changing the owner
         business.setName(businessDTO.getName());
+        business.setBusinessId(businessDTO.getBusinessId());
         business.setDescription(businessDTO.getDescription());
         business.setAddress(businessDTO.getAddress());
         business.setCity(businessDTO.getCity());
@@ -200,6 +201,7 @@ public class BusinessServiceImpl implements BusinessService {
 
         Business business = new Business();
         business.setOwner(user);
+        business.setBusinessId(businessDTO.getBusinessId());
         business.setName(businessDTO.getName());
         business.setDescription(businessDTO.getDescription());
         business.setAddress(businessDTO.getAddress());
@@ -237,6 +239,7 @@ public class BusinessServiceImpl implements BusinessService {
 
         BusinessDTO businessDTO = new BusinessDTO();
         businessDTO.setId(business.getId());
+        businessDTO.setBusinessId(business.getBusinessId());
         businessDTO.setOwner(business.getOwner().getId());
         businessDTO.setName(business.getName());
         businessDTO.setDescription(business.getDescription());
@@ -263,6 +266,7 @@ public class BusinessServiceImpl implements BusinessService {
     private BusinessCard convertToCard(Business business) {
         BusinessCard businessCard = new BusinessCard();
         businessCard.setId(business.getId());
+        businessCard.setBusinessId(business.getBusinessId());
         businessCard.setName(business.getName());
         businessCard.setDescription(business.getDescription());
         businessCard.setAddress(business.getAddress());
@@ -279,6 +283,11 @@ public class BusinessServiceImpl implements BusinessService {
         return businessCard;
     }
 
+    private String generateBusinessId() {
+        String prefix = "SBE";
+        String uniqueId = String.valueOf(System.currentTimeMillis());
+        return prefix + uniqueId;
+    }
 
 
 

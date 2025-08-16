@@ -106,6 +106,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         }
 
         businessServiceOffered.setBusiness(business);
+        businessServiceOffered.setServiceOfferedId(generateServiceOfferedId());
         businessServiceOffered.setName(serviceOfferedDTO.getName());
         businessServiceOffered.setDescription(serviceOfferedDTO.getDescription());
         businessServiceOffered.setPrice(serviceOfferedDTO.getPrice());
@@ -203,6 +204,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
     public BusinessServiceOfferedDTO convertToDTO(BusinessServiceOffered services) {
         BusinessServiceOfferedDTO dto = new BusinessServiceOfferedDTO();
         dto.setId(services.getId());
+        dto.setServiceOfferedId(services.getServiceOfferedId());
         dto.setName(services.getName());
         dto.setDescription(services.getDescription());
         dto.setPrice(services.getPrice());
@@ -217,6 +219,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
     private BusinessServiceOfferedCard convertToCard(BusinessServiceOffered services) {
         BusinessServiceOfferedCard card = new BusinessServiceOfferedCard();
         card.setId(services.getId());
+        card.setServiceOfferedId(services.getServiceOfferedId());
         card.setName(services.getName());
         card.setDescription(services.getDescription());
         card.setPrice(services.getPrice());
@@ -230,6 +233,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
     private BusinessServiceOffered convertToEntity(BusinessServiceOfferedDTO dto) {
         BusinessServiceOffered entity = new BusinessServiceOffered();
         entity.setId(dto.getId());
+        entity.setServiceOfferedId(dto.getServiceOfferedId());
         entity.setName(dto.getName());
         entity.setDescription(dto.getDescription());
         entity.setPrice(dto.getPrice());
@@ -244,6 +248,10 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         return entity;
     }
 
-
+    private String generateServiceOfferedId() {
+        String prefix = "SO";
+        long count = businessServiceOfferedRepository.count() + 1; // Start from 1
+        return prefix + count;
+    }
 
 }

@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 @Setter
 public class BusinessServiceOfferedCard {
     private Long id;
+    private String serviceOfferedId;
     private String name;
     private String description;
     private Integer duration;

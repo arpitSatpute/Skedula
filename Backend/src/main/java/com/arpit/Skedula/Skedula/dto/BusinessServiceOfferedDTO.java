@@ -18,6 +18,8 @@ public class BusinessServiceOfferedDTO {
 
     private Long id;
 
+    private String serviceOfferedId;
+
     @NotNull(message = "Enter Service Name")
     private String name;
 

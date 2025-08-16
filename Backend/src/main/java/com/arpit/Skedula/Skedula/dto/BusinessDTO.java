@@ -18,6 +18,8 @@ public class BusinessDTO {
 
     private Long id;
 
+    private String businessId;
+
     private Long owner;
 
     @NotNull

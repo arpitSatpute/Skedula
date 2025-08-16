@@ -16,6 +16,7 @@ public class BusinessServiceOffered {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String serviceOfferedId;
     private String name;
     private String description;
     private Integer duration;

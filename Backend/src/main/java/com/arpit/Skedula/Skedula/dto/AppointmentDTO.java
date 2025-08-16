@@ -17,7 +17,7 @@ import java.time.LocalDate;
 public class AppointmentDTO {
 
     private Long id;
-
+    private String appointmentId;
     @NotNull(message = "Appointment Date cannot be null")
     private LocalDate date;
 

@@ -18,6 +18,8 @@ public class Business {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String businessId;
+
     @ManyToOne
     @JoinColumn(name = "owner_id")
     private User owner;

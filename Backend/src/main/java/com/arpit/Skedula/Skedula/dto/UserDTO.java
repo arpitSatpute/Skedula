@@ -22,6 +22,8 @@ public class UserDTO {
     @Size(min = 10, max = 10, message = "Phone number must be 10 digits")
     private String phone;
 
+    private String imageUrl;
+
     @NotNull(message = "Role cannot be null")
     private Set<Role> roles;
 

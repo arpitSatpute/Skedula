@@ -77,7 +77,13 @@ public class AuthServiceImpl implements AuthService {
         if (signupDto.getRole() != Role.CUSTOMER && signupDto.getRole() != Role.OWNER) {
             throw new RuntimeConflictException("Role is required for signup");
         }
-        User mappedUser = modelMapper.map(signupDto, User.class);
+        User mappedUser = new User();
+        mappedUser.setName(signupDto.getName());
+        mappedUser.setEmail(signupDto.getEmail());
+        mappedUser.setPhone(signupDto.getPhone());
+        mappedUser.setImageUrl(null);
+        mappedUser.setPassword(signupDto.getPassword());
+        // Set the role and encode the password
         mappedUser.setRoles(Set.of(signupDto.getRole()));
         mappedUser.setPassword(passwordEncoder.encode(mappedUser.getPassword()));
         User savedUser = userRepository.save(mappedUser);

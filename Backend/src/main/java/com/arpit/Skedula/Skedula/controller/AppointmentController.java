@@ -1,5 +1,6 @@
 package com.arpit.Skedula.Skedula.controller;
 
+import com.arpit.Skedula.Skedula.card.AppointmentCard;
 import com.arpit.Skedula.Skedula.dto.AppointmentDTO;
 import com.arpit.Skedula.Skedula.entity.Appointment;
 import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
@@ -31,7 +32,7 @@ public class AppointmentController {
     // Get By id
 //    @PreAuthorize("@customerService.isOwnerOfAppointment(#id) || @businessService.isOwnerOfAppointment(#id)")
     @GetMapping("/get/{id}")
-    public ResponseEntity<AppointmentDTO> getAppointmentById(@PathVariable Long id) {
+    public ResponseEntity<AppointmentCard> getAppointmentById(@PathVariable Long id) {
         return ResponseEntity.ok(appointmentService.getAppointmentById(id));
     }
 
@@ -50,34 +51,34 @@ public class AppointmentController {
     }
 
 //     Get Booked Appointment By Status By Role By UserId
-    @PreAuthorize("@businessService.isOwnerOfProfile(#userId) || @customerService.isOwnerOfProfile(#userId)")
-    @GetMapping("/get/{status}/{role}/{userId}")
-    public ResponseEntity<List<AppointmentDTO>> getAllAppointmentByStatusRoleUserId(@PathVariable AppointmentStatus status, @PathVariable Role role, @PathVariable Long userId) {
-        if(status == null || role == null || userId == null) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        return ResponseEntity.ok(appointmentService.getAllAppointmentByStatusRoleUserId(status, role, userId));
-    }
-
-//     Get Booked Appointment By Status By Role By UserId By ServiceId
-    @GetMapping("/get/{status}/{role}/{userId}/{serviceId}")
-    public ResponseEntity<List<AppointmentDTO>> getAllAppointmentByService(@PathVariable AppointmentStatus status, @PathVariable Role role, @PathVariable Long userId, @PathVariable Long serviceId) {
-        if(status == null || role == null || userId == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        return ResponseEntity.ok(appointmentService.getAllAppointmentByStatusRoleUserIdServiceId(status, role, userId, serviceId));
-    }
-
-//     Get Booked Appointment By Date By Role By Status
-    @GetMapping("/get/{status}/{role}/{userId}/{date}")
-    public ResponseEntity<List<AppointmentDTO>> getAllAppointmentByDate(@PathVariable AppointmentStatus status, @PathVariable Role role, @PathVariable Long userId, @PathVariable LocalDate date) {
-        if(status == null || role == null || userId == null) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        return ResponseEntity.ok(appointmentService.getAllAppointmentByStatusRoleUserIdDate(status, role, userId, date));
-    }
+//    @PreAuthorize("@businessService.isOwnerOfProfile(#userId) || @customerService.isOwnerOfProfile(#userId)")
+//    @GetMapping("/get/{status}/{role}/{userId}")
+//    public ResponseEntity<List<AppointmentDTO>> getAllAppointmentByStatusRoleUserId(@PathVariable AppointmentStatus status, @PathVariable Role role, @PathVariable Long userId) {
+//        if(status == null || role == null || userId == null) {
+//            return ResponseEntity.badRequest().build();
+//        }
+//
+//        return ResponseEntity.ok(appointmentService.getAllAppointmentByStatusRoleUserId(status, role, userId));
+//    }
+//
+////     Get Booked Appointment By Status By Role By UserId By ServiceId
+//    @GetMapping("/get/{status}/{role}/{userId}/{serviceId}")
+//    public ResponseEntity<List<AppointmentDTO>> getAllAppointmentByService(@PathVariable AppointmentStatus status, @PathVariable Role role, @PathVariable Long userId, @PathVariable Long serviceId) {
+//        if(status == null || role == null || userId == null) {
+//            return ResponseEntity.badRequest().build();
+//        }
+//        return ResponseEntity.ok(appointmentService.getAllAppointmentByStatusRoleUserIdServiceId(status, role, userId, serviceId));
+//    }
+//
+////     Get Booked Appointment By Date By Role By Status
+//    @GetMapping("/get/{status}/{role}/{userId}/{date}")
+//    public ResponseEntity<List<AppointmentDTO>> getAllAppointmentByDate(@PathVariable AppointmentStatus status, @PathVariable Role role, @PathVariable Long userId, @PathVariable LocalDate date) {
+//        if(status == null || role == null || userId == null) {
+//            return ResponseEntity.badRequest().build();
+//        }
+//
+//        return ResponseEntity.ok(appointmentService.getAllAppointmentByStatusRoleUserIdDate(status, role, userId, date));
+//    }
 
 //    @PreAuthorize("@businessService.isOwnerOfAppointment(#id)")
     @PatchMapping("/approve/{id}")
@@ -99,14 +100,14 @@ public class AppointmentController {
 
 //    @PreAuthorize("@businessService.isOwnerOfProfile(#businessId)")
     @GetMapping("/request/pending/{businessId}")
-    public ResponseEntity<List<AppointmentDTO>> getPendingAppointmentRequest(@PathVariable Long businessId) {
+    public ResponseEntity<List<AppointmentCard>> getPendingAppointmentRequest(@PathVariable Long businessId) {
         return ResponseEntity.ok(appointmentService.getPendingAppointmentRequest(businessId));
     }
 
 
 //    @PreAuthorize("@customerService.isOwnerOfProfile(#customerId)")
     @GetMapping("/get/customer/{customerId}")
-    public ResponseEntity<List<AppointmentDTO>> getAllAppointmentsByCustomerId(@PathVariable Long customerId) {
+    public ResponseEntity<List<AppointmentCard>> getAllAppointmentsByCustomerId(@PathVariable Long customerId) {
         return ResponseEntity.ok(appointmentService.getAppointmentByCustomerId(customerId));
     }
 
@@ -114,19 +115,19 @@ public class AppointmentController {
     // Get All Appointments By Business Id and Service Id
     @PreAuthorize("@businessService.isOwnerOfProfile(#businessId)")
     @GetMapping("get/business/service/{businessId}/{serviceId}")
-    public ResponseEntity<List<AppointmentDTO>> getAllAppointmentsByBusinessIdAndServiceId(@PathVariable Long businessId, @PathVariable Long serviceId) {
+    public ResponseEntity<List<AppointmentCard>> getAllAppointmentsByBusinessIdAndServiceId(@PathVariable Long businessId, @PathVariable Long serviceId) {
         return ResponseEntity.ok(appointmentService.getAllAppointmentsByBusinessIdAndServiceId(businessId, serviceId));
     }
 
     @PreAuthorize("@businessService.isOwnerOfProfile(#businessId)")
     @GetMapping("get/business/{businessId}")
-    public ResponseEntity<List<AppointmentDTO>> getAllAppointmentsByBusinessId(@PathVariable Long businessId) {
+    public ResponseEntity<List<AppointmentCard>> getAllAppointmentsByBusinessId(@PathVariable Long businessId) {
         return ResponseEntity.ok(appointmentService.getAllAppointmentsByBusinessId(businessId));
     }
 
 
     @GetMapping("/get/upcoming/{date}/{businessId}")
-    public ResponseEntity<List<AppointmentDTO>> getAppointmentsOnAndAfterDate(@PathVariable LocalDate date, @PathVariable Long businessId) {
+    public ResponseEntity<List<AppointmentCard>> getAppointmentsOnAndAfterDate(@PathVariable LocalDate date, @PathVariable Long businessId) {
         if (date == null || businessId == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -135,7 +136,7 @@ public class AppointmentController {
 
 
     @GetMapping("/get/previous/{date}/{businessId}")
-    public ResponseEntity<List<AppointmentDTO>> getAppointmentsBeforeDate(@PathVariable LocalDate date, @PathVariable Long businessId) {
+    public ResponseEntity<List<AppointmentCard>> getAppointmentsBeforeDate(@PathVariable LocalDate date, @PathVariable Long businessId) {
         if (date == null || businessId == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -143,7 +144,7 @@ public class AppointmentController {
     }
 
     @GetMapping("/get/date/{date}/{businessId}")
-    public ResponseEntity<List<AppointmentDTO>> getAppointmentsByDate(@PathVariable LocalDate date, @PathVariable Long businessId) {
+    public ResponseEntity<List<AppointmentCard>> getAppointmentsByDate(@PathVariable LocalDate date, @PathVariable Long businessId) {
         if (date == null || businessId == null) {
             return ResponseEntity.badRequest().build();
         }

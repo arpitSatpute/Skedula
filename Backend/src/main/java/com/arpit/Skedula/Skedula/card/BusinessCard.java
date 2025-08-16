@@ -14,7 +14,7 @@ import java.util.Date;
 public class BusinessCard {
 
     private Long id;
-
+    private String businessId;
     private String name;
     private String description;
 

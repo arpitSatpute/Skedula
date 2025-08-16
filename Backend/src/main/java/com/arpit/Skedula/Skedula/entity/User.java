@@ -30,6 +30,8 @@ public class User implements UserDetails {
 
     private String phone;
 
+    private String imageUrl;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     private Set<Role> roles;

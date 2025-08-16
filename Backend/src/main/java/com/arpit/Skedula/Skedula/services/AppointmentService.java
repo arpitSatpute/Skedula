@@ -1,5 +1,6 @@
 package com.arpit.Skedula.Skedula.services;
 
+import com.arpit.Skedula.Skedula.card.AppointmentCard;
 import com.arpit.Skedula.Skedula.dto.AppointmentDTO;
 import com.arpit.Skedula.Skedula.entity.Appointment;
 import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
@@ -17,35 +18,35 @@ public interface AppointmentService {
 
     AppointmentDTO approveAppointment(Long id);
 
-    List<AppointmentDTO> getPendingAppointmentRequest(Long businessId);
+    List<AppointmentCard> getPendingAppointmentRequest(Long businessId);
 
-    AppointmentDTO getAppointmentById(Long id);
+    AppointmentCard getAppointmentById(Long id);
 
     AppointmentDTO cancelAppointmentByCustomer(Long id);
 
     AppointmentDTO cancelAppointmentByOwner(Long id);
+//
+//    List<AppointmentDTO> getAllAppointmentByStatusRoleUserId(AppointmentStatus status, Role role, Long userId);
+//
+//    List<AppointmentDTO> getAllAppointmentByStatusRoleUserIdDate(AppointmentStatus status, Role role, Long userId, LocalDate date);
+//
+//    List<AppointmentDTO> getAllAppointmentByStatusRoleUserIdServiceId(AppointmentStatus status, Role role, Long userId, Long serviceId);
 
-    List<AppointmentDTO> getAllAppointmentByStatusRoleUserId(AppointmentStatus status, Role role, Long userId);
-
-    List<AppointmentDTO> getAllAppointmentByStatusRoleUserIdDate(AppointmentStatus status, Role role, Long userId, LocalDate date);
-
-    List<AppointmentDTO> getAllAppointmentByStatusRoleUserIdServiceId(AppointmentStatus status, Role role, Long userId, Long serviceId);
-
-    List<AppointmentDTO> getAppointmentByCustomerId(Long customerId);
+    List<AppointmentCard> getAppointmentByCustomerId(Long customerId);
 
     AppointmentDTO rejectAppointment(Long id);
 
     AppointmentDTO doneAppointment(Long id);
 
-    List<AppointmentDTO> getAllAppointmentsByBusinessIdAndServiceId(Long businessId, Long serviceId);
+    List<AppointmentCard> getAllAppointmentsByBusinessIdAndServiceId(Long businessId, Long serviceId);
 
-    List<AppointmentDTO> getAllAppointmentsByBusinessId(Long businessId);
+    List<AppointmentCard> getAllAppointmentsByBusinessId(Long businessId);
 
     AppointmentDTO convertToDTO(Appointment newAppointment);
 
-    List<AppointmentDTO> getAppointmentsOnAndAfterDate(LocalDate date, Long businessId);
+    List<AppointmentCard> getAppointmentsOnAndAfterDate(LocalDate date, Long businessId);
 
-    List<AppointmentDTO> getAppointmentsBeforeDate(LocalDate date, Long businessId);
+    List<AppointmentCard> getAppointmentsBeforeDate(LocalDate date, Long businessId);
 
-    List<AppointmentDTO> getAppointmentBydate(LocalDate date, Long businessId);
+    List<AppointmentCard> getAppointmentBydate(LocalDate date, Long businessId);
 }
