@@ -13,11 +13,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = () => {
       try {
-        
         const accessToken = localStorage.getItem('accessToken');
 
         if (accessToken) {
-          setUser(JSON.parse(customer));
+          // setUser(JSON.parse(customer));
           setIsAuthenticated(true);
           console.log('AuthContext - Initialized with existing session');
         } else {
@@ -38,27 +37,61 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password, role) => {
-    setLoading(true);
     try {
-        const url = `${baseUrl}/auth/login`;
-
-        console.log('AuthContext - Attempting login with:', { email, role, password });
+        setLoading(true);
+        console.log("🔑 AuthContext: Attempting login...");
         
-        const response = await axios.post(url, { email, password, role });
-        const { accessToken } = response.data.data;
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('userRole', role);
-        setUser({ email, role });
-        console.log('Login successful');
-        setIsAuthenticated(true);
-      console.log('AuthContext - Login successful');
-      
-      return response.data.data;
+        // Make login request with proper format
+        const response = await axios.post(`${baseUrl}/auth/login`, 
+            { email, password, role }, 
+            { 
+                withCredentials: true, // Send cookies
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        console.log("✅ AuthContext: Login response received:", response.data);
+
+        // Extract access token from response
+        let accessToken = response.data.data?.accessToken || 
+                         response.data?.accessToken || 
+                         response.data?.token;
+
+        if (accessToken) {
+            // Store access token
+            localStorage.setItem('accessToken', accessToken);
+            console.log("✅ AuthContext: Access token stored in localStorage");
+
+            // Store user data if available
+            const userData = response.data?.data?.user || response.data?.user;
+            if (userData) {
+                localStorage.setItem('customer', JSON.stringify(userData));
+                setUser(userData);
+                console.log("✅ AuthContext: User data stored");
+            }
+
+            setIsAuthenticated(true);
+            console.log("✅ AuthContext: Login successful");
+            
+            return { success: true };
+        } else {
+            console.log("❌ AuthContext: No access token in login response");
+            return { 
+                success: false, 
+                message: 'No access token received' 
+            };
+        }
+
     } catch (error) {
-      console.error('AuthContext - Login failed:', error);
-      throw error;
+        console.error('❌ AuthContext: Login failed:', error);
+        return { 
+            success: false, 
+            message: error.response?.data?.message || 'Login failed' 
+        };
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
 

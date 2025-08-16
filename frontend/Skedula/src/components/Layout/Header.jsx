@@ -3,55 +3,28 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../Auth/AuthContext";
 
-function Header({ isLoggedIn, onLogin, onLogout, isDarkMode, toggleDarkMode }) {
+function Header({ isDarkMode, toggleDarkMode }) {
   const navigate = useNavigate();
-  const { user, logout } = useContext(AuthContext);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user, logout, isAuthenticated } = useContext(AuthContext); // Use AuthContext directly
+  
+  console.log("Header - Auth State:", { isAuthenticated, user });
 
-  // Check for user authentication using AuthContext and localStorage
-  useEffect(() => {
-    const checkAuthStatus = () => {
-      try {
-        const authToken = localStorage.getItem('accessToken');
-        const storedUser = localStorage.getItem('user');
-        const userRole = localStorage.getItem('userRole');
-        
-        if (authToken && (storedUser || userRole)) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        console.error('Error checking auth status:', error);
-        setIsAuthenticated(false);
-      }
-    };
-
-    checkAuthStatus();
-
-    // Listen for storage changes (when user logs in/out in another tab)
-    const handleStorageChange = () => {
-      checkAuthStatus();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also check periodically in case of same-tab changes
-    const interval = setInterval(checkAuthStatus, 1000);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, [user]);
-
-  // Get current user data
+  // Get current user data - prioritize AuthContext user over localStorage
   const getCurrentUser = () => {
     try {
+      // First check AuthContext user
+      if (user) {
+        return user;
+      }
+      
+      // Fallback to localStorage
+      const storedCustomer = localStorage.getItem('customer');
       const storedUser = localStorage.getItem('user');
       const userRole = localStorage.getItem('userRole');
       
-      if (storedUser) {
+      if (storedCustomer) {
+        return JSON.parse(storedCustomer);
+      } else if (storedUser) {
         return JSON.parse(storedUser);
       } else if (userRole) {
         return {
@@ -60,22 +33,35 @@ function Header({ isLoggedIn, onLogin, onLogout, isDarkMode, toggleDarkMode }) {
           name: 'User'
         };
       }
-      return user;
+      
+      return null;
     } catch (error) {
       console.error('Error getting current user:', error);
-      return user;
+      return null;
     }
   };
 
   const currentUser = getCurrentUser();
   
-  const handleLogout = () => {
-    logout();
-    localStorage.removeItem('user');
-    localStorage.removeItem('userRole');
-    setIsAuthenticated(false);
-    console.log('🚪 User logged out');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      console.log('🚪 Header: Initiating logout...');
+      
+      // Call AuthContext logout (this should clear tokens and state)
+      await logout();
+      
+      // Clear any remaining localStorage items
+      localStorage.removeItem('user');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('customer');
+      localStorage.removeItem('accessToken');
+      
+      console.log('🚪 Header: Logout completed');
+      navigate('/login');
+    } catch (error) {
+      console.error('Header: Logout error:', error);
+      navigate('/login');
+    }
   };
 
   const handleLogin = () => {
@@ -150,11 +136,15 @@ function Header({ isLoggedIn, onLogin, onLogout, isDarkMode, toggleDarkMode }) {
                   >
                     <i className="bi bi-person-circle me-2"></i>
                     <span className="d-none d-md-inline">
-                      {currentUser?.name || currentUser?.email || 'User'}
+                      {currentUser?.name || currentUser?.firstName || currentUser?.email || 'User'}
                     </span>
                   </button>
                   <ul className="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userDropdown">
-                    
+                    <li>
+                      <span className="dropdown-item-text small text-muted">
+                        {currentUser?.email || 'No email'}
+                      </span>
+                    </li>
                     <li><hr className="dropdown-divider" /></li>
                     <li>
                       <Link className="dropdown-item" to="/profile">
@@ -165,7 +155,7 @@ function Header({ isLoggedIn, onLogin, onLogout, isDarkMode, toggleDarkMode }) {
                     
                     <li>
                       <Link className="dropdown-item" to="/appointments">
-                        <i className="bi bi-person me-2 text-primary"></i>
+                        <i className="bi bi-calendar-check me-2 text-success"></i>
                         Appointments
                       </Link>
                     </li>

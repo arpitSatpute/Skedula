@@ -35,7 +35,7 @@ const Protected = () => {
 
   // Refresh Token Function - Gets new accessToken using refresh token from cookies
   const refreshToken = async () => {
-    console.log("Entered Refresh Token Process");
+    console.log("👉 Entered Refresh Token Process");
     
     if (refreshAttempted) {
       console.log("Refresh already attempted, skipping");
@@ -46,15 +46,6 @@ const Protected = () => {
       setRefreshAttempted(true);
       console.log("Attempting to refresh token...");
       
-      const currentAccessToken = localStorage.getItem("accessToken");
-      if (!currentAccessToken) {
-        console.log("No access token found in localStorage");
-        setRefreshAttempted(false);
-        return false;
-      }
-      
-      console.log("Access token found in localStorage, proceeding with refresh");
-      
       // Call refresh API - backend expects refreshToken from cookies
       const response = await axios.post(`${baseUrl}/auth/refresh`, {}, {
         withCredentials: true, // Send cookies with the request (includes refreshToken)
@@ -63,37 +54,53 @@ const Protected = () => {
         }
       });
       
-      console.log("Token refresh response:", response.data);
+      console.log("Full token refresh response:", response.data);
       
-      // Handle response - backend returns new accessToken
+      // Handle different response structures
       let newAccessToken = response.data.data?.accessToken;
+      
+      // Check multiple possible response structures
+      if (!newAccessToken && response.data?.accessToken) {
+        newAccessToken = response.data.accessToken;
+      }
+      if (!newAccessToken && response.data?.token) {
+        newAccessToken = response.data.token;
+      }
+      
+      console.log("Extracted newAccessToken:", newAccessToken ? "Token received" : "No token found");
       
       if (newAccessToken) {
         // Replace the expired token with new one
         localStorage.setItem("accessToken", newAccessToken);
-        console.log("New access token stored successfully, replaced expired token");
+        console.log("New access token stored successfully in localStorage");
+        
+        // Reset the refresh attempted flag before validation
+        setRefreshAttempted(false);
         
         // Validate the new token by getting user data
         const isValidSession = await validateUserSession();
         if (isValidSession) {
           setIsAuthenticated(true);
           console.log("Token refreshed and session validated successfully");
-          setRefreshAttempted(false);
           return true;
         } else {
           console.log("New token validation failed, session not valid");
-          setRefreshAttempted(false);
           return false;
         }
       } else {
-        console.log("No access token in refresh response");
-        console.log("Full response:", response.data);
+        console.log("No access token found in refresh response");
+        console.log("Response structure:", JSON.stringify(response.data, null, 2));
         setRefreshAttempted(false);
         return false;
       }
       
     } catch (error) {
-      console.error("Refresh token failed:", error.response?.status, error.response?.data);
+      console.error("Refresh token failed:", {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
       setRefreshAttempted(false);
       
       // If refresh token is invalid/expired, clear all auth data
@@ -109,7 +116,10 @@ const Protected = () => {
   // Validate user session with backend
   const validateUserSession = async () => {
     try {
+      console.log("Validating user session...");
       const response = await apiClient.get("/user/getCurrentUser");
+      console.log("Session validation response:", response.data);
+      
       if (response.data && response.data.data) {
         const userData = response.data.data;
         setUser(userData);
@@ -118,9 +128,13 @@ const Protected = () => {
         console.log("User session validated successfully");
         return true;
       }
+      console.log("No user data in session validation response");
       return false;
     } catch (error) {
-      console.error("Session validation failed:", error.response?.status);
+      console.error("Session validation failed:", {
+        status: error.response?.status,
+        message: error.message
+      });
       return false;
     }
   };
@@ -155,7 +169,8 @@ const Protected = () => {
       const accessToken = localStorage.getItem("accessToken");
 
       console.log("Checking auth status:", {
-        hasAccessToken: !!accessToken
+        hasAccessToken: !!accessToken,
+        tokenLength: accessToken?.length || 0
       });
 
       // If no access token
@@ -167,11 +182,11 @@ const Protected = () => {
 
       // Check if current access token is expired - DON'T remove it immediately
       if (isTokenExpired(accessToken)) {
-        console.log("Access token expired, keeping it and attempting refresh");
+        console.log("☠️ Access token expired, attempting refresh");
         
         const refreshed = await refreshToken();
         if (!refreshed) {
-          console.log("Refresh failed for expired token, now clearing auth data");
+          console.log("Refresh failed for expired token, clearing auth data");
           clearAuthData();
           return;
         }
@@ -188,11 +203,14 @@ const Protected = () => {
         
         const refreshed = await refreshToken();
         if (!refreshed) {
+          console.log("Refresh failed after invalid session, clearing auth data");
           clearAuthData();
         } else {
           // Try validating session again with new token
+          console.log("Retry session validation with new token");
           const retrySessionValid = await validateUserSession();
           if (!retrySessionValid) {
+            console.log("Retry session validation failed, clearing auth data");
             clearAuthData();
           }
         }
