@@ -60,7 +60,8 @@ function Appointments() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const customerId = JSON.parse(localStorage.getItem('customer'))?.id;
+        const customerId = JSON.parse(localStorage.getItem('customerData')).id;
+        console.log("Fetching appointments for customer ID:", customerId);
         console.log("Customer ID:", customerId);
         const response = await apiClient.get(`/appointments/get/customer/${customerId}`);
         console.log("Appointments data:", response.data.data);
@@ -74,6 +75,11 @@ function Appointments() {
 
       }
       catch (err) {
+        if(err.response && err.response.status === 404) {
+          console.log(err.response.data.error.message || 'No appointments found for this customer');
+          setAppointments([]); // No appointments found, set to empty array
+          return;
+        }
         console.error("Error fetching appointments:", err);
         setError(err.response?.data?.message || 'Failed to load appointments');
       }
