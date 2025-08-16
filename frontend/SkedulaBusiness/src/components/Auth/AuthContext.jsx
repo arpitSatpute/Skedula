@@ -42,16 +42,36 @@ export const AuthProvider = ({ children }) => {
 
         console.log('AuthContext - Attempting login with:', { email, role, password });
         
-        const response = await axios.post(url, { email, password, role });
-        const { accessToken } = response.data.data;
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('userRole', role);
-        setUser({ email, role });
-        console.log('Login successful');
-        setIsAuthenticated(true);
-      console.log('AuthContext - Login successful');
+        const response = await axios.post(`${baseUrl}/auth/login`, 
+            { email, password, role }, 
+            { 
+                withCredentials: true, // Send cookies
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        console.log('AuthContext - Login response received:', response.data);
+        const accessToken = response.data.data.accessToken;
+
+        if(accessToken) {
+          localStorage.setItem('accessToken', accessToken);
+          console.log('AuthContext - Access token stored');
+          localStorage.setItem('userRole', role);
+          setUser({ email, role });
+          console.log('Login successful');
+          setIsAuthenticated(true);
+          console.log('AuthContext - Login successful');
+          return {success: true};
       
-      return response.data;
+        }
+        else {
+            console.log("❌ AuthContext: No access token in login response");
+            return { 
+                success: false, 
+                message: 'No access token received' 
+            };
+        }
     } catch (error) {
       console.error('AuthContext - Login failed:', error);
       throw error;
