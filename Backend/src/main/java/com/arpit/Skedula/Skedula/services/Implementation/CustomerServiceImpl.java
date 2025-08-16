@@ -9,6 +9,7 @@ import com.arpit.Skedula.Skedula.entity.enums.Role;
 import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.AppointmentRepository;
 import com.arpit.Skedula.Skedula.repository.CustomerRepository;
+import com.arpit.Skedula.Skedula.repository.UserRepository;
 import com.arpit.Skedula.Skedula.services.CustomerService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -29,6 +30,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final CustomerRepository customerRepository;
     private final ModelMapper modelMapper;
     private final AppointmentRepository appointmentRepository;
+    private final UserRepository userRepository;
 
     @Override
     public CustomerDTO createCustomer(User user) {
@@ -44,9 +46,10 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public CustomerDTO getCurrentCustomer() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        Customer customer = customerRepository.findByUser_Email(email)
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found for email: " + email));
+        Customer customer = customerRepository.findByUser_Id(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found for email: " + email));
-        return entityToDTO(customer, customer.getUser().getId());
+        return entityToDTO(customer, user.getId());
     }
 
     @Override

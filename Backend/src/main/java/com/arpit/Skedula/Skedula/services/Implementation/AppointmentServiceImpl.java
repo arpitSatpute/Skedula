@@ -157,6 +157,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         List<Appointment> appointmentList = appointmentRepository.findByBookedBy(customer);
         if (appointmentList.isEmpty()) {
             throw new ResourceNotFoundException("No appointments found for the given customer.");
+
         }
         return appointmentList.stream()
                 .map(this::convertToDTO)
