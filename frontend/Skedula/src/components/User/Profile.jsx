@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import apiClient from '../Auth/ApiClient'
+import EditImage from './EditImage';
 
 function Profile() {
   const [userData, setUserData] = useState({
@@ -10,6 +11,7 @@ function Profile() {
     error: null
   })
   const [activeTab, setActiveTab] = useState('details')
+  const [showEditImage, setShowEditImage] = useState(false);
   
   const navigate = useNavigate()
 
@@ -28,6 +30,10 @@ function Profile() {
         loading: false,
         error: null
       })
+
+      console.log("User: ", userResult);
+      console.log("Customer: ", customerResult);
+      // console.log("image: ", userData.)
     } catch (error) {
       setUserData(prev => ({
         ...prev,
@@ -147,6 +153,36 @@ function Profile() {
 
   const { user, customer } = userData
 
+  const handleImageChange = () => {
+    setShowEditImage(true);
+  }
+
+  const handleImageSelect = async (imageFile) => {
+    console.log('Selected image:', imageFile);
+    
+    const formData = new FormData();
+    formData.append('file', imageFile);
+    console.log(customer);
+    console.log(user);
+    try {
+      // Use apiClient instead of fetch, and correct endpoint
+      const response = await apiClient.put(`/user/update/image/${user.id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      console.log('Image uploaded successfully:', response.data);
+      setShowEditImage(false);
+      loadUserProfile(); // Reload profile to get new image
+      
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Failed to upload image. Please try again.');
+      throw error;
+    }
+  };
+
   return (
     <div className="bg-light min-vh-100">
       <div className="container py-4">
@@ -166,20 +202,61 @@ function Profile() {
                     {/* Profile Avatar */}
                     <div className="position-relative d-inline-block mb-4">
                       <div className="bg-gradient rounded-circle d-flex align-items-center justify-content-center text-white shadow-lg mx-auto" 
-                           style={{
-                             width: '120px', 
-                             height: '120px', 
-                             fontSize: '3rem',
-                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                           }}>
-                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                          style={{
+                            width: '120px', 
+                            height: '120px', 
+                            fontSize: '3rem',
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                          }}>                            
+                        
+                        {user?.imageUrl ? (
+                          <img 
+                            src={user?.imageUrl} 
+                            alt="Profile" 
+                            className="rounded-circle border border-3 border-light shadow-sm"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.querySelector('.initials-fallback').style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        
+                        {/* <span 
+                          className="initials-fallback d-flex align-items-center justify-content-center"
+                          style={{ 
+                            display: user?.imageUrl ? 'none' : 'flex',
+                            width: '100%', 
+                            height: '100%'
+                          }}
+                        >
+                          {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                        </span> */}
                       </div>
+                      
+                      {/* Verified Badge */}
                       <span className="position-absolute bottom-0 end-0 bg-success rounded-circle border border-4 border-white d-flex align-items-center justify-content-center" 
                             style={{width: '35px', height: '35px'}}>
                         <i className="bi bi-check-lg text-white"></i>
                       </span>
+                      
+                      {/* Edit Button */}
+                      <button 
+                        className="btn btn-light rounded-circle border-3 border-white position-absolute shadow-sm d-flex align-items-center justify-content-center"
+                        style={{
+                          width: '40px', 
+                          height: '40px', 
+                          top: '0', 
+                          right: '0',
+                          transform: 'translate(25%, -25%)'
+                        }}
+                        onClick={handleImageChange}                
+                        title="Edit Profile Picture"
+                      >
+                        <i className="bi bi-pencil text-dark"></i>
+                      </button>
                     </div>
-                    
+                                        
                     {/* User Name */}
                     <h1 className="display-5 fw-bold text-dark mb-3">{user?.name || 'Welcome'}</h1>
                     
@@ -277,6 +354,15 @@ function Profile() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Edit Image Modal */}
+        {showEditImage && (
+          <EditImage 
+            onImageSelect={handleImageSelect}
+            currentImage={user?.profileImage}
+            onCancel={() => setShowEditImage(false)}
+          />
         )}
       </div>
     </div>

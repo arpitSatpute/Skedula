@@ -527,15 +527,49 @@ function Appointments() {
                     </div>
 
                     {/* Service Details */}
+
+                    <div className="mb-3">
+                      <div className="bg-light rounded-3 p-3">
+                        <h6 className="fw-semibold text-dark mb-2">
+                          <i className="bi bi-gear text-primary me-2"></i>
+                          Appointment ID
+                        </h6>
+                        <p className="mb-0 text-muted">{app.appointmentId || 'Appointment details not available'}</p>
+                      </div>
+                    </div>
+
                     <div className="mb-3">
                       <div className="bg-light rounded-3 p-3">
                         <h6 className="fw-semibold text-dark mb-2">
                           <i className="bi bi-gear text-primary me-2"></i>
                           Service
                         </h6>
-                        <p className="mb-0 text-muted">{app.serviceOffered || 'Service details not available'}</p>
+                        <p className="mb-0 text-muted">{app.serviceOfferedId || 'Service details not available'}</p>
                       </div>
                     </div>
+
+                    <div className="mb-3">
+                      <div className="bg-light rounded-3 p-3">
+                        <h6 className="fw-semibold text-dark mb-2">
+                          <i className="bi bi-gear text-primary me-2"></i>
+                          Business Id
+                        </h6>
+                        <p className="mb-0 text-muted">{app.bId || 'Business details not available'}</p>
+                      </div>
+                    </div>
+
+
+                    <div className="mb-3">
+                      <div className="bg-light rounded-3 p-3">
+                        <h6 className="fw-semibold text-dark mb-2">
+                          <i className="bi bi-gear text-primary me-2"></i>
+                          Customer Id
+                        </h6>
+                        <p className="mb-0 text-muted">{app.customerId || 'Customer details not available'}</p>
+                      </div>
+                    </div>
+
+                    
 
                     {/* Notes */}
                     {app.notes && (
