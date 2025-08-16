@@ -364,6 +364,9 @@ function ListBusiness() {
                     </div>
                   </div>
                 </div>
+
+                <p>Business Id: {business.businessId}</p>
+
               </div>
 
               {/* Card Footer */}

@@ -156,6 +156,15 @@ const Business = () => {
                     
                     <div className="row g-4">
                       <div className="col-md-6">
+                                                <div className="d-flex align-items-center mb-3 p-3 bg-light rounded-3">
+                          <div className="bg-danger bg-opacity-10 rounded-circle p-2 me-3">
+                            <i className="bi bi-globe text-danger"></i>
+                          </div>
+                          <div>
+                            <small className="text-muted d-block">Businesss Id</small>
+                            <span className="fw-semibold">{business.businessId}</span>
+                          </div>
+                        </div>
                         <div className="d-flex align-items-center mb-3 p-3 bg-light rounded-3">
                           <div className="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
                             <i className="bi bi-envelope text-primary"></i>
@@ -212,6 +221,7 @@ const Business = () => {
                             <span className="fw-semibold">{business.country} - {business.zipCode}</span>
                           </div>
                         </div>
+
                       </div>
                     </div>
 
@@ -304,12 +314,9 @@ const Business = () => {
                       <div className="d-flex align-items-center justify-content-between text-muted small">
                         <span>
                           <i className="bi bi-people me-1"></i>
-                          50+ bookings
+                          Business Id: {service.serviceOfferedId}
                         </span>
-                        <span>
-                          <i className="bi bi-star-fill text-warning me-1"></i>
-                          4.8 rating
-                        </span>
+                        
                       </div>
                     </div>
                   </div>
