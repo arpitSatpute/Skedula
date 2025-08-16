@@ -160,10 +160,14 @@ const ListServices = () => {
                   <i className="bi bi-info-circle"></i>
                 </button>
               </div>
+              
+              <div className="d-grid gap-2 d-md-flex">
+                <p className="pt-2">Service Id: {service.serviceOfferedId}</p>
+              </div>
             </div>
 
             {/* Card Footer */}
-            
+          
           </div>
         </div>
       ))}

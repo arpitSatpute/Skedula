@@ -119,6 +119,7 @@ function Services() {
               <div className="text-center mb-4">
                 <h2 className="card-title fw-bold text-dark mb-2">{service.name}</h2>
                 <p className="text-muted lead">{service.description}</p>
+                <p className="text-muted lead">Service Id: {service.serviceOfferedId}</p>
               </div>
 
               {/* Service Info Grid */}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../Auth/ApiClient.js';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import EditImage from './EditImage.jsx';
 
 const UserProfile = () => {
   const [business, setBusiness] = useState(null);
@@ -8,6 +9,7 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
+  const [showEditImage, setShowEditImage] = useState(false);
 
   // Mock data - replace with actual API call
   
@@ -60,6 +62,35 @@ const UserProfile = () => {
 
   const completionRate = (totalAppointmentsCompleted/(totalAppointments - totalAppointmentsCancelled) * 100).toFixed(2) || 0;
 
+  const handleImageChange = () => {
+    setShowEditImage(true);
+  }
+
+  const handleImageSelect = async (imageFile) => {
+    console.log('Selected image:', imageFile);
+    
+    const formData = new FormData();
+    formData.append('file', imageFile);
+    
+    try {
+      // Use apiClient instead of fetch, and correct endpoint
+      const response = await apiClient.put(`/user/update/image/${user.id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      console.log('Image uploaded successfully:', response.data);
+      setShowEditImage(false);
+      fetchUserProfile(); // Changed from loadUserProfile() to fetchUserProfile()
+      
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Failed to upload image. Please try again.');
+      throw error;
+    }
+  };
+
   if (loading) {
     return (
       <div className="container py-5">
@@ -105,20 +136,57 @@ const UserProfile = () => {
           <div className="text-center">
             {/* Profile Avatar */}
             <div className="position-relative d-inline-block mb-4">
-              <div className="bg-gradient rounded-circle d-flex align-items-center justify-content-center text-black shadow-lg mx-auto" 
-                   style={{
-                     width: '120px', 
-                     height: '120px', 
-                     fontSize: '3rem',
-                     background: 'grey',
-                     color: '#000'
-                   }}>
-                {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              <div className="bg-gradient rounded-circle d-flex align-items-center justify-content-center text-white shadow-lg mx-auto" 
+                  style={{
+                    width: '120px', 
+                    height: '120px', 
+                    fontSize: '3rem',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                  }}>                            
+                
+                {user?.imageUrl ? (
+                  <img 
+                    src={user?.imageUrl} 
+                    alt="Profile" 
+                    className="rounded-circle border border-3 border-light shadow-sm"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.parentElement.querySelector('.initials-fallback').style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                
+                {/* <span 
+                  className="initials-fallback d-flex align-items-center justify-content-center"
+                  style={{ 
+                    display: user?.imageUrl ? 'none' : 'flex',
+                    width: '100%', 
+                    height: '100%'
+                  }}
+                >
+                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </span> */}
               </div>
+              
               <span className="position-absolute bottom-0 end-0 bg-success rounded-circle border border-4 border-white d-flex align-items-center justify-content-center" 
                     style={{width: '35px', height: '35px'}}>
                 <i className="bi bi-check-lg text-white"></i>
               </span>
+              <button 
+                className="btn btn-light rounded-circle border-3 border-white position-absolute shadow-sm d-flex align-items-center justify-content-center"
+                style={{
+                  width: '40px', 
+                  height: '40px', 
+                  top: '0', 
+                  right: '0',
+                  transform: 'translate(25%, -25%)'
+                }}
+                onClick={handleImageChange}                
+                title="Edit Profile Picture"
+              >
+                <i className="bi bi-pencil text-dark"></i>
+              </button>
             </div>
             
             {/* User Name */}
@@ -424,6 +492,13 @@ const UserProfile = () => {
               </div>
             </div>
           </div>
+        )}
+        {showEditImage && (
+          <EditImage 
+            onImageSelect={handleImageSelect}
+            currentImage={user?.profileImage}
+            onCancel={() => setShowEditImage(false)}
+          />
         )}
       </div>
     </div>

@@ -190,7 +190,7 @@ const Business = () => {
                         </div>
                         <div>
                           <h1 className="fw-bold mb-1 text-black">{business.name}</h1>
-                          <p className="mb-0 opacity-85 fs-5 text-black">Business Dashboard</p>
+                          <p className="mb-0 opacity-85 fs-5 text-black">Business Id: {business.businessId || `SBE000000`}</p>
                         </div>
                       </div>
                       <div className="row g-3">

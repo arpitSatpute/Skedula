@@ -294,10 +294,31 @@ function Appointments() {
               <div className="col-12">
                 <div className="bg-light rounded-3 p-3">
                   <div className="d-flex align-items-center">
-                    <i className="bi bi-gear text-success fs-4 me-3"></i>
+                    <i className="bi bi-gear text-success fs-4 me-3 mb-3"></i>
                     <div>
-                      <h6 className="fw-bold mb-0">{app.serviceoffered}</h6>
+                      <h6 className="fw-bold mb-0 text-black">{`${app.appointmentId}`}</h6>
+                      <small className="text-muted">Appointment Id</small>
+                    </div>
+                  </div>
+                  <div className="d-flex align-items-center">
+                    <i className="bi bi-gear text-success fs-4 me-3 mb-3"></i>
+                    <div>
+                      <h6 className="fw-bold mb-0 text-black">{`${app.serviceOfferedId}`}</h6>
                       <small className="text-muted">Service Type</small>
+                    </div>
+                  </div>
+                  <div className="d-flex align-items-center">
+                    <i className="bi bi-gear text-success fs-4 me-3 mb-3"></i>
+                    <div>
+                      <h6 className="fw-bold mb-0 text-black">{`${app.bId}`}</h6>
+                      <small className="text-muted">Business Id</small>
+                    </div>
+                  </div>
+                  <div className="d-flex align-items-center">
+                    <i className="bi bi-gear text-success fs-4 me-3 mb-3"></i>
+                    <div>
+                      <h6 className="fw-bold mb-0">{app.customerId}</h6>
+                      <small className="text-muted">Customer Id</small>
                     </div>
                   </div>
                 </div>

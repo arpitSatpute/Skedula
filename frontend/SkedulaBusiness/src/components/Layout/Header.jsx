@@ -205,7 +205,7 @@ const Header = () => {
                   <a className="nav-link fw-semibold" href="#features">Features</a>
                 </li>
                 <li className="nav-item">
-                  <a className="nav-link fw-semibold" href="#about">About</a>
+                  <a className="nav-link fw-semibold" href="/about">About</a>
                 </li>
                 <li className="nav-item">
                   <a className="nav-link fw-semibold" href="#testimonials">Reviews</a>
