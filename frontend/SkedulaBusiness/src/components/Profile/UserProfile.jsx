@@ -303,7 +303,7 @@ const UserProfile = () => {
                     <table className="table table-hover mb-0">
                       <thead className="bg-light">
                         <tr>
-                          <th className="border-0 px-4 py-3">Service</th>
+                          <th className="border-0 px-4 py-3">Appointment</th>
                           <th className="border-0 px-4 py-3">Date</th>
                           <th className="border-0 px-4 py-3">Status</th>
                         </tr>
@@ -315,8 +315,8 @@ const UserProfile = () => {
                         .map(appointment => (
                           <tr key={appointment.id}>
                             <td className="px-4 py-3">
-                              <div className="fw-semibold">{appointment.service}</div>
-                              <small className="text-muted">ID: #{appointment.id}</small>
+                              {/* <div className="fw-semibold text-black">{appointment.id}</div> */}
+                              <small className="text-muted">ID: {appointment.appointmentId}</small>
                             </td>
                             <td className="px-4 py-3">
                               {new Date(appointment.date).toLocaleDateString('en-IN')}
