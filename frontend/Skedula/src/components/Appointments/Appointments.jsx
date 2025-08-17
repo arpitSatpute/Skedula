@@ -187,6 +187,20 @@ function Appointments() {
     return '';
   };
 
+  const handleCancelBooking = async (appointmentId) => {
+    try {
+      const response = await apiClient.patch(`/appointments/cancelBooking/${appointmentId}`)
+      console.log("response.data.data");
+      alert("Appointment cancelled successfully. Cancellation charge 10% of total amount.");
+      window.location.reload(); // Reload to fetch updated appointments
+    }
+    catch (err) {
+      console.error("Error cancelling appointment:", err);
+      setError(err.response?.data?.message || 'Failed to cancel appointment');
+    }
+
+  }
+
   if (loading) {
     return (
       <div className="container py-5">
@@ -584,10 +598,6 @@ function Appointments() {
 
                     {/* Action Buttons */}
                     <div className="d-grid gap-2 d-md-flex mt-3">
-                      <button className="btn btn-outline-primary btn-sm rounded-3 flex-fill">
-                        <i className="bi bi-eye me-1"></i>
-                        View Details
-                      </button>
                       {app.appointmentStatus?.toLowerCase() === 'pending' && (
                         <button className="btn btn-outline-warning btn-sm rounded-3">
                           <i className="bi bi-pencil me-1"></i>
@@ -595,6 +605,33 @@ function Appointments() {
                         </button>
                       )}
                     </div>
+
+                    <div className="d-grid gap-2 d-md-flex mt-3">
+                      {app.appointmentStatus?.toLowerCase() === 'pending' &&(
+                        
+                        <p className='text-secondary'>Feature available soon</p>                       
+                      )
+                     }
+                    </div>
+
+                    <div className="d-grid gap-2 d-md-flex mt-3">
+                      {app.appointmentStatus?.toLowerCase() === 'booked' &&(
+                        
+                        <button className="btn btn-outline-danger btn-sm rounded-3" onClick={() => handleCancelBooking(app.id)}>
+                          <i className="bi bi-pencil me-1"></i>
+                          Cancel                          
+                        </button>                        
+                      )
+                     }
+                    </div>
+                    <div className="d-grid gap-2 d-md-flex mt-3">
+                      {app.appointmentStatus?.toLowerCase() === 'booked' &&(
+                        
+                        <p className='text-secondary'>Cancellation Charge 10%</p>                       
+                      )
+                     }
+                    </div>
+                    
                   </div>
                 </div>
               </div>

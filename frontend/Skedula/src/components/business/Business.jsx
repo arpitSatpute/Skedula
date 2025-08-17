@@ -314,7 +314,7 @@ const Business = () => {
                       <div className="d-flex align-items-center justify-content-between text-muted small">
                         <span>
                           <i className="bi bi-people me-1"></i>
-                          Business Id: {service.serviceOfferedId}
+                          Service Id: {service.serviceOfferedId}
                         </span>
                         
                       </div>
