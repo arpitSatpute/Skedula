@@ -151,6 +151,11 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentService.getAppointmentBydate(date, businessId));
     }
 
+    @PatchMapping("/cancelBooking/{id}")
+    public ResponseEntity<Void> cancelBooking(@PathVariable Long id) {
+        return ResponseEntity.ok(appointmentService.cancelBooking(id));
+    }
+
 //    @GetMapping("/get/customer/{customerId")
 //    public ResponseEntity<List<AppointmentDTO>> getAppointmentByCustomerId(@PathVariable Long customerId) {
 //        return ResponseEntity.ok(appointmentService.getAppointmentByCustomerId(customerId));

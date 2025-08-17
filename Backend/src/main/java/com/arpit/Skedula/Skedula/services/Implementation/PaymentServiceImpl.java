@@ -40,4 +40,9 @@ public class PaymentServiceImpl implements PaymentService {
         walletPaymentStrategies.refundPayment(payment);
     }
 
+    @Override
+    public void refundBookedAppointmentPayment(Appointment appointment) {
+        Payment payment = paymentRepository.findByAppointment(appointment).orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
+        walletPaymentStrategies.refundBookedAppointmentPayment(payment);
+    }
 }

@@ -35,7 +35,7 @@ public class WalletPaymentStrategies {
         Business business = payment.getAppointment().getBusiness();
         Customer customer = payment.getAppointment().getBookedBy();
 
-        Wallet customerWallet = walletRepository.findByUserId(customer.getUser().getId())
+        Wallet customerWallet = walletRepository.findByUser_Id(customer.getUser().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer wallet not found"));
 
 
@@ -60,11 +60,11 @@ public class WalletPaymentStrategies {
         Business business = payment.getAppointment().getBusiness();
         Customer customer = payment.getAppointment().getBookedBy();
 
-        Wallet businessWallet = walletRepository.findByUserId(business.getId()).orElseThrow(() -> new ResourceNotFoundException("Customer wallet not found"));
+        Wallet businessWallet = walletRepository.findByUser_Id(business.getOwner().getId()).orElseThrow(() -> new ResourceNotFoundException("Business wallet not found"));
 
         if(businessWallet.getBalance().compareTo(payment.getAmount()) < 0) {
-            payment.setPaymentStatus(PaymentStatus.FAILED);
-            paymentRepository.save(payment);
+//            payment.setPaymentStatus(PaymentStatus.FAILED);
+//            paymentRepository.save(payment);
             throw new RuntimeException("Insufficient balance in business wallet: refund failed. Contact Business Owner");
         }
         walletService.deductMoney(business.getOwner(), payment.getAmount(), generateTransactionId(), payment.getAppointment());
@@ -73,6 +73,28 @@ public class WalletPaymentStrategies {
         paymentRepository.save(payment);
 
     }
+
+    @Transactional
+    public void refundBookedAppointmentPayment(Payment payment) {
+        Business business = payment.getAppointment().getBusiness();
+        Customer customer = payment.getAppointment().getBookedBy();
+
+        Wallet businessWallet = walletRepository.findByUser_Id(business.getOwner().getId()).orElseThrow(() -> new ResourceNotFoundException("Business wallet not found"));
+
+        if(businessWallet.getBalance().compareTo(payment.getAmount()) < 0) {
+//            payment.setPaymentStatus(PaymentStatus.FAILED);
+//            paymentRepository.save(payment);
+            throw new RuntimeException("Insufficient balance in business wallet: refund failed. Contact Business Owner");
+        }
+
+        BigDecimal refundAmount = payment.getAmount().multiply(BigDecimal.ONE.subtract(PLATFORM_FEES.multiply(BigDecimal.TWO)));
+        walletService.deductMoney(business.getOwner(), refundAmount, generateTransactionId(), payment.getAppointment());
+        walletService.addMoney(customer.getUser(), refundAmount, generateTransactionId(), payment.getAppointment());
+        payment.setPaymentStatus(PaymentStatus.REFUNDED);
+        paymentRepository.save(payment);
+
+    }
+
 
 
 

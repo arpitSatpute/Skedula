@@ -49,4 +49,6 @@ public interface AppointmentService {
     List<AppointmentCard> getAppointmentsBeforeDate(LocalDate date, Long businessId);
 
     List<AppointmentCard> getAppointmentBydate(LocalDate date, Long businessId);
+
+    Void cancelBooking(Long id);
 }

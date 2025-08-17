@@ -92,7 +92,7 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     public Wallet getWalletByUserId(Long id) {
-        return walletRepository.findByUserId(id)
+        return walletRepository.findByUser_Id(id)
                 .orElseThrow(() -> new RuntimeException("Wallet not found for user ID: " + id));
     }
 

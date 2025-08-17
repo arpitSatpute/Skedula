@@ -193,78 +193,6 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
 
-//    @Override
-//    public List<AppointmentDTO> getAllAppointmentByStatusRoleUserId(AppointmentStatus status, Role role, Long userId) {
-//
-//        // For Customer
-//        if(role.equals(Role.CUSTOMER)) {
-//            List<Appointment> appointmentList = appointmentRepository.getAppointmentByAppointmentStatusAndBookedBy_User_RolesAndBookedBy_Id(status, role, userId);
-//            if (appointmentList.isEmpty()) {
-//                throw new ResourceNotFoundException("No appointments found for the given status, role, and customer.");
-//            }
-//            return appointmentList.stream()
-//                    .map(this::convertToDTO)
-//                    .toList();
-//        }
-//
-//        // For Business
-//        List<Appointment> appointmentList = appointmentRepository.getAppointmentByAppointmentStatusAndBookedBy_User_RolesAndBusiness_Id(status, role, userId);
-//        if (appointmentList.isEmpty()) {
-//            throw new ResourceNotFoundException("No appointments found for the given status, role, and customer.");
-//        }
-//        return appointmentList.stream()
-//                .map(this::convertToDTO)
-//                .toList();
-//
-//    }
-//
-//    @Override
-//    public List<AppointmentDTO> getAllAppointmentByStatusRoleUserIdDate(AppointmentStatus status, Role role, Long userId, LocalDate date) {
-//        if(role.equals(Role.CUSTOMER)) {
-//            List<Appointment> appointmentList = appointmentRepository.getAppointmentByAppointmentStatusAndBookedBy_User_RolesAndBookedBy_IdAndAppointmentDate(status, role, userId, date);
-//            if (appointmentList.isEmpty()) {
-//                throw new ResourceNotFoundException("No appointments found for the given status, role, and customer.");
-//            }
-//            return appointmentList.stream()
-//                    .map(this::convertToDTO)
-//                    .toList();
-//        }
-//
-//        // For Business
-//        List<Appointment> appointmentList = appointmentRepository.getAppointmentByAppointmentStatusAndBookedBy_User_RolesAndBusiness_IdAndAppointmentDate(status, role, userId, date);
-//        if (appointmentList.isEmpty()) {
-//            throw new ResourceNotFoundException("No appointments found for the given status, role, and customer.");
-//        }
-//        return appointmentList.stream()
-//                .map(this::convertToDTO)
-//                .toList();
-//
-//
-//    }
-//
-//    @Override
-//    public List<AppointmentDTO> getAllAppointmentByStatusRoleUserIdServiceId(AppointmentStatus status, Role role, Long userId, Long serviceId) {
-//        if(role.equals(Role.CUSTOMER)) {
-//            List<Appointment> appointmentList = appointmentRepository.getAppointmentByAppointmentStatusAndBookedBy_User_RolesAndBookedBy_IdAndServiceOffered_Id(status, role, userId, serviceId);
-//            if (appointmentList.isEmpty()) {
-//                throw new ResourceNotFoundException("No appointments found for the given status, role, and customer.");
-//            }
-//            return appointmentList.stream()
-//                    .map(this::convertToDTO)
-//                    .toList();
-//        }
-//
-//        // For Business
-//        List<Appointment> appointmentList = appointmentRepository.getAppointmentByAppointmentStatusAndBookedBy_User_RolesAndBusiness_IdAndServiceOffered_Id(status, role, userId, serviceId);
-//        if (appointmentList.isEmpty()) {
-//            throw new ResourceNotFoundException("No appointments found for the given status, role, and customer.");
-//        }
-//        return appointmentList.stream()
-//                .map(this::convertToDTO)
-//                .toList();
-//    }
-
-
     @Override
     public List<AppointmentCard> getAllAppointmentsByBusinessIdAndServiceId(Long businessId, Long serviceId) {
         Business business = businessRepository.findById(businessId)
@@ -322,6 +250,24 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    @Override
+    public Void cancelBooking(Long id) {
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
+        if(appointment.getAppointmentStatus() != AppointmentStatus.BOOKED) {
+            throw new RuntimeException("Only booked appointments can be cancelled.");
+        }
+        appointment.setAppointmentStatus(AppointmentStatus.CANCELLED);
+        appointmentRepository.save(appointment);
+
+
+        paymentService.refundBookedAppointmentPayment(appointment);
+
+        return null;
+    }
+
+
     private AppointmentCard convertToCard(Appointment newAppointment) {
         AppointmentCard result = new AppointmentCard();
 
@@ -368,14 +314,15 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     private boolean isAppointmentIdAvailable(String appointmentId) {
-        return appointmentRepository.findByAppointmentId(appointmentId);
+        return appointmentRepository.existsByAppointmentId(appointmentId);
+
     }
 
     private String generateAppointmentId() {
         // Generate a unique appointment ID (e.g., using UUID or a custom logic)
         String apptId =  "APPT-" + System.currentTimeMillis();
         if (isAppointmentIdAvailable(apptId)) {
-            return generateAppointmentId();
+             generateAppointmentId();
         }
         return apptId;
     }

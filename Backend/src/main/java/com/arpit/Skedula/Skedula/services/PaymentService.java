@@ -12,5 +12,7 @@ public interface PaymentService {
     Payment createNewPayment(Appointment appointment);
 
     void refundPayment(Appointment appointment);
+
+    void refundBookedAppointmentPayment(Appointment appointment);
 }
 
