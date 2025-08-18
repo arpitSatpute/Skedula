@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { AuthContext } from '../Auth/AuthContext';
 import apiClient from '../Auth/ApiClient';
+import { toast } from 'react-toastify';
 
 function AddBusiness() {
   const { id } = useParams()
@@ -80,6 +81,7 @@ function AddBusiness() {
   };
   
   useEffect(() => {
+    let ignore = false; // Flag to ignore updates if component unmounts
     console.log('AddBusiness useEffect triggered', { isEdit, id });
     
     if (!isEdit || !id) return;
@@ -121,6 +123,8 @@ function AddBusiness() {
           // Fallback: Fetch from API if no sessionStorage data
           console.log('No data in sessionStorage, fetching from API...');
           const response = await apiClient.get(`/business/get/${id}`);
+          if(!ignore) {
+
           const businessData = response.data.data;
           
           console.log('Fetched business data from API:', businessData);
@@ -143,19 +147,26 @@ function AddBusiness() {
             openTime: businessData.openTime || '',
             closeTime: businessData.closeTime || ''
           });
+          }
         }
       } catch (error) {
-        console.error('Error loading business data:', error);
-        setCustomError('Error loading business data. Please try again.');
+        if(!ignore) {
+          console.error('Error loading business data:', error);
+          setCustomError('Error loading business data. Please try again.');
+          toast.error(error.response.data.errror.message);
+        }
       } finally {
-        setIsLoadingBusiness(false);
+        if(!ignore) setIsLoadingBusiness(false);
       }
     };
 
     // Add a small delay to ensure sessionStorage is set
     const timeoutId = setTimeout(loadBusinessData, 100);
     
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      ignore = true; // Set ignore flag to true on cleanup
+    }
   }, [id, isEdit])
 
   const handleInputChange = (field, value) => {
@@ -168,6 +179,7 @@ function AddBusiness() {
   }
 
   const handleSubmit = async (e) => {
+    let ignore = false; // Flag to ignore updates if component unmounts
     e.preventDefault();
     
     setLoading(true);
@@ -188,40 +200,52 @@ function AddBusiness() {
       if (!isEdit) {
         console.log("Creating new business:", formData);
         const response = await apiClient.post(`/business/register`, formData);
-        console.log("Business created:", response.data);
-        
-        if (response.status === 200 || response.status === 201) {
-          alert('Business created successfully!');
-          navigate('/businesses');
+        if(!ignore) {
+            console.log("Business created:", response.data);
+          
+          if (response.status === 200 || response.status === 201) {
+            toast.success('Business created successfully!');
+            navigate('/businesses');
+          }
         }
       } else {
         console.log("Updating business:", formData);
         const response = await apiClient.put(`/business/update/${id}`, formData);
-        console.log("Business updated:", response.data);
+        if(!ignore) {
+          console.log("Business updated:", response.data);
         
-        if (response.status === 200) {
-          alert('Business updated successfully!');
-          navigate('/businesses');
+          if (response.status === 200) {
+            toast.success('Business updated successfully!');
+            sessionStorage.removeItem('editBusiness'); // Clear sessionStorage after update
+            navigate('/businesses');
+          }
         }
       }
       
     } catch (error) {
-      console.error('Error saving business:', error);
-      console.error('Error response:', error.response?.data);
-      
-      // Safely extract error message
-      let errorMessage = 'Failed to save business. Please try again.';
-      
-      if (error.response?.data) {
-        errorMessage = getErrorMessage(error.response.data);
-      } else if (error.message) {
-        errorMessage = error.message;
+      if (!ignore) {
+        console.error('Error saving business:', error);
+        console.error('Error response:', error.response?.data);
+        toast.error(error.response?.data?.error?.message || 'Failed to save business');
+        
+        // Safely extract error message
+        let errorMessage = 'Failed to save business. Please try again.';
+        
+        if (error.response?.data) {
+          errorMessage = getErrorMessage(error.response.data);
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        setCustomError(errorMessage);
       }
-      
-      setCustomError(errorMessage);
     } finally {
-      setLoading(false);
+      if (!ignore) setLoading(false);
     }
+    return () => {
+      ignore = true; // Set ignore flag to true on cleanup
+    }
+
   }
 
   // Check authentication

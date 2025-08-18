@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import apiClient from '../Auth/ApiClient'
+import { toast } from 'react-toastify'
 
 function AddService() {
   const { id } = useParams() // Get business ID from URL
@@ -49,6 +50,7 @@ function AddService() {
     submitBtn.disabled = true; // Disable button to prevent multiple submissions
     try {
       const response = await apiClient.post('/services-offered/create', formData);
+      toast.success('Service created successfully!');
       
       setServiceId(response.data.data.id);
       try {
@@ -56,15 +58,18 @@ function AddService() {
         file.append('file', image);
       
         const uploadImage = await apiClient.put(`/services-offered/uploadFile/${response.data.data.id}`, file);
+        toast.success('Service image uploaded successfully!');
         const imageResponse = await uploadImage.data.data;
        } catch (error) {
         console.error('Error uploading image:', error);
+        toast.error(error.response?.data?.error?.message || 'Failed to upload image');
         setError('Failed to upload image');
       } 
       setSuccess('Service created successfully!');
       setLoading(true);
     } catch (error) {
       console.error('Error creating service:', error);
+      toast.error(error.response?.data?.error?.message || 'Failed to create service');
       setError('Failed to create service');
     }
     finally {

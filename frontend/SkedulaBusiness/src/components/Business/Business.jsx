@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient.js';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import ConfirmationModal from '../ConfirmationModel/ConfirmationModel.jsx';
+import { toast } from 'react-toastify';
 
 const Business = () => {
   const [business, setBusiness] = useState(null);
@@ -15,24 +16,36 @@ const Business = () => {
 
   useEffect( () => {
     // Simulate API call
+    let ignore = false;
+
     const loadBusiness = async () => {
       setLoading(true);
       try {
         const response = await apiClient.get(`/business/get/user`);
-          console.log("Business data loaded:", response.status);
+        if(!ignore) {
           console.log("Business data loaded:", response.data.data);
           setBusiness(response.data.data);
+          toast.success('Business data loaded successfully!');
+        }
       } catch (err) {
         if (err.response && err.response.status === 404) {
-            setBusiness(null);
+          if(!ignore) {
+            toast.error('No business found for this user.');
+              setBusiness(null);
+            }
+            console.error("Error loading business data:", err);
+            toast.error(err.response?.data?.error?.message || 'Failed to load business data');
           }
-          console.error("Error loading business data:", err);
       } finally {
-        setLoading(false);
+        if(!ignore) setLoading(false);
       }
     };
 
     loadBusiness();
+
+    return () => {
+      ignore = true;
+    }
   }, []);
 
   if (loading) {

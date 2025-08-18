@@ -3,6 +3,7 @@ import apiClient from '../Auth/ApiClient.js';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import EditImage from './EditImage.jsx';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const UserProfile = () => {
   const [business, setBusiness] = useState(null);
@@ -15,47 +16,55 @@ const UserProfile = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchUserProfile();
-  }, []);
+  let ignore = false; // guard against double calls / unmount issues
 
   const fetchUserProfile = async () => {
     setLoading(true);
-    setBusinessNotFound(false); // Reset business not found state
-    
-    try {
-      const response = await apiClient.get('/user/getCurrentUser');
-      await setUser(response.data.data);
-      console.log('User data:', response.data.data);
-      setLoading(false);
+    setBusinessNotFound(false);
 
-    } catch (err) {
-      if(err.response && err.response.status === 404) {
-        setUser([]);
-      }
-      console.error('Error fetching profile:', err);
-      setError('Failed to load profile data. Please try again later.');
-      setLoading(false);
-    }
-    
     try {
-      const businessResponse = await apiClient.get('/business/get/user');
-      await setBusiness(businessResponse.data.data);
-      console.log('Business data:', businessResponse.data.data);
-    }
-    catch (err) {
-      if(err.response && err.response.status === 404) {
-        setBusiness(null); // Set to null instead of empty array
-        setBusinessNotFound(true); // Set business not found flag
-        console.log('No business registered for this user');
-        return;
+      // Fetch user
+      const response = await apiClient.get('/user/getCurrentUser');
+      if (!ignore) {
+        setUser(response.data.data);
+        console.log('User data:', response.data.data);
+        toast.success('User profile loaded successfully!');
       }
-      console.error('Error fetching business data:', err);
-      setError('Failed to load business data. Please try again later.');
-    }
-    finally {
-      setLoading(false);
+
+      // Fetch business
+      const businessResponse = await apiClient.get('/business/get/user');
+      if (!ignore) {
+        setBusiness(businessResponse.data.data);
+        console.log('Business data:', businessResponse.data.data);
+        toast.success('Business data loaded successfully!');
+      }
+    } catch (err) {
+      if (err.response?.status === 404) {
+        if (!ignore) {
+          setBusiness(null);
+          setBusinessNotFound(true);
+          toast.error('No business registered for this user.');
+          console.log('No business registered for this user');
+        }
+      } else {
+        console.error('Error fetching data:', err);
+        if (!ignore) {
+          setError('Failed to load profile or business data. Please try again later.');
+          toast.error(err.response?.data?.error?.message || 'Failed to load profile or business data');
+        }
+      }
+    } finally {
+      if (!ignore) setLoading(false);
     }
   };
+
+  fetchUserProfile();
+
+  return () => {
+    ignore = true; // cleanup
+  };
+}, []);
+
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -100,12 +109,13 @@ const UserProfile = () => {
       });
       
       console.log('Image uploaded successfully:', response.data);
+      toast.success('Profile image updated successfully!');
       setShowEditImage(false);
       fetchUserProfile();
       
     } catch (error) {
       console.error('Upload failed:', error);
-      alert('Failed to upload image. Please try again.');
+      toast.error('Failed to update profile image. Please try again.');
       throw error;
     }
   };

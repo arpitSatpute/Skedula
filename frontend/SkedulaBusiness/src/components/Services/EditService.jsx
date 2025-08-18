@@ -2,6 +2,7 @@ import React from 'react'
 import { Form, useNavigate, useParams } from 'react-router-dom';
 import { useState } from 'react';   
 import apiClient from '../Auth/ApiClient';
+import { toast } from 'react-toastify';
 
 function EditService() {
 
@@ -52,6 +53,7 @@ function EditService() {
             console.log('Sending request data:', requestData);
             
             const response = await apiClient.put(`/services-offered/update/${serviceId}`, requestData);
+            toast.info('Service updated successfully!');
             console.log('Service updated:', response.data);
             setSuccess('Service updated successfully!');
             
@@ -66,6 +68,7 @@ function EditService() {
         } catch (err) {
             console.error('Error updating service:', err);
             console.error('Error response:', err.response?.data);
+            toast.error(err.response?.data?.error?.message || 'Failed to update service');
             
             // Better error handling
             let errorMessage = 'Failed to update service.';

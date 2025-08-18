@@ -3,6 +3,7 @@ import axios from 'axios'
 import { useNavigate, useParams } from 'react-router-dom'
 import apiClient from '../Auth/ApiClient'
 import ConfirmationModal from '../ConfirmationModel/ConfirmationModel.jsx'
+import { toast } from 'react-toastify'
 
 function getStatusDetails(status) {
   switch (status) {
@@ -71,50 +72,59 @@ function Appointments() {
   ]
 
   // Function to fetch appointments based on tab, date and service
-  const fetchAppointments = async (tabType = activeTab, date = selectedDate) => {
-    setLoading(true)
-    setError(null)
-    
-    try {
-      console.log('Fetching appointments for date:', date);
-      let apiUrl = ''
-      
-      // Determine API endpoint based on tab type and service
-      if (tabType === null) {
-        apiUrl = `/appointments/get/date/${date}/${id}`
-      }
-      else if (!serviceId) {
-        if (tabType === 'upcoming') {
-          apiUrl = `/appointments/get/upcoming/${date}/${id}`
-          console.log(apiUrl);
-        } else {
-          apiUrl = `/appointments/get/previous/${date}/${id}`
-          console.log(apiUrl);
-        }
-      } else {
-        // Service-specific appointments
-        apiUrl = `/appointments/get/business/service/${id}/${serviceId}`  
-        console.log(apiUrl);
-      }
-      
-      console.log(`Fetching ${tabType} appointments from:`, apiUrl)
-      
-      const response = await apiClient.get(apiUrl)
-      setAppointments((response.data.data).reverse())
-      
-      console.log(`${tabType} appointments loaded for ${date}:`, response.data.data)
-      
-    } catch (err) {
-      console.error(`Error fetching ${tabType} appointments:`, err)
-      setError(`Failed to load ${tabType} appointments. Please try again later.`)
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  
   // Initial load when component mounts or dependencies change
   useEffect(() => {
+    let ignore = false; // Flag to ignore updates if component unmounts
+      
+    const fetchAppointments = async (tabType = activeTab, date = selectedDate) => {
+        setLoading(true)
+        setError(null)
+        
+        try {
+          console.log('Fetching appointments for date:', date);
+          let apiUrl = ''
+          
+          // Determine API endpoint based on tab type and service
+          if (tabType === null) {
+            apiUrl = `/appointments/get/date/${date}/${id}`
+          }
+          else if (!serviceId) {
+            if (tabType === 'upcoming') {
+              apiUrl = `/appointments/get/upcoming/${date}/${id}`
+              console.log(apiUrl);
+            } else {
+              apiUrl = `/appointments/get/previous/${date}/${id}`
+              console.log(apiUrl);
+            }
+          } else {
+            // Service-specific appointments
+            apiUrl = `/appointments/get/business/service/${id}/${serviceId}`  
+            console.log(apiUrl);
+          }
+          
+          console.log(`Fetching ${tabType} appointments from:`, apiUrl)
+          
+          const response = await apiClient.get(apiUrl)
+          if (ignore) return; // Ignore updates if component unmounted
+          toast.success(`Appointments loaded successfully!`  )
+          setAppointments((response.data.data).reverse())
+          
+          console.log(`${tabType} appointments loaded for ${date}:`, response.data.data)
+          
+        } catch (err) {
+          if (ignore) return; // Ignore updates if component unmounted
+          console.error(`Error fetching ${tabType} appointments:`, err)
+          toast.error(err.response?.data?.error?.message || `Failed to load ${tabType} appointments`)
+          setError(`Failed to load ${tabType} appointments. Please try again later.`)
+        } finally {
+          if(!ignore) setLoading(false)
+        }
+      }
     fetchAppointments(activeTab, selectedDate)
+    return () => {
+      ignore = true; // Set ignore flag to true on cleanup
+    }
   }, [id, serviceId]) // Only depend on id and serviceId for initial load
 
   // Handle tab change
@@ -158,10 +168,13 @@ function Appointments() {
           app.id === appointmentId ? { ...app, status: 'Cancelled' } : app
         )
       )
-      window.location.reload();
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000) 
+      toast.warn('Appointment cancelled successfully!')
     } catch (err) {
       console.error('Cancel failed', err)
-      setError('Failed to cancel appointment')
+      toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
     }
   }
 
@@ -173,10 +186,13 @@ function Appointments() {
           app.id === appointmentId ? { ...app, status: 'REJECTED' } : app
         )
       )
-      window.location.reload();
+      toast.warn('Appointment rejected successfully!')
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000) 
     } catch (err) {
       console.error('Cancel failed', err)
-      setError('Failed to cancel appointment')
+      toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
     }
   }
 
@@ -190,10 +206,12 @@ function Appointments() {
         )
       )
       console.log('Appointment approved successfully')
-      window.location.reload();
+      
+      toast.info('Appointment approved successfully!')
+      // Wait for 1 second before reloading
     } catch (err) {
       console.error('Approve failed', err)
-      setError('Failed to approve appointment')
+      toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
     }
   }
 
@@ -206,10 +224,14 @@ function Appointments() {
           app.id === appointmentId ? { ...app, status: 'Done' } : app
         )
       )
-      window.location.reload();
+      toast.info('Appointment marked as done successfully!')
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000) 
     } catch (err) {
       console.error('Mark done failed', err)
-      setError('Failed to mark appointment as done')
+      toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
     }
   }
 

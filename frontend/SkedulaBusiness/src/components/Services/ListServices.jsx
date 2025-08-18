@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient';
 import logo from '../../assets/skedula.png'; // Adjust the path as necessary
+import { toast } from 'react-toastify';
 
 
 const ListServices = () => {
@@ -14,20 +15,31 @@ const ListServices = () => {
 
   useEffect(() => {
 
+    let ignore = false; // Flag to ignore updates if component unmounts
+
     const loadServices = async () => {
       setLoading(true);
       try {
         const response = await apiClient.get('/services-offered/get/user')
-        setServices(response.data.data);
-        console.log("Services loaded:", response.data.data);
+        if(!ignore) {
+          setServices(response.data.data);
+          console.log("Services loaded:", response.data.data);
+          toast.success('Services loaded successfully!');
+        }
       } catch (error) {
         console.error("Error loading services:", error);
-        setError(error.response?.data?.message || 'Failed to load services');
+        if(!ignore) {
+          toast.error(error.response?.data?.error?.message || 'Failed to load services');
+          setError(error.response?.data?.message || 'Failed to load services');
+        }
       } finally {
-        setLoading(false);
+        if(!ignore) setLoading(false);
       }
     };
     loadServices();
+    return () => {
+      ignore = true; // Set ignore flag to true on cleanup
+    }
   }, []);
 
   if (loading) {

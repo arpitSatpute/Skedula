@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import logo from '../../assets/skedula.png';
 import axios from 'axios';
 import ConfirmationModal from '../ConfirmationModel/ConfirmationModel.jsx'; // Add this import
+import { toast } from 'react-toastify';
 
 function Services() {
   const [service, setService] = useState([]);
@@ -16,21 +17,29 @@ function Services() {
   const navigate = useNavigate();
   
   useEffect(() => {
+    let ignore = false;
     const fetchData = async () => {
       setLoading(true);
       setError('');
       try {
         const response = await axios.get(`${baseUrl}/public/getService/${id}`)
+        if (ignore) return; // Ignore updates if component unmounted
         setService(response.data.data);
+        toast.success('Service loaded successfully!');
         console.log("Service loaded:", response.data.data);
       } catch (error) {
+        if (ignore) return; // Ignore updates if component unmounted
         console.error("Error loading service:", error);
+        toast.error(error.response.data.error.message || 'Failed to load service');
         setError(error.response.data.message || 'Failed to load service');
       } finally {
-        setLoading(false);
+        if(!ignore) setLoading(false);
       }
     }
     fetchData();
+    return () => {
+      ignore = true; // Set ignore flag to true on cleanup
+    }
   }, [id, baseUrl]);
 
   const handleEditService = () => {
@@ -50,7 +59,9 @@ function Services() {
       setShowConfirmModal(false);
       
       const response = await apiClient.delete(`/services-offered/delete/${id}`);
+      toast.warn('Service deleted successfully!');
       console.log('Service deleted:', response.data.data);
+      toast.
       
       // You can show a success message here if needed
       navigate(`/services`); // Navigate to services list instead of businesses
@@ -58,6 +69,7 @@ function Services() {
     } catch (error) {
       console.error('Error deleting service:', error);
       setError('Failed to delete service. Please try again.');
+      toast.error(error.response?.data?.error?.message || 'Failed to delete service');
     } finally {
       setLoading(false);
     }

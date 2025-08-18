@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import apiClient from '../Auth/ApiClient.js'
 import 'bootstrap/dist/css/bootstrap.min.css'
+import { toast } from 'react-toastify';
 
 const Owner_Page = import.meta.env.VITE_FRONTEND_OWNER_URL;
 
@@ -18,28 +19,39 @@ function Wallet() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchWalletData()
+    let ignore = false; // Flag to ignore updates if component unmounts
+    
+    const fetchWalletData = async () => {
+      setLoading(true)
+      setError('')
+  
+      try {
+        const response = await apiClient.get('/wallet/get');
+        if( ignore) return; // Ignore updates if component unmounted
+        await setWalletData(response.data.data);
+        toast.success('Wallet data loaded successfully!');
+        console.log('Wallet data fetched successfully:', response.data.data);
+      }
+      catch (err) {
+        if (ignore) return; // Ignore updates if component unmounted
+        console.error('Error fetching wallet data:', err)
+        toast.error(err.response?.data?.error?.message || 'Failed to load wallet information');
+        setError('Failed to load wallet information')
+      }
+      finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+
+    fetchWalletData();
+    return () => {
+      ignore = true; // Set ignore flag to true on cleanup
+    }
   }, [])
 
-  const fetchWalletData = async () => {
-    setLoading(true)
-    setError('')
-
-    try {
-      const response = await apiClient.get('/wallet/get');
-      await setWalletData(response.data.data);
-      console.log('Wallet data fetched successfully:', response.data.data);
-    }
-    catch (err) {
-      console.error('Error fetching wallet data:', err)
-      setError('Failed to load wallet information')
-    }
-    finally {
-      setLoading(false)
-    }
-  }
 
   const handleAddMoney = async () => {
+    toast.info('Redirecting to payment page...');
     window.open(`${baseUrl}/payment.html`, '_blank');
   }
 
