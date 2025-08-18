@@ -39,6 +39,7 @@ function AddBusiness() {
     description: '',
     email: '',
     phone: '',
+    businessId: '',
     address: '',
     city: '',
     state: '',
@@ -97,6 +98,7 @@ function AddBusiness() {
           
           setFormData({
             name: businessData.name || '',
+            businessId: businessData.businessId || '',
             description: businessData.description || '',
             email: businessData.email || '',
             phone: businessData.phone || '',
@@ -125,6 +127,7 @@ function AddBusiness() {
           
           setFormData({
             name: businessData.name || '',
+            businessId: businessData.businessId || '',
             description: businessData.description || '',
             email: businessData.email || '',
             phone: businessData.phone || '',

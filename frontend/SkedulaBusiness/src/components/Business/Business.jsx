@@ -168,7 +168,7 @@ const Business = () => {
   const totalAppointments = (business.appointments && Array.isArray(business.appointments)) ? business.appointments.length : 0;
   const confirmedAppointments = (business.appointments && Array.isArray(business.appointments)) ? 
     business.appointments.filter(apt => apt.status === 'Confirmed').length : 0;
-  const totalRevenue = business.serviceOffered?.reduce((sum, service) => sum + service.price, 0) || 0;
+  // const totalRevenue = business.serviceOffered?.reduce((sum, service) => sum + service.price, 0) || 0;
 
   // Business available - show business dashboard with enhanced design
   return (

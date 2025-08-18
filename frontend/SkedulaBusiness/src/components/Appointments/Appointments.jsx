@@ -310,7 +310,7 @@ function Appointments() {
                   <div className="d-flex align-items-center">
                     <i className="bi bi-gear text-success fs-4 me-3 mb-3"></i>
                     <div>
-                      <h6 className="fw-bold mb-0 text-black">{`${app.bId}`}</h6>
+                      <h6 className="fw-bold mb-0 text-black">{`${app.bid}`}</h6>
                       <small className="text-muted">Business Id</small>
                     </div>
                   </div>

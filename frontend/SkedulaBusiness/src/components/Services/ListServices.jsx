@@ -8,7 +8,7 @@ const ListServices = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(""); // Initialize search with current date as a string
   const navigate = useNavigate();
 
 
@@ -117,7 +117,7 @@ const ListServices = () => {
                   {service.name}
                 </h5>
                 <span className="badge bg-success ms-2 px-2 py-1">
-                  Available
+                  {service.status}
                 </span>
               </div>
               
