@@ -220,18 +220,21 @@ function Profile() {
                               e.target.parentElement.querySelector('.initials-fallback').style.display = 'flex';
                             }}
                           />
-                        ) : null}
-                        
-                        {/* <span 
-                          className="initials-fallback d-flex align-items-center justify-content-center"
+                        ) : (
+                          <span 
+                          className="initials-fallback d-flex align-items-center justify-content-center "
                           style={{ 
                             display: user?.imageUrl ? 'none' : 'flex',
                             width: '100%', 
-                            height: '100%'
+                            height: '100%',
+                            color: '#000',
                           }}
                         >
                           {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                        </span> */}
+                        </span>
+                        )}
+                        
+                        
                       </div>
                       
                       {/* Verified Badge */}

@@ -117,7 +117,7 @@ const ListServices = () => {
                   {service.name}
                 </h5>
                 <span className="badge bg-success ms-2 px-2 py-1">
-                  Available
+                  {service.status}
                 </span>
               </div>
               

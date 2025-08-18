@@ -34,7 +34,7 @@ function Services() {
   
 
   // New function to handle confirmed deletion
-  
+
 
   const handleBookAppointments = () => {
       navigate(`/appointments/book/${service.id}/${service.business}`);
@@ -85,7 +85,7 @@ function Services() {
               <div className="position-absolute top-0 end-0 m-3">
                 <span className="badge bg-success px-3 py-2 rounded-pill">
                   <i className="bi bi-check-circle me-1"></i>
-                  Available
+                  {service.status}
                 </span>
               </div>
             </div>

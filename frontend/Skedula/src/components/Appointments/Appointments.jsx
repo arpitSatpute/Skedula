@@ -187,11 +187,23 @@ function Appointments() {
     return '';
   };
 
+  const handleCancelAppointment = async (appointmentId) => {
+    try {
+      const response = await apiClient.patch(`/appointments/cancel/customer/${appointmentId}`)
+      console.log("response.data.data");
+      window.location.reload(); // Reload to fetch updated appointments
+    }
+    catch (err) {
+      console.error("Error cancelling appointment:", err);
+      setError(err.response?.data?.message || 'Failed to cancel appointment');
+    }
+
+  }
+
   const handleCancelBooking = async (appointmentId) => {
     try {
       const response = await apiClient.patch(`/appointments/cancelBooking/${appointmentId}`)
       console.log("response.data.data");
-      alert("Appointment cancelled successfully. Cancellation charge 10% of total amount.");
       window.location.reload(); // Reload to fetch updated appointments
     }
     catch (err) {
@@ -599,9 +611,9 @@ function Appointments() {
                     {/* Action Buttons */}
                     <div className="d-grid gap-2 d-md-flex mt-3">
                       {app.appointmentStatus?.toLowerCase() === 'pending' && (
-                        <button className="btn btn-outline-warning btn-sm rounded-3">
-                          <i className="bi bi-pencil me-1"></i>
-                          Reschedule
+                        <button className="btn btn-outline-danger btn-sm rounded-3" onClick={() => handleCancelAppointment(app.id)  }>
+                          <i className="bi bi-x me-1"></i>
+                          Cancel
                         </button>
                       )}
                     </div>
@@ -609,7 +621,7 @@ function Appointments() {
                     <div className="d-grid gap-2 d-md-flex mt-3">
                       {app.appointmentStatus?.toLowerCase() === 'pending' &&(
                         
-                        <p className='text-secondary'>Feature available soon</p>                       
+                        <p className='text-secondary'>No Charges applicable till Booked</p>                       
                       )
                      }
                     </div>
@@ -618,7 +630,7 @@ function Appointments() {
                       {app.appointmentStatus?.toLowerCase() === 'booked' &&(
                         
                         <button className="btn btn-outline-danger btn-sm rounded-3" onClick={() => handleCancelBooking(app.id)}>
-                          <i className="bi bi-pencil me-1"></i>
+                          <i className="bi bi-x me-1"></i>
                           Cancel                          
                         </button>                        
                       )
