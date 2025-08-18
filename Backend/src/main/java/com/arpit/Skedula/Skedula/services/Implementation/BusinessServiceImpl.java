@@ -69,6 +69,7 @@ public class BusinessServiceImpl implements BusinessService {
 
 
     @Override
+    @Transactional
     public BusinessDTO register(BusinessDTO businessDTO) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(username).orElseThrow(() -> new RuntimeException("User not found with username: " + username));
@@ -88,6 +89,7 @@ public class BusinessServiceImpl implements BusinessService {
     }
 
     @Override
+    @Transactional
     public BusinessDTO updateBusiness(Long id, BusinessDTO businessDTO) {
         Business business = businessRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Business not found with id: " + id));
