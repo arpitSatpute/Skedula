@@ -17,7 +17,6 @@ import Contact from './components/Contact.jsx'
 import BookAppointment from './components/Appointments/BookAppointment.jsx'
 import Login from './components/Auth/Login.jsx'
 import SignUp from './components/Auth/Signup.jsx'
-import CustomerDashboard from './components/Dashboard/CustomerDashboard.jsx'
 import Protected from './components/Auth/Protected.jsx'
 import { AuthProvider } from './components/Auth/AuthContext.jsx'
 
@@ -85,10 +84,7 @@ const router = createBrowserRouter([
             path: "/appointments/book/:serviceId/:businessId",
             element: <BookAppointment />
           },
-          {
-            path: "/dashboard",
-            element: <CustomerDashboard />
-          }
+          
         ]
       }
       
@@ -98,10 +94,10 @@ const router = createBrowserRouter([
 
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
+  // <StrictMode>
     <AuthProvider>
       <RouterProvider router={router} />
     </AuthProvider>
-  </StrictMode>
+  // </StrictMode> 
 )
 

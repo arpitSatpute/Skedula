@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient';
 import logo from '../../assets/skedula.png'; // Adjust the path as necessary
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const ListServices = () => {
   const [services, setServices] = useState([]);
@@ -14,20 +15,29 @@ const ListServices = () => {
 
   useEffect(() => {
 
+    let ignore = false; // Flag to ignore updates if component unmounts
+
     const loadServices = async () => {
       setLoading(true);
       try {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_BASE_URL}/public/getAllServices`);
+        if(ignore) return; // Ignore updates if component unmounted
         setServices(response.data.data);
         console.log("Services loaded:", response.data.data);
+        toast.info('Services loaded successfully!');
       } catch (error) {
+        if(ignore) return; // Ignore updates if component unmounted
         console.error("Error loading services:", error);
         setError(error.response?.data?.message || 'Failed to load services');
+        toast.error(error.response?.data?.error?.message || 'Failed to load services');
       } finally {
-        setLoading(false);
+        if(!ignore) setLoading(false);
       }
     };
     loadServices();
+    return () => {
+      ignore = true; // Set ignore flag to true on cleanup
+    }
   }, []);
 
   if (loading) {

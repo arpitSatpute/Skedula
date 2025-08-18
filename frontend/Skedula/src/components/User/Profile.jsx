@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import apiClient from '../Auth/ApiClient'
 import EditImage from './EditImage';
+import { toast } from 'react-toastify'
 
 function Profile() {
   const [userData, setUserData] = useState({
@@ -12,10 +13,11 @@ function Profile() {
   })
   const [activeTab, setActiveTab] = useState('details')
   const [showEditImage, setShowEditImage] = useState(false);
-  
   const navigate = useNavigate()
 
+  // ✅ Move loadUserProfile outside of useEffect
   const loadUserProfile = useCallback(async () => {
+    let ignore = false;
     try {
       setUserData(prev => ({ ...prev, loading: true, error: null }))
       
@@ -23,7 +25,9 @@ function Profile() {
         apiClient.get('/customer/get/currentCustomer'),
         apiClient.get('/user/getCurrentUser')
       ])
-      
+
+      if (ignore) return;
+
       setUserData({
         customer: customerResult.status === 'fulfilled' ? customerResult.value.data.data : null,
         user: userResult.status === 'fulfilled' ? userResult.value.data.data : null,
@@ -31,16 +35,17 @@ function Profile() {
         error: null
       })
 
-      console.log("User: ", userResult);
-      console.log("Customer: ", customerResult);
-      // console.log("image: ", userData.)
+      toast.info('Profile loaded successfully!')
     } catch (error) {
       setUserData(prev => ({
         ...prev,
         loading: false,
         error: 'Unable to load profile. Please try again.'
       }))
+      toast.error(error.response?.data?.error?.message || 'Failed to load profile')
     }
+
+    return () => { ignore = true }
   }, [])
 
   useEffect(() => {
@@ -153,40 +158,28 @@ function Profile() {
 
   const { user, customer } = userData
 
-  const handleImageChange = () => {
-    setShowEditImage(true);
-  }
+  const handleImageChange = () => setShowEditImage(true)
 
   const handleImageSelect = async (imageFile) => {
-    console.log('Selected image:', imageFile);
-    
-    const formData = new FormData();
-    formData.append('file', imageFile);
-    console.log(customer);
-    console.log(user);
+    const formData = new FormData()
+    formData.append('file', imageFile)
+
     try {
-      // Use apiClient instead of fetch, and correct endpoint
-      const response = await apiClient.put(`/user/update/image/${user.id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
-      console.log('Image uploaded successfully:', response.data);
-      setShowEditImage(false);
-      loadUserProfile(); // Reload profile to get new image
-      
+      await apiClient.put(`/user/update/image/${user.id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      toast.success('Image updated successfully!')
+      setShowEditImage(false)
+      loadUserProfile() // ✅ Reload after update
     } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Failed to upload image. Please try again.');
-      throw error;
+      console.error('Upload failed:', error)
+      toast.error('Failed to upload image. Please try again.')
     }
-  };
+  }
 
   return (
     <div className="bg-light min-vh-100">
       <div className="container py-4">
-        
         {/* Profile Header */}
         <div className="row mb-4">
           <div className="col-12">
@@ -215,26 +208,13 @@ function Profile() {
                             alt="Profile" 
                             className="rounded-circle border border-3 border-light shadow-sm"
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.parentElement.querySelector('.initials-fallback').style.display = 'flex';
-                            }}
                           />
                         ) : (
-                          <span 
-                          className="initials-fallback d-flex align-items-center justify-content-center "
-                          style={{ 
-                            display: user?.imageUrl ? 'none' : 'flex',
-                            width: '100%', 
-                            height: '100%',
-                            color: '#000',
-                          }}
-                        >
-                          {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                        </span>
+                          <span className="initials-fallback d-flex align-items-center justify-content-center "
+                            style={{ width: '100%', height: '100%', color: '#000' }}>
+                            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                          </span>
                         )}
-                        
-                        
                       </div>
                       
                       {/* Verified Badge */}
@@ -246,13 +226,7 @@ function Profile() {
                       {/* Edit Button */}
                       <button 
                         className="btn btn-light rounded-circle border-3 border-white position-absolute shadow-sm d-flex align-items-center justify-content-center"
-                        style={{
-                          width: '40px', 
-                          height: '40px', 
-                          top: '0', 
-                          right: '0',
-                          transform: 'translate(25%, -25%)'
-                        }}
+                        style={{ width: '40px', height: '40px', top: '0', right: '0', transform: 'translate(25%, -25%)' }}
                         onClick={handleImageChange}                
                         title="Edit Profile Picture"
                       >
@@ -271,7 +245,6 @@ function Profile() {
                       </span>
                     </div>
                     
-                    
                   </div>
                 </div>
               </div>
@@ -279,7 +252,7 @@ function Profile() {
           </div>
         </div>
 
-        {/* Quick Actions Section */}
+        {/* Quick Actions */}
         <div className="row mb-4">
           <div className="col-12">
             <div className="card border-0 shadow-sm">
@@ -330,7 +303,6 @@ function Profile() {
         {/* Profile Details */}
         {activeTab === 'details' && (
           <div className="row">
-            {/* Personal Information */}
             <div className="col-lg-12 mb-8">
               <div className="card border-0 shadow-sm">
                 <div className="card-header bg-transparent border-0 p-4">
@@ -342,16 +314,8 @@ function Profile() {
                 <div className="card-body p-4">
                   <div className="row">
                     {profileFields.map((field, index) => (
-                      <ProfileField
-                        key={index}
-                        icon={field.icon}
-                        label={field.label}
-                        value={field.value}
-                        iconColor={field.iconColor}
-                      />
+                      <ProfileField key={index} {...field} />
                     ))}
-                    
-                    
                   </div>
                 </div>
               </div>

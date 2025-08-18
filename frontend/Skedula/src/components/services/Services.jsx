@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import logo from '../../assets/skedula.png';
 import axios from 'axios';
+import {toast} from 'react-toastify';
+
 
 function Services() {
   const [service, setService] = useState([]);
@@ -14,21 +16,29 @@ function Services() {
   const navigate = useNavigate();
   
   useEffect(() => {
+    let ignore = false;
     const fetchData = async () => {
       setLoading(true);
       setError('');
       try {
         const response = await axios.get(`${baseUrl}/public/getService/${id}`)
+        if (ignore) return; // Ignore updates if component unmounted
         setService(response.data.data);
         console.log("Service loaded:", response.data.data);
+        toast.success('Service loaded successfully!');
       } catch (error) {
+        if (ignore) return; // Ignore updates if component unmounted
         console.error("Error loading service:", error);
-        setError(error.response.data.message || 'Failed to load service');
+        setError(error.response.data.error.message || 'Failed to load service');
+        toast.error(error.response.data.error.message || 'Failed to load service');
       } finally {
-        setLoading(false);
+        if(!ignore) setLoading(false);
       }
     }
     fetchData();
+    return () => {
+      ignore = true; // Set ignore flag to true on cleanup
+    }
   }, [id, baseUrl]);
 
   

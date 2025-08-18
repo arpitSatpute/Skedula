@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import apiClient from '../Auth/ApiClient'
+import { toast } from 'react-toastify'
+
 
 function getStatusConfig(status) {
   switch (status?.toLowerCase()) {
@@ -58,12 +60,17 @@ function Appointments() {
   const navigate = useNavigate()
 
   useEffect(() => {
+
+    let ignore = false;
+
     const fetchData = async () => {
       try {
         const customerId = JSON.parse(localStorage.getItem('customerData')).id;
         console.log("Fetching appointments for customer ID:", customerId);
         console.log("Customer ID:", customerId);
         const response = await apiClient.get(`/appointments/get/customer/${customerId}`);
+        if (ignore) return; // Ignore updates if component unmounted
+        toast.success('Appointments loaded successfully!');
         console.log("Appointments data:", response.data.data);
         
         // Sort appointments by date (newest first)
@@ -75,19 +82,25 @@ function Appointments() {
 
       }
       catch (err) {
+        if (ignore) return; // Ignore updates if component unmounted
         if(err.response && err.response.status === 404) {
           console.log(err.response.data.error.message || 'No appointments found for this customer');
+          toast.error('No appointments found for this customer');
           setAppointments([]); // No appointments found, set to empty array
           return;
         }
         console.error("Error fetching appointments:", err);
         setError(err.response?.data?.message || 'Failed to load appointments');
+        toast.error(err.response?.data?.error?.message || 'Failed to load appointments');
       }
       finally {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       }
     }
     fetchData();
+    return () => {
+      ignore = true;
+    }
   }, [])
 
   // Combined filtering for both status and date
@@ -191,10 +204,14 @@ function Appointments() {
     try {
       const response = await apiClient.patch(`/appointments/cancel/customer/${appointmentId}`)
       console.log("response.data.data");
-      window.location.reload(); // Reload to fetch updated appointments
+      toast.success('Appointment cancelled successfully!');
+      setTimeout(() => {
+        window.location.reload(); // Reload to fetch updated appointments
+      }, 2000)
     }
     catch (err) {
       console.error("Error cancelling appointment:", err);
+      toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment');
       setError(err.response?.data?.message || 'Failed to cancel appointment');
     }
 
@@ -204,10 +221,15 @@ function Appointments() {
     try {
       const response = await apiClient.patch(`/appointments/cancelBooking/${appointmentId}`)
       console.log("response.data.data");
-      window.location.reload(); // Reload to fetch updated appointments
+      toast('Appointment booking cancelled successfully!');
+      toast.info("10% charges applied for cancellation");
+      setTimeout(() => {
+        window.location.reload(); // Reload to fetch updated appointments
+      }, 2000) // Reload to fetch updated appointments
     }
     catch (err) {
       console.error("Error cancelling appointment:", err);
+      toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment');
       setError(err.response?.data?.message || 'Failed to cancel appointment');
     }
 

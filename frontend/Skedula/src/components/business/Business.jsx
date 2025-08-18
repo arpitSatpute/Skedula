@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient.js';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { toast } from 'react-toastify';
+
 
 const Business = () => {
   const {id} = useParams();
@@ -13,23 +15,29 @@ const Business = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const baseURl = import.meta.env.VITE_BACKEND_BASE_URL;
+ 
 
   useEffect( () => {
+    let ignore = false; 
     // Simulate API call
     const loadBusiness = async () => {
       setLoading(true);
       try {
         const response = await axios.get(`${baseURl}/public/getBusiness/${id}`);
+        if(ignore ) return; // Ignore updates if component unmounted
           console.log("Business data loaded:", response.status);
           console.log("Business data loaded:", response.data.data);
+          toast.info('Business loaded successfully!');
           setBusiness(response.data.data);
       } catch (err) {
+        if (ignore) return; // Ignore updates if component unmounted
         if (err.response && err.response.status === 404) {
             setBusiness(null);
+            toast.error('Business not found');
           }
           console.error("Error loading business data:", err);
       } finally {
-        setLoading(false);
+        if(!ignore) setLoading(false);
       }
     };
 
@@ -37,21 +45,29 @@ const Business = () => {
       setLoading(true);
       try {
         const response = await axios.get(`${baseURl}/public/getServiceByBusinessId/${id}`);
+        if (ignore) return; // Ignore updates if component unmounted
         console.log("Services loaded:", response.data.data);
         setServices(response.data.data || []);
       } catch (error) {
+        if (ignore) return;
         console.log(error);
         if (error.status === 404) {
           setServices([]);
+          toast.error('No services found for this business');
+          return
         }
+        toast.error(error.response?.data?.error?.message || 'Failed to load services');
         
       } finally {
-        setLoading(false);
+        if(!ignore) setLoading(false);
       }
     }
 
     loadBusiness();
     loadServices();
+    return () => {
+      ignore = true;
+    }
   }, []);
 
   if (loading) {

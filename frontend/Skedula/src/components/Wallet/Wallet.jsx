@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import apiClient from '../Auth/ApiClient.js'
 import 'bootstrap/dist/css/bootstrap.min.css'
+import { toast } from 'react-toastify'
 
 const Owner_Page = import.meta.env.VITE_FRONTEND_OWNER_URL;
 
@@ -15,32 +16,43 @@ function Wallet() {
   const [filterType, setFilterType] = useState('ALL'); // ALL, CREDIT, DEBIT
   const [filterStatus, setFilterStatus] = useState('ALL'); // ALL, COMPLETED, PENDING
   const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
+
   // const navigate = useNavigate();
 
   useEffect(() => {
-    fetchWalletData()
-  }, [])
+    let ignore = false;
+    const fetchWalletData = async () => {
 
-  const fetchWalletData = async () => {
     setLoading(true)
     setError('')
 
     try {
       const response = await apiClient.get('/wallet/get');
+      if (ignore) return; // Ignore updates if component unmounted
       await setWalletData(response.data.data);
+      toast.info('Wallet loaded successfully!')
       console.log('Wallet data fetched successfully:', response.data.data);
     }
     catch (err) {
       console.error('Error fetching wallet data:', err)
       setError('Failed to load wallet information')
+      toast.error(err.response?.data?.error?.message || 'Failed to load wallet information')
     }
     finally {
-      setLoading(false)
+      if(!ignore) setLoading(false)
     }
   }
+    fetchWalletData()
+    return () => {
+      ignore = true; // Set ignore flag to true on cleanup
+    }
+  }, [])
+
+  
 
   const handleAddMoney = async () => {
     window.open(`${baseUrl}/payment.html`, '_blank');
+    window.location.reload();
   }
 
   const handleWithdraw = async () => {

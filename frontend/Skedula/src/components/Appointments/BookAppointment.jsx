@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import apiClient from '../Auth/ApiClient'
-
+import { toast } from 'react-toastify'
 
 function BookAppointment() {
   const { serviceId, businessId } = useParams();
@@ -37,6 +37,7 @@ function BookAppointment() {
       
       await apiClient.post(`/appointments/create`, payload)
       setSuccess('Appointment booked successfully!')
+      toast.success('Appointment booked successfully!')
       
       // Reset form
       setDateTime('')
@@ -50,6 +51,7 @@ function BookAppointment() {
     } catch (err) {
       console.error('Booking error:', err)
       setError(err.response?.data?.error?.message || 'Failed to book appointment.')
+      toast.error(err.response?.data?.error?.message || 'Failed to book appointment.')
     } finally {
       setLoading(false)
     }
