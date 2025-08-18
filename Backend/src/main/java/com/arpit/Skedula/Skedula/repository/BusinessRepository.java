@@ -3,7 +3,9 @@ package com.arpit.Skedula.Skedula.repository;
 import com.arpit.Skedula.Skedula.entity.Appointment;
 import com.arpit.Skedula.Skedula.entity.Business;
 import com.arpit.Skedula.Skedula.entity.BusinessServiceOffered;
+import com.arpit.Skedula.Skedula.entity.enums.BusinessStatus;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -30,4 +32,6 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
     Optional<Business> findByServiceOffered_Id(BusinessServiceOffered serviceOffered);
 
     Optional<Business> findByOwner_Id(Long id);
+
+    Page<Business> findAllByStatus(PageRequest of, BusinessStatus businessStatus);
 }

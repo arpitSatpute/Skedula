@@ -3,12 +3,17 @@ package com.arpit.Skedula.Skedula.services.Implementation;
 import com.arpit.Skedula.Skedula.card.BusinessServiceOfferedCard;
 import com.arpit.Skedula.Skedula.dto.BusinessServiceOfferedDTO;
 import com.arpit.Skedula.Skedula.dto.OnBoardBusinessServiceOfferedDTO;
+import com.arpit.Skedula.Skedula.entity.Appointment;
 import com.arpit.Skedula.Skedula.entity.Business;
 import com.arpit.Skedula.Skedula.entity.BusinessServiceOffered;
 import com.arpit.Skedula.Skedula.entity.User;
+import com.arpit.Skedula.Skedula.entity.enums.BusinessStatus;
+import com.arpit.Skedula.Skedula.entity.enums.ServiceStatus;
 import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
+import com.arpit.Skedula.Skedula.repository.AppointmentRepository;
 import com.arpit.Skedula.Skedula.repository.BusinessRepository;
 import com.arpit.Skedula.Skedula.repository.BusinessServiceOfferedRepository;
+import com.arpit.Skedula.Skedula.services.AppointmentService;
 import com.arpit.Skedula.Skedula.services.BusinessServiceOfferedService;
 import com.uploadcare.api.Client;
 import com.uploadcare.upload.FileUploader;
@@ -25,6 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.*;
 
 @Service
@@ -37,6 +43,8 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
     private final BusinessServiceOfferedRepository businessServiceOfferedRepository;
     private final ModelMapper modelMapper;
     private final Client client;
+    private final AppointmentRepository appointmentRepository;
+    private final AppointmentService appointmentService;
 
 
     @Override
@@ -91,6 +99,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         List<BusinessServiceOffered> services = businessServiceOfferedRepository.findAll();
         return services.stream()
                 .map(this::convertToDTO)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
@@ -100,7 +109,9 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         BusinessServiceOffered businessServiceOffered = new BusinessServiceOffered();
 
         Business business = businessRepository.findById(serviceOfferedDTO.getBusiness()).orElseThrow(()-> new ResourceNotFoundException("Business not found"));
-
+        if(business.getStatus().equals(BusinessStatus.UNAVAILABLE)) {
+            throw new RuntimeException("Business is not available to add services");
+        }
         if(business.getServiceOffered().contains(serviceOfferedDTO.getName())){
             throw new RuntimeException("Business service named " + serviceOfferedDTO.getName() + "already exists");
         }
@@ -113,6 +124,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         businessServiceOffered.setTotalSlots(serviceOfferedDTO.getTotalSlots());
         businessServiceOffered.setDuration(serviceOfferedDTO.getDuration());
         businessServiceOffered.setImageUrl(null);
+        businessServiceOffered.setStatus(ServiceStatus.AVAILABLE);
 
         businessServiceOfferedRepository.save(businessServiceOffered);
 
@@ -124,6 +136,8 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         result.setPrice(businessServiceOffered.getPrice());
         result.setTotalSlots(businessServiceOffered.getTotalSlots());
         result.setDuration(businessServiceOffered.getDuration());
+        result.setServiceOfferedId(businessServiceOffered.getServiceOfferedId());
+        result.setStatus(businessServiceOffered.getStatus());
         result.setImageUrl(null);
 
         System.out.println("Service created: -------------------------------------------------------------");
@@ -138,6 +152,9 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
     public BusinessServiceOfferedDTO getServiceById(Long id) {
         BusinessServiceOffered service = businessServiceOfferedRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
+        if (service.getStatus() == ServiceStatus.UNAVAILABLE) {
+            throw new ResourceNotFoundException("Service is currently unavailable");
+        }
         return convertToDTO(service);
 
     }
@@ -153,7 +170,15 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
     public Void deleteService(Long id) {
         BusinessServiceOffered service = businessServiceOfferedRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
-        businessServiceOfferedRepository.delete(service);
+        List<Appointment> appointments = appointmentRepository.findByServiceOffered_Id(id);
+        if (appointments != null && !appointments.isEmpty()) {
+            appointmentService.cancelAllAppointmentsByServiceOfferedId(id);
+        }
+        service.setStatus(ServiceStatus.UNAVAILABLE);
+//        service.setName(null);
+//        service.setBusiness(null);
+//        service.setServiceOfferedId(null);
+        businessServiceOfferedRepository.save(service);
         return null;
     }
 
@@ -164,6 +189,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
 
         existingService.setName(serviceOfferedDTO.getName());
+        existingService.setStatus(ServiceStatus.AVAILABLE);
         existingService.setDescription(serviceOfferedDTO.getDescription());
         existingService.setPrice(serviceOfferedDTO.getPrice());
         existingService.setTotalSlots(serviceOfferedDTO.getTotalSlots());
@@ -179,10 +205,11 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
     @Override
     public List<BusinessServiceOfferedDTO> getServiceByUser(){
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_Owner_Email(user.getEmail());
+        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_Owner_EmailAndStatus(user.getEmail(), ServiceStatus.AVAILABLE);
         if (services == null) {
             throw new ResourceNotFoundException("No services found for the user: " + user.getEmail());
         }
+
         return services.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -191,7 +218,14 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
     @Override
     public List<BusinessServiceOfferedCard> getServiceByBusinessId(Long businessId) {
 
-        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_Id(businessId);
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
+
+        if(business.getStatus() == BusinessStatus.UNAVAILABLE) {
+            throw new ResourceNotFoundException("Business is currently unavailable");
+        }
+
+        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_IdAndStatus(businessId, ServiceStatus.AVAILABLE);
         if (services == null || services.isEmpty()) {
             return null;
         }
@@ -201,7 +235,24 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
 
     }
 
+    @Override
+    public void unavailableAllServicesByBusinessId(Long id) {
+        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_IdAndStatus(id, ServiceStatus.AVAILABLE);
+        if (services == null || services.isEmpty()) {
+            return;
+        }
+        for(BusinessServiceOffered service : services) {
+            service.setStatus(ServiceStatus.UNAVAILABLE);
+            businessServiceOfferedRepository.save(service);
+        }
+    }
+
+
     public BusinessServiceOfferedDTO convertToDTO(BusinessServiceOffered services) {
+        if(services.getStatus() == ServiceStatus.UNAVAILABLE) {
+            return null;
+        }
+
         BusinessServiceOfferedDTO dto = new BusinessServiceOfferedDTO();
         dto.setId(services.getId());
         dto.setServiceOfferedId(services.getServiceOfferedId());
@@ -212,6 +263,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         dto.setDuration(services.getDuration());
         dto.setImageUrl(services.getImageUrl());
         dto.setBusiness(services.getBusiness().getId());
+        dto.setStatus(services.getStatus());
 
         return dto;
     }
@@ -226,6 +278,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         card.setTotalSlots(services.getTotalSlots());
         card.setDuration(services.getDuration());
         card.setImageUrl(services.getImageUrl());
+        card.setStatus(services.getStatus());
 
         return card;
     }
@@ -240,6 +293,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         entity.setTotalSlots(dto.getTotalSlots());
         entity.setDuration(dto.getDuration());
         entity.setImageUrl(dto.getImageUrl());
+        entity.setStatus(dto.getStatus());
 
         Business business = businessRepository.findById(dto.getBusiness())
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + dto.getBusiness()));

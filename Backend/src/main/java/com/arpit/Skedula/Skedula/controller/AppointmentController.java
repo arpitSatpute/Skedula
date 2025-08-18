@@ -37,8 +37,8 @@ public class AppointmentController {
     }
 
     // Cancel Appointment By Customer
-    @PreAuthorize("@customerService.isOwnerOfProfile(#id)")
-    @PutMapping("/cancel/customer/{id}")
+//    @PreAuthorize("@customerService.isOwnerOfProfile(#id)")
+    @PatchMapping("/cancel/customer/{id}")
     public ResponseEntity<AppointmentDTO> cancelAppointmentByCustomer(@PathVariable Long id) {
         return ResponseEntity.ok(appointmentService.cancelAppointmentByCustomer(id));
     }

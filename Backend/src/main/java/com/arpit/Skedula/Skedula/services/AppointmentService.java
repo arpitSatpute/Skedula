@@ -3,12 +3,9 @@ package com.arpit.Skedula.Skedula.services;
 import com.arpit.Skedula.Skedula.card.AppointmentCard;
 import com.arpit.Skedula.Skedula.dto.AppointmentDTO;
 import com.arpit.Skedula.Skedula.entity.Appointment;
-import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
-import com.arpit.Skedula.Skedula.entity.enums.Role;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -51,4 +48,8 @@ public interface AppointmentService {
     List<AppointmentCard> getAppointmentBydate(LocalDate date, Long businessId);
 
     Void cancelBooking(Long id);
+
+    void cancelAllAppointmentsByBusinessId(Long id);
+
+    void cancelAllAppointmentsByServiceOfferedId(Long id);
 }

@@ -1,6 +1,7 @@
 package com.arpit.Skedula.Skedula.repository;
 
 import com.arpit.Skedula.Skedula.dto.BusinessServiceOfferedDTO;
+import com.arpit.Skedula.Skedula.entity.enums.ServiceStatus;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,4 +27,8 @@ public interface BusinessServiceOfferedRepository extends JpaRepository<Business
     List<BusinessServiceOffered> findByBusiness_Id(Long id);
 
     List<BusinessServiceOfferedDTO> getBusinessServiceOffered_IdByBusiness_Id(Long id);
+
+    List<BusinessServiceOffered> findByBusiness_Owner_EmailAndStatus(String email, ServiceStatus serviceStatus);
+
+    List<BusinessServiceOffered> findByBusiness_IdAndStatus(Long businessId, ServiceStatus serviceStatus);
 }

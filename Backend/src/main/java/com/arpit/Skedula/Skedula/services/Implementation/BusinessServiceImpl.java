@@ -8,6 +8,7 @@ import com.arpit.Skedula.Skedula.entity.Appointment;
 import com.arpit.Skedula.Skedula.entity.Business;
 import com.arpit.Skedula.Skedula.entity.BusinessServiceOffered;
 import com.arpit.Skedula.Skedula.entity.User;
+import com.arpit.Skedula.Skedula.entity.enums.BusinessStatus;
 import com.arpit.Skedula.Skedula.entity.enums.Role;
 import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.AppointmentRepository;
@@ -26,9 +27,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 
@@ -48,7 +50,7 @@ public class BusinessServiceImpl implements BusinessService {
 
     @Override
     public Page<BusinessCard> getAllBusiness(Integer pageOffset, Integer pageSize) {
-        Page<Business> businessPage = businessRepository.findAll(PageRequest.of(pageOffset, pageSize));
+        Page<Business> businessPage = businessRepository.findAllByStatus(PageRequest.of(pageOffset, pageSize), BusinessStatus.AVAILABLE);
         List<BusinessCard> card = businessPage.stream()
                 .map(this::convertToCard)
                 .collect(Collectors.toList());
@@ -59,6 +61,9 @@ public class BusinessServiceImpl implements BusinessService {
     public BusinessCard getBusinessById(Long id) {
         Business business = businessRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Business not found with id: " + id));
+        if(business.getStatus() == BusinessStatus.UNAVAILABLE) {
+            throw new RuntimeException("Business status is not AVAILABLE");
+        }
         return convertToCard(business);
     }
 
@@ -75,6 +80,7 @@ public class BusinessServiceImpl implements BusinessService {
             throw new RuntimeException("Business with name: " + businessDTO.getName() + " already exists");
         }
         businessDTO.setBusinessId(generateBusinessId());
+        businessDTO.setStatus(BusinessStatus.AVAILABLE);
         Business business = convertToEntity(businessDTO, user);
         businessRepository.save(business);
         BusinessDTO result = convertToDTO(business);
@@ -100,11 +106,11 @@ public class BusinessServiceImpl implements BusinessService {
         business.setEmail(businessDTO.getEmail());
         business.setZipCode(businessDTO.getZipCode());
         business.setMapLink(businessDTO.getMapLink());
-        business.setCRNNumber(businessDTO.getCRNNumber());
-        business.setGSTNumber(businessDTO.getGSTNumber());
+//        business.setCRNNumber(businessDTO.getCRNNumber());
+//        business.setGSTNumber(businessDTO.getGSTNumber());
         business.setOpenTime(businessDTO.getOpenTime());
         business.setCloseTime(businessDTO.getCloseTime());
-        business.setIdentity(businessDTO.getIdentity());
+//        business.setIdentity(businessDTO.getIdentity());
         business.setAppointments(appoointments);
         business.setServiceOffered(services);
 
@@ -134,6 +140,9 @@ public class BusinessServiceImpl implements BusinessService {
         }
 
         Business business = businessRepository.findByOwner_Id(user.getId()).orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + user.getId()));
+        if(business.getStatus() == BusinessStatus.UNAVAILABLE) {
+            throw new RuntimeException("Business status is not AVAILABLE");
+        }
         return convertToDTO(business);
     }
 
@@ -189,8 +198,16 @@ public class BusinessServiceImpl implements BusinessService {
 
     }
 
+    @Override
+    @Transactional
     public void removeBusinessById(Long id) {
-        businessRepository.deleteById(id);
+        Business business = businessRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + id));
+         // find and remove all appointments associated with the business
+        appointmentService.cancelAllAppointmentsByBusinessId(id);
+        businessServiceOfferedService.unavailableAllServicesByBusinessId(id);
+        business.setStatus(BusinessStatus.UNAVAILABLE);
+        business.setOwner(null);
+        businessRepository.save(business);
     }
 
 
@@ -203,6 +220,7 @@ public class BusinessServiceImpl implements BusinessService {
         business.setOwner(user);
         business.setBusinessId(businessDTO.getBusinessId());
         business.setName(businessDTO.getName());
+        business.setStatus(businessDTO.getStatus());
         business.setDescription(businessDTO.getDescription());
         business.setAddress(businessDTO.getAddress());
         business.setCity(businessDTO.getCity());
@@ -229,7 +247,9 @@ public class BusinessServiceImpl implements BusinessService {
 
         List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_Id(business.getId());
         List<BusinessServiceOfferedDTO> serviceDTO = services.stream()
+                .filter(s -> s.getBusiness() != null)
                 .map(businessServiceOfferedService::convertToDTO)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
         List<Appointment> appointments = appointmentRepository.findByBusiness_Id(business.getId());
@@ -239,7 +259,7 @@ public class BusinessServiceImpl implements BusinessService {
 
         BusinessDTO businessDTO = new BusinessDTO();
         businessDTO.setId(business.getId());
-        businessDTO.setBusinessId(business.getBusinessId());
+        businessDTO.setStatus(business.getStatus());
         businessDTO.setOwner(business.getOwner().getId());
         businessDTO.setName(business.getName());
         businessDTO.setDescription(business.getDescription());
@@ -258,6 +278,7 @@ public class BusinessServiceImpl implements BusinessService {
         businessDTO.setCloseTime(business.getCloseTime());
         businessDTO.setServiceOffered(serviceDTO);
         businessDTO.setAppointments(appointmentDTO);
+        businessDTO.setBusinessId(business.getBusinessId());
 
         return businessDTO;
 
@@ -266,6 +287,7 @@ public class BusinessServiceImpl implements BusinessService {
     private BusinessCard convertToCard(Business business) {
         BusinessCard businessCard = new BusinessCard();
         businessCard.setId(business.getId());
+        businessCard.setStatus(business.getStatus());
         businessCard.setBusinessId(business.getBusinessId());
         businessCard.setName(business.getName());
         businessCard.setDescription(business.getDescription());

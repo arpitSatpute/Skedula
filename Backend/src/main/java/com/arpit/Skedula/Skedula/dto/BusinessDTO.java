@@ -1,5 +1,6 @@
 package com.arpit.Skedula.Skedula.dto;
 
+import com.arpit.Skedula.Skedula.entity.enums.BusinessStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -64,6 +65,8 @@ public class BusinessDTO {
 
     @NotNull(message = "Open Time Required")
     private LocalTime closeTime;
+
+    private BusinessStatus status;
 
     private List<BusinessServiceOfferedDTO> serviceOffered;
     private List<AppointmentDTO> appointments;

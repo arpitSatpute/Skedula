@@ -174,8 +174,6 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointment.setAppointmentStatus(AppointmentStatus.CANCELLED);
         appointmentRepository.save(appointment);
 
-        //        paymentService.refundPayment(appointment);
-
         return convertToDTO(appointment);
     }
 
@@ -267,6 +265,49 @@ public class AppointmentServiceImpl implements AppointmentService {
         return null;
     }
 
+    @Override
+    public void cancelAllAppointmentsByBusinessId(Long id) {
+        Business business = businessRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + id));
+        List<Appointment> appointments = appointmentRepository.findByBusiness_Id(id);
+        List<Appointment> bookedAppointments = appointments.stream()
+                .filter(appointment -> appointment.getAppointmentStatus() == AppointmentStatus.BOOKED)
+                .collect(Collectors.toList());
+        for(Appointment appointment : bookedAppointments){
+            cancelAppointmentByOwner(appointment.getId());
+        }
+
+        List<Appointment> pendingAppointments = appointments.stream()
+                .filter(appointment -> appointment.getAppointmentStatus() == AppointmentStatus.PENDING)
+                .collect(Collectors.toList());
+
+        for(Appointment appointment : pendingAppointments) {
+            rejectAppointment(appointment.getId());
+        }
+    }
+
+    @Override
+    public void cancelAllAppointmentsByServiceOfferedId(Long id) {
+        BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
+
+        List<Appointment> appointments = appointmentRepository.findByServiceOffered_Id(id);
+        List<Appointment> bookedAppointments = appointments.stream()
+                .filter(appointment -> appointment.getAppointmentStatus() == AppointmentStatus.BOOKED)
+                .collect(Collectors.toList());
+        for(Appointment appointment : bookedAppointments) {
+            cancelAppointmentByOwner(appointment.getId());
+        }
+
+        List<Appointment> pendingAppointments = appointments.stream()
+                .filter(appointment -> appointment.getAppointmentStatus() == AppointmentStatus.PENDING)
+                .collect(Collectors.toList());
+
+        for(Appointment appointment : pendingAppointments) {
+            rejectAppointment(appointment.getId());
+        }
+
+    }
 
     private AppointmentCard convertToCard(Appointment newAppointment) {
         AppointmentCard result = new AppointmentCard();

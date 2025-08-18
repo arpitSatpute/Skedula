@@ -1,5 +1,6 @@
 package com.arpit.Skedula.Skedula.entity;
 
+import com.arpit.Skedula.Skedula.entity.enums.BusinessStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -45,6 +46,8 @@ public class Business {
 
     private LocalTime openTime;
     private LocalTime closeTime;
+
+    private BusinessStatus status;
 
 
 

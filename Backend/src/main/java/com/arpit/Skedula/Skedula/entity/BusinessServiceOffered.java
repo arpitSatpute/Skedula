@@ -1,5 +1,6 @@
 package com.arpit.Skedula.Skedula.entity;
 
+import com.arpit.Skedula.Skedula.entity.enums.ServiceStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,6 +29,8 @@ public class BusinessServiceOffered {
 
     @ManyToOne
     private Business business;
+
+    private ServiceStatus status;
 
     // Add any other fields related to the service here
 }

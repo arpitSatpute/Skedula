@@ -1,6 +1,7 @@
 package com.arpit.Skedula.Skedula.dto;
 
 import com.arpit.Skedula.Skedula.entity.Business;
+import com.arpit.Skedula.Skedula.entity.enums.ServiceStatus;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -38,6 +39,8 @@ public class BusinessServiceOfferedDTO {
     @NotNull(message =" Enter Approx Service Duration")
     @Min(value = 1, message = "Required at least 1 slot")
     private Long totalSlots;
+
+    private ServiceStatus status;
 
     //Business ID
     private Long business;

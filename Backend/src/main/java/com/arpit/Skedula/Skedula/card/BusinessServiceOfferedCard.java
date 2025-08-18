@@ -1,6 +1,7 @@
 package com.arpit.Skedula.Skedula.card;
 
 
+import com.arpit.Skedula.Skedula.entity.enums.ServiceStatus;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -19,4 +20,5 @@ public class BusinessServiceOfferedCard {
     private BigDecimal price;
     private String imageUrl;
     private Long totalSlots;
+    private ServiceStatus status;
 }

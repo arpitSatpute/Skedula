@@ -1,5 +1,6 @@
 package com.arpit.Skedula.Skedula.card;
 
+import com.arpit.Skedula.Skedula.entity.enums.BusinessStatus;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -32,5 +33,7 @@ public class BusinessCard {
 
     private LocalTime openTime;
     private LocalTime closeTime;
+
+    private BusinessStatus status;
 
 }

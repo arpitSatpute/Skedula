@@ -34,4 +34,6 @@ public interface BusinessServiceOfferedService {
     BusinessServiceOfferedDTO convertToDTO(BusinessServiceOffered services);
 
     List<BusinessServiceOfferedCard> getServiceByBusinessId(Long id);
+
+    void unavailableAllServicesByBusinessId(Long id);
 }
