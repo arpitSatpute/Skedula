@@ -3,17 +3,11 @@ package com.arpit.Skedula.Skedula.services.Implementation;
 
 import com.arpit.Skedula.Skedula.card.AppointmentCard;
 import com.arpit.Skedula.Skedula.dto.AppointmentDTO;
-import com.arpit.Skedula.Skedula.entity.Appointment;
-import com.arpit.Skedula.Skedula.entity.Business;
-import com.arpit.Skedula.Skedula.entity.BusinessServiceOffered;
-import com.arpit.Skedula.Skedula.entity.Customer;
+import com.arpit.Skedula.Skedula.entity.*;
 import com.arpit.Skedula.Skedula.entity.enums.Role;
 import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
 import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
-import com.arpit.Skedula.Skedula.repository.AppointmentRepository;
-import com.arpit.Skedula.Skedula.repository.BusinessRepository;
-import com.arpit.Skedula.Skedula.repository.BusinessServiceOfferedRepository;
-import com.arpit.Skedula.Skedula.repository.CustomerRepository;
+import com.arpit.Skedula.Skedula.repository.*;
 import com.arpit.Skedula.Skedula.services.AppointmentService;
 
 import com.arpit.Skedula.Skedula.services.PaymentService;
@@ -36,6 +30,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final BusinessServiceOfferedRepository businessServiceOfferedRepository;
     private final CustomerRepository customerRepository;
     private final PaymentService paymentService;
+    private final WalletRepository walletRepository;
 
 
     @Override
@@ -52,6 +47,10 @@ public class AppointmentServiceImpl implements AppointmentService {
         Long booked = appointmentRepository.countByServiceOffered_IdAndAppointmentDateAndAppointmentStatus(appointmentDTO.getServiceOffered(), appointmentDTO.getDate(), AppointmentStatus.BOOKED);
         Customer customer = customerRepository.findById(appointmentDTO.getBookedBy())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointmentDTO.getBookedBy()));
+        Wallet customerWallet = walletRepository.findByUser_Id(customer.getUser().getId()).orElseThrow(() -> new ResourceNotFoundException("Customer wallet not found with id: " + customer.getUser().getId()));
+        if(customerWallet.getBalance().compareTo(serviceOffered.getPrice()) < 0) {
+            throw new RuntimeException("Insufficient balance in wallet to book the appointment.");
+        }
         if(booked >= total) {
             throw new RuntimeException("No slots available for the selected service on the given date.");
         }
@@ -65,7 +64,6 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
-    @Transactional
     public AppointmentDTO approveAppointment(Long id) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
@@ -77,6 +75,14 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointment.getBookedBy().getId()));
         Long booked = appointmentRepository.countByServiceOffered_IdAndAppointmentDateAndAppointmentStatus(appointment.getServiceOffered().getId(), appointment.getAppointmentDate(), AppointmentStatus.BOOKED);
         Long total = serviceOffered.getTotalSlots();
+
+        Wallet customerWallet = walletRepository.findByUser_Id(customer.getUser().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Customer wallet not found with id: " + customer.getUser().getId()));
+        if(customerWallet.getBalance().compareTo(serviceOffered.getPrice()) < 0) {
+            appointment.setAppointmentStatus(AppointmentStatus.CANCELLED);
+            appointmentRepository.save(appointment);
+            throw new RuntimeException("Insufficient balance in customer wallet to book the appointment.");
+        }
 
         if(booked >= total) {
             throw new RuntimeException("No slots available for the selected service on the given date.");
