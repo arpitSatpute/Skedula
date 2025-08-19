@@ -21,10 +21,8 @@ const Login = () => {
     setError(null);
     
     try {
-      console.log("Entered Login");
-      console.log("Login Data:", { email, password, role });
+      
       await login(email, password, role);
-      console.log("Done Login");
 
       
       navigate('/profile');

@@ -19,8 +19,6 @@ function AddService() {
   
   const [image, setImage] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
 
   // Handle input changes
   const handleInputChange = (field, value) => {
@@ -29,7 +27,6 @@ function AddService() {
       [field]: value
     }))
     
-    if (error) setError(null)
   }
 
   // Handle image change
@@ -37,7 +34,6 @@ function AddService() {
     const file = e.target.files[0]
     if (file) {
       setImage(file)
-      setError(null)
     }
   }
 
@@ -45,7 +41,6 @@ function AddService() {
     e.preventDefault()
     
     // TODO: Add your API logic here
-    console.log('Form submitted:', formData)
     const submitBtn = document.getElementById('createServiceButton');
     submitBtn.disabled = true; // Disable button to prevent multiple submissions
     try {
@@ -61,16 +56,10 @@ function AddService() {
         toast.success('Service image uploaded successfully!');
         const imageResponse = await uploadImage.data.data;
        } catch (error) {
-        console.error('Error uploading image:', error);
         toast.error(error.response?.data?.error?.message || 'Failed to upload image');
-        setError('Failed to upload image');
-      } 
-      setSuccess('Service created successfully!');
-      setLoading(true);
+      }       setLoading(true);
     } catch (error) {
-      console.error('Error creating service:', error);
       toast.error(error.response?.data?.error?.message || 'Failed to create service');
-      setError('Failed to create service');
     }
     finally {
       submitBtn.disabled = false; // Re-enable button after submission
@@ -95,31 +84,7 @@ function AddService() {
             </div>
             
             <div className="card-body p-4">
-              {error && (
-                <div className="alert alert-danger alert-dismissible" role="alert">
-                  <i className="bi bi-exclamation-triangle me-2"></i>
-                  {error}
-                  <button 
-                    type="button" 
-                    className="btn-close" 
-                    onClick={() => setError(null)}
-                    aria-label="Close"
-                  ></button>
-                </div>
-              )}
 
-              {success && (
-                <div className="alert alert-success alert-dismissible" role="alert">
-                  <i className="bi bi-check-circle me-2"></i>
-                  {success}
-                  <button 
-                    type="button" 
-                    className="btn-close" 
-                    onClick={() => setSuccess(null)}
-                    aria-label="Close"
-                  ></button>
-                </div>
-              )}
 
               {loading && (
                 <div className="alert alert-info" role="alert">

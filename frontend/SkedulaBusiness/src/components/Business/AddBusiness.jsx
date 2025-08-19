@@ -27,7 +27,7 @@ function AddBusiness() {
       }
       return user; // Fallback to AuthContext user
     } catch (error) {
-      console.error('Error getting current user:', error);
+      toast.error('Failed to retrieve user data');
       return null;
     }
   };
@@ -54,35 +54,14 @@ function AddBusiness() {
     closeTime: ''
   })
 
-  const [customError, setCustomError] = useState('')
   const [isLoadingBusiness, setIsLoadingBusiness] = useState(false)
   const [loading, setLoading] = useState(false)
 
   // Helper function to safely extract error message
-  const getErrorMessage = (error) => {
-    if (typeof error === 'string') {
-      return error;
-    }
-    
-    if (error && typeof error === 'object') {
-      // Handle various error object structures
-      if (error.message) return error.message;
-      if (error.error) return error.error;
-      if (error.status && error.message) return `${error.status}: ${error.message}`;
-      if (error.subErrors && Array.isArray(error.subErrors)) {
-        return error.subErrors.map(subError => 
-          typeof subError === 'string' ? subError : subError.message || 'Validation error'
-        ).join(', ');
-      }
-      return 'An unexpected error occurred';
-    }
-    
-    return 'An unexpected error occurred';
-  };
+  
   
   useEffect(() => {
     let ignore = false; // Flag to ignore updates if component unmounts
-    console.log('AddBusiness useEffect triggered', { isEdit, id });
     
     if (!isEdit || !id) return;
 
@@ -92,11 +71,9 @@ function AddBusiness() {
       try {
         // Check sessionStorage first
         const storedBusiness = sessionStorage.getItem('editBusiness');
-        console.log('Stored business data:', storedBusiness);
         
         if (storedBusiness && storedBusiness !== 'null') {
           const businessData = JSON.parse(storedBusiness);
-          console.log('Loading business data for edit:', businessData);
           
           setFormData({
             name: businessData.name || '',
@@ -121,13 +98,11 @@ function AddBusiness() {
           sessionStorage.removeItem('editBusiness');
         } else {
           // Fallback: Fetch from API if no sessionStorage data
-          console.log('No data in sessionStorage, fetching from API...');
           const response = await apiClient.get(`/business/get/${id}`);
           if(!ignore) {
 
           const businessData = response.data.data;
           
-          console.log('Fetched business data from API:', businessData);
           
           setFormData({
             name: businessData.name || '',
@@ -151,8 +126,6 @@ function AddBusiness() {
         }
       } catch (error) {
         if(!ignore) {
-          console.error('Error loading business data:', error);
-          setCustomError('Error loading business data. Please try again.');
           toast.error(error.response.data.errror.message);
         }
       } finally {
@@ -175,7 +148,6 @@ function AddBusiness() {
       [field]: value
     }))
     // Clear errors when user starts typing
-    if (customError) setCustomError('')
   }
 
   const handleSubmit = async (e) => {
@@ -183,25 +155,20 @@ function AddBusiness() {
     e.preventDefault();
     
     setLoading(true);
-    setCustomError('');
 
     // Validate required fields
     if (!formData.name || !formData.email || !formData.description || 
         !formData.identity || !formData.crnnumber || !formData.gstnumber || 
         !formData.openTime || !formData.closeTime) {
-      setCustomError('Please fill in all required fields');
       setLoading(false);
       return;
     }
 
-    console.log("Form data to be sent:", formData);
 
     try {
       if (!isEdit) {
-        console.log("Creating new business:", formData);
         const response = await apiClient.post(`/business/register`, formData);
         if(!ignore) {
-            console.log("Business created:", response.data);
           
           if (response.status === 200 || response.status === 201) {
             toast.success('Business created successfully!');
@@ -209,10 +176,8 @@ function AddBusiness() {
           }
         }
       } else {
-        console.log("Updating business:", formData);
         const response = await apiClient.put(`/business/update/${id}`, formData);
         if(!ignore) {
-          console.log("Business updated:", response.data);
         
           if (response.status === 200) {
             toast.success('Business updated successfully!');
@@ -224,20 +189,11 @@ function AddBusiness() {
       
     } catch (error) {
       if (!ignore) {
-        console.error('Error saving business:', error);
-        console.error('Error response:', error.response?.data);
+       
         toast.error(error.response?.data?.error?.message || 'Failed to save business');
         
         // Safely extract error message
-        let errorMessage = 'Failed to save business. Please try again.';
         
-        if (error.response?.data) {
-          errorMessage = getErrorMessage(error.response.data);
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-        
-        setCustomError(errorMessage);
       }
     } finally {
       if (!ignore) setLoading(false);
@@ -295,19 +251,7 @@ function AddBusiness() {
               </h3>
             </div>
             <div className="card-body p-4">
-              {customError && (
-                <div className="alert alert-danger alert-dismissible" role="alert">
-                  <i className="bi bi-exclamation-triangle me-2"></i>
-                  {getErrorMessage(customError)}
-                  <button 
-                    type="button" 
-                    className="btn-close" 
-                    onClick={() => setCustomError('')}
-                    aria-label="Close"
-                  ></button>
-                </div>
-              )}
-
+              
               {loading && (
                 <div className="alert alert-info" role="alert">
                   <div className="d-flex align-items-center">

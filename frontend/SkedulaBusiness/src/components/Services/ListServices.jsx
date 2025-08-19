@@ -23,14 +23,11 @@ const ListServices = () => {
         const response = await apiClient.get('/services-offered/get/user')
         if(!ignore) {
           setServices(response.data.data);
-          console.log("Services loaded:", response.data.data);
           toast.success('Services loaded successfully!');
         }
       } catch (error) {
-        console.error("Error loading services:", error);
         if(!ignore) {
           toast.error(error.response?.data?.error?.message || 'Failed to load services');
-          setError(error.response?.data?.message || 'Failed to load services');
         }
       } finally {
         if(!ignore) setLoading(false);
@@ -56,16 +53,7 @@ const ListServices = () => {
     }
 
 
-  if (error) {
-    return (
-      <div className="container py-5">
-        <div className="alert alert-danger" role="alert">
-          <i className="bi bi-exclamation-triangle me-2"></i>
-          {error}
-        </div>
-      </div>
-    );
-  }
+  
 
 
     const filteredServices = services.filter(service =>

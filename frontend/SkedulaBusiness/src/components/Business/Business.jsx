@@ -9,7 +9,6 @@ import { toast } from 'react-toastify';
 const Business = () => {
   const [business, setBusiness] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const navigate = useNavigate();
   
@@ -23,7 +22,6 @@ const Business = () => {
       try {
         const response = await apiClient.get(`/business/get/user`);
         if(!ignore) {
-          console.log("Business data loaded:", response.data.data);
           setBusiness(response.data.data);
           toast.success('Business data loaded successfully!');
         }
@@ -33,7 +31,6 @@ const Business = () => {
             toast.error('No business found for this user.');
               setBusiness(null);
             }
-            console.error("Error loading business data:", err);
             toast.error(err.response?.data?.error?.message || 'Failed to load business data');
           }
       } finally {
@@ -64,28 +61,7 @@ const Business = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="bg-light min-vh-100 d-flex align-items-center">
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-lg-6">
-              <div className="alert alert-danger shadow-lg border-0" role="alert">
-                <div className="d-flex align-items-center">
-                  <i className="bi bi-exclamation-triangle fs-2 me-3"></i>
-                  <div>
-                    <h5 className="alert-heading mb-1">Error Loading Business</h5>
-                    <p className="mb-0">{error}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  
   // No business available - show add business option only
   if (!business) {
     return (
@@ -135,7 +111,6 @@ const Business = () => {
       gstnumber: business.gstnumber || ''
     };
     
-    console.log('Storing business data for edit:', businessDataForEdit);
     
     // Store with a unique key and timestamp
     const dataWithMeta = {
@@ -147,7 +122,6 @@ const Business = () => {
     sessionStorage.setItem('editBusiness', JSON.stringify(dataWithMeta));
     sessionStorage.setItem(`editBusiness_${business.id}`, JSON.stringify(dataWithMeta));
     
-    console.log('Stored data verification:', sessionStorage.getItem('editBusiness'));
     
     // Use replace instead of navigate to avoid history issues
     navigate(`/business/${business.id}/edit`, { replace: true });
@@ -169,8 +143,7 @@ const Business = () => {
         setBusiness(null);
       }
     } catch (error) {
-      console.error('Error removing business:', error);
-      setError('Failed to remove business. Please try again.');
+      toast.error(error.response?.data?.error?.message || 'Failed to remove business');
     } finally {
       setLoading(false);
     }

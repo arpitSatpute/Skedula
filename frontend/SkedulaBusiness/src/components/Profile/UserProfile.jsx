@@ -9,7 +9,6 @@ const UserProfile = () => {
   const [business, setBusiness] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [showEditImage, setShowEditImage] = useState(false);
   const [businessNotFound, setBusinessNotFound] = useState(false); // Add this state
@@ -27,7 +26,6 @@ const UserProfile = () => {
       const response = await apiClient.get('/user/getCurrentUser');
       if (!ignore) {
         setUser(response.data.data);
-        console.log('User data:', response.data.data);
         toast.success('User profile loaded successfully!');
       }
 
@@ -35,7 +33,6 @@ const UserProfile = () => {
       const businessResponse = await apiClient.get('/business/get/user');
       if (!ignore) {
         setBusiness(businessResponse.data.data);
-        console.log('Business data:', businessResponse.data.data);
         toast.success('Business data loaded successfully!');
       }
     } catch (err) {
@@ -44,12 +41,9 @@ const UserProfile = () => {
           setBusiness(null);
           setBusinessNotFound(true);
           toast.error('No business registered for this user.');
-          console.log('No business registered for this user');
         }
       } else {
-        console.error('Error fetching data:', err);
         if (!ignore) {
-          setError('Failed to load profile or business data. Please try again later.');
           toast.error(err.response?.data?.error?.message || 'Failed to load profile or business data');
         }
       }
@@ -96,7 +90,6 @@ const UserProfile = () => {
   }
 
   const handleImageSelect = async (imageFile) => {
-    console.log('Selected image:', imageFile);
     
     const formData = new FormData();
     formData.append('file', imageFile);
@@ -108,15 +101,12 @@ const UserProfile = () => {
         }
       });
       
-      console.log('Image uploaded successfully:', response.data);
       toast.success('Profile image updated successfully!');
       setShowEditImage(false);
       fetchUserProfile();
       
     } catch (error) {
-      console.error('Upload failed:', error);
       toast.error('Failed to update profile image. Please try again.');
-      throw error;
     }
   };
 
@@ -133,20 +123,7 @@ const UserProfile = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="container py-5">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle me-2"></i>
-          {error}
-          <button className="btn btn-outline-danger btn-sm ms-3" onClick={fetchUserProfile}>
-            <i className="bi bi-arrow-clockwise me-1"></i>Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  
   return (
     <div className="bg-light min-vh-100">
       <div className="container py-4">

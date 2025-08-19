@@ -18,8 +18,6 @@ function EditService() {
         business: id || ''
     });
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [success, setSuccess] = useState(null);
 
     const handleInputChange = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
@@ -28,13 +26,10 @@ function EditService() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setError(null);
-        setSuccess(null);
 
         // Validate required fields
         if (!formData.name || !formData.description || !formData.duration || 
             !formData.price || !formData.totalSlots) {
-            setError('Please fill in all required fields');
             setLoading(false);
             return;
         }
@@ -49,13 +44,9 @@ function EditService() {
                 totalSlots: parseInt(formData.totalSlots), // Ensure it's a number
                 business: formData.business
             };
-            
-            console.log('Sending request data:', requestData);
-            
+                        
             const response = await apiClient.put(`/services-offered/update/${serviceId}`, requestData);
             toast.info('Service updated successfully!');
-            console.log('Service updated:', response.data);
-            setSuccess('Service updated successfully!');
             
             // Clear localStorage after successful update
             localStorage.removeItem('serviceData');
@@ -66,21 +57,11 @@ function EditService() {
             }, 2000);
             
         } catch (err) {
-            console.error('Error updating service:', err);
-            console.error('Error response:', err.response?.data);
             toast.error(err.response?.data?.error?.message || 'Failed to update service');
             
             // Better error handling
-            let errorMessage = 'Failed to update service.';
-            if (err.response?.data?.message) {
-                errorMessage = err.response.data.message;
-            } else if (err.response?.data?.error) {
-                errorMessage = err.response.data.error;
-            } else if (err.message) {
-                errorMessage = err.message;
-            }
             
-            setError(errorMessage);
+            
         } finally {
             setLoading(false);
         }
@@ -101,31 +82,8 @@ function EditService() {
             </div>
             
             <div className="card-body p-4">
-              {error && (
-                <div className="alert alert-danger alert-dismissible" role="alert">
-                  <i className="bi bi-exclamation-triangle me-2"></i>
-                  {error}
-                  <button 
-                    type="button" 
-                    className="btn-close" 
-                    onClick={() => setError(null)}
-                    aria-label="Close"
-                  ></button>
-                </div>
-              )}
-
-              {success && (
-                <div className="alert alert-success alert-dismissible" role="alert">
-                  <i className="bi bi-check-circle me-2"></i>
-                  {success}
-                  <button 
-                    type="button" 
-                    className="btn-close" 
-                    onClick={() => setSuccess(null)}
-                    aria-label="Close"
-                  ></button>
-                </div>
-              )}
+              
+              
 
               {loading && (
                 <div className="alert alert-info" role="alert">

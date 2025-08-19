@@ -78,7 +78,6 @@ function EditImage({ onImageSelect, currentImage, onCancel }) {
       }
       
     } catch (error) {
-      console.error('Error uploading image:', error);
       // Don't close the modal on error, let user try again
     } finally {
       setLoading(false);

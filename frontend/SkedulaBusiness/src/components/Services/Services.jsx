@@ -9,7 +9,6 @@ import { toast } from 'react-toastify';
 
 function Services() {
   const [service, setService] = useState([]);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false); // Add this state
   const {id} = useParams();
@@ -20,18 +19,14 @@ function Services() {
     let ignore = false;
     const fetchData = async () => {
       setLoading(true);
-      setError('');
       try {
         const response = await axios.get(`${baseUrl}/public/getService/${id}`)
         if (ignore) return; // Ignore updates if component unmounted
         setService(response.data.data);
         toast.success('Service loaded successfully!');
-        console.log("Service loaded:", response.data.data);
       } catch (error) {
         if (ignore) return; // Ignore updates if component unmounted
-        console.error("Error loading service:", error);
         toast.error(error.response.data.error.message || 'Failed to load service');
-        setError(error.response.data.message || 'Failed to load service');
       } finally {
         if(!ignore) setLoading(false);
       }
@@ -60,15 +55,12 @@ function Services() {
       
       const response = await apiClient.delete(`/services-offered/delete/${id}`);
       toast.warn('Service deleted successfully!');
-      console.log('Service deleted:', response.data.data);
       toast.
       
       // You can show a success message here if needed
       navigate(`/services`); // Navigate to services list instead of businesses
       
     } catch (error) {
-      console.error('Error deleting service:', error);
-      setError('Failed to delete service. Please try again.');
       toast.error(error.response?.data?.error?.message || 'Failed to delete service');
     } finally {
       setLoading(false);
@@ -92,17 +84,7 @@ function Services() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="container py-5">
-        <div className="alert alert-danger" role="alert">
-          <i className="bi bi-exclamation-triangle me-2"></i>
-          {error}
-        </div>
-      </div>
-    );
-  }
-
+  
 
   return (
     <div className="container py-5">

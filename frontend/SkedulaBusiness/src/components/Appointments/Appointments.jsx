@@ -55,7 +55,6 @@ function getStatusDetails(status) {
 function Appointments() {
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [filterStatus, setFilterStatus] = useState('All')
   const [activeTab, setActiveTab] = useState('upcoming')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]) // Default to today
@@ -79,10 +78,8 @@ function Appointments() {
       
     const fetchAppointments = async (tabType = activeTab, date = selectedDate) => {
         setLoading(true)
-        setError(null)
         
         try {
-          console.log('Fetching appointments for date:', date);
           let apiUrl = ''
           
           // Determine API endpoint based on tab type and service
@@ -92,31 +89,24 @@ function Appointments() {
           else if (!serviceId) {
             if (tabType === 'upcoming') {
               apiUrl = `/appointments/get/upcoming/${date}/${id}`
-              console.log(apiUrl);
             } else {
               apiUrl = `/appointments/get/previous/${date}/${id}`
-              console.log(apiUrl);
             }
           } else {
             // Service-specific appointments
             apiUrl = `/appointments/get/business/service/${id}/${serviceId}`  
-            console.log(apiUrl);
           }
           
-          console.log(`Fetching ${tabType} appointments from:`, apiUrl)
           
           const response = await apiClient.get(apiUrl)
           if (ignore) return; // Ignore updates if component unmounted
           toast.success(`Appointments loaded successfully!`  )
           setAppointments((response.data.data).reverse())
           
-          console.log(`${tabType} appointments loaded for ${date}:`, response.data.data)
           
         } catch (err) {
           if (ignore) return; // Ignore updates if component unmounted
-          console.error(`Error fetching ${tabType} appointments:`, err)
           toast.error(err.response?.data?.error?.message || `Failed to load ${tabType} appointments`)
-          setError(`Failed to load ${tabType} appointments. Please try again later.`)
         } finally {
           if(!ignore) setLoading(false)
         }
@@ -173,7 +163,6 @@ function Appointments() {
       }, 2000) 
       toast.warn('Appointment cancelled successfully!')
     } catch (err) {
-      console.error('Cancel failed', err)
       toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
       setTimeout(() => {
         window.location.reload();
@@ -194,7 +183,6 @@ function Appointments() {
         window.location.reload();
       }, 2000) 
     } catch (err) {
-      console.error('Cancel failed', err)
       toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
       setTimeout(() => {
         window.location.reload();
@@ -211,12 +199,10 @@ function Appointments() {
           app.id === appointmentId ? { ...app, status: 'BOOKED' } : app
         )
       )
-      console.log('Appointment approved successfully')
       
       toast.info('Appointment approved successfully!')
       // Wait for 1 second before reloading
     } catch (err) {
-      console.error('Approve failed', err)
       toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
       setTimeout(() => {
         window.location.reload();
@@ -239,7 +225,6 @@ function Appointments() {
         window.location.reload();
       }, 2000) 
     } catch (err) {
-      console.error('Mark done failed', err)
       toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
       setTimeout(() => {
         window.location.reload();
@@ -260,23 +245,7 @@ function Appointments() {
     )
   }
 
-  if (error) {
-    return (
-      <div className="container py-5">
-        <div className="alert alert-danger" role="alert">
-          <i className="bi bi-exclamation-triangle me-2"></i>
-          {error}
-          <button 
-            className="btn btn-outline-danger btn-sm ms-3"
-            onClick={() => fetchAppointments(activeTab, selectedDate)}
-          >
-            <i className="bi bi-arrow-clockwise me-1"></i>
-            Retry
-          </button>
-        </div>
-      </div>
-    )
-  }
+  
 
   // Apply status filter
   const displayedAppointments = filterStatus === 'All' 

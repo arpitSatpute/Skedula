@@ -22,7 +22,6 @@ const Header = () => {
           setIsAuthenticated(false);
         }
       } catch (error) {
-        console.error('Error checking auth status:', error);
         setIsAuthenticated(false);
       }
     };
@@ -62,7 +61,6 @@ const Header = () => {
       }
       return user;
     } catch (error) {
-      console.error('Error getting current user:', error);
       return user;
     }
   };
@@ -74,7 +72,6 @@ const Header = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('userRole');
     setIsAuthenticated(false);
-    console.log('🚪 User logged out');
     navigate('/login');
   };
 

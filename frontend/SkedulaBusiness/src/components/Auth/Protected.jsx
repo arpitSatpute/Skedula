@@ -13,7 +13,6 @@ const Protected = () => {
 
   // Clear all authentication data
   const clearAuthData = () => {
-    console.log("Clearing all auth data");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("customer");
     localStorage.removeItem("token");
@@ -27,13 +26,11 @@ const Protected = () => {
   // Refresh Token Function - Gets new accessToken using refresh token from cookies
   const refreshToken = async () => {
     if (refreshAttempted) {
-      console.log("Refresh already attempted, skipping");
       return false;
     }
 
     try {
       setRefreshAttempted(true);
-      console.log("Attempting to refresh token...");
 
       const response = await axios.post(
         `${baseUrl}/auth/refresh`,
@@ -55,23 +52,21 @@ const Protected = () => {
           setUser(decoded);
           localStorage.setItem("customer", JSON.stringify(decoded));
         } catch (err) {
-          console.error("Error decoding refreshed token:", err);
+          console.error("Failed to decode token:", err);
         }
 
         setIsAuthenticated(true);
         setRefreshAttempted(false);
-        console.log("Token refreshed successfully");
         return true;
       } else {
-        console.log("No access token found in refresh response");
         setRefreshAttempted(false);
         return false;
       }
     } catch (error) {
-      console.error("Refresh token failed:", {
-        status: error.response?.status,
-        message: error.message,
-      });
+        console.log('Refresh token failed:', {
+          status: error.response?.status,
+          message: error.message
+        });
       setRefreshAttempted(false);
 
       if (error.response?.status === 401 || error.response?.status === 403) {
@@ -89,7 +84,6 @@ const Protected = () => {
       const currentTime = Date.now() / 1000;
       return decoded.exp < currentTime;
     } catch (error) {
-      console.error("Error decoding token:", error);
       return true;
     }
   };
@@ -103,14 +97,12 @@ const Protected = () => {
       const accessToken = localStorage.getItem("accessToken");
 
       if (!accessToken) {
-        console.log("No access token found");
         setIsAuthenticated(false);
         return;
       }
 
       // If expired → try refresh
       if (isTokenExpired(accessToken)) {
-        console.log("Access token expired, attempting refresh");
         const refreshed = await refreshToken();
         if (!refreshed) {
           clearAuthData();
@@ -124,12 +116,10 @@ const Protected = () => {
         setUser(decoded);
         localStorage.setItem("customer", JSON.stringify(decoded));
       } catch (err) {
-        console.error("Error decoding token:", err);
       }
 
       setIsAuthenticated(true);
     } catch (error) {
-      console.error("Auth check error:", error);
       clearAuthData();
     } finally {
       setLocalLoading(false);
@@ -139,7 +129,6 @@ const Protected = () => {
 
   // Check authentication when component mounts or route changes
   useEffect(() => {
-    console.log(`Protected route accessed: ${location.pathname}`);
     setRefreshAttempted(false);
     checkAuthStatus();
   }, [location.pathname]);
@@ -154,11 +143,7 @@ const Protected = () => {
           </div>
           <h5 className="text-muted mb-2">Verifying Your Session</h5>
           <p className="text-muted small">Please wait while we authenticate your access...</p>
-          <div className="mt-3">
-            <small className="text-muted">
-              Accessing: <code>{location.pathname}</code>
-            </small>
-          </div>
+          
         </div>
       </div>
     );
@@ -166,7 +151,6 @@ const Protected = () => {
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    console.log(`Access denied to ${location.pathname}, redirecting to login`);
     return (
       <Navigate
         to="/login"
@@ -179,7 +163,6 @@ const Protected = () => {
     );
   }
 
-  console.log(`Access granted to ${location.pathname}`);
   return <Outlet />;
 };
 

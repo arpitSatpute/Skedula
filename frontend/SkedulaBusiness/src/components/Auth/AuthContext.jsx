@@ -17,14 +17,11 @@ export const AuthProvider = ({ children }) => {
 
         if (accessToken) {
           setIsAuthenticated(true);
-          console.log('AuthContext - Initialized with existing session');
         } else {
           setIsAuthenticated(false);
           // setUser(null);
-          console.log('AuthContext - No existing session found');
         }
       } catch (error) {
-        console.error('AuthContext - Initialization error:', error);
         setIsAuthenticated(false);
         // setUser(null);
       } finally {
@@ -39,8 +36,6 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
         const url = `${baseUrl}/auth/login`;
-
-        console.log('AuthContext - Attempting login with:', { email, role, password });
         
         const response = await axios.post(`${baseUrl}/auth/login`, 
             { email, password, role }, 
@@ -51,29 +46,23 @@ export const AuthProvider = ({ children }) => {
                 }
             }
         );
-        console.log('AuthContext - Login response received:', response.data);
         const accessToken = response.data.data.accessToken;
 
         if(accessToken) {
           localStorage.setItem('accessToken', accessToken);
-          console.log('AuthContext - Access token stored');
           localStorage.setItem('userRole', role);
           setUser({ email, role });
-          console.log('Login successful');
           setIsAuthenticated(true);
-          console.log('AuthContext - Login successful');
           return {success: true};
       
         }
         else {
-            console.log("❌ AuthContext: No access token in login response");
             return { 
                 success: false, 
                 message: 'No access token received' 
             };
         }
     } catch (error) {
-      console.error('AuthContext - Login failed:', error);
       throw error;
     } finally {
       setLoading(false);
@@ -89,17 +78,14 @@ export const AuthProvider = ({ children }) => {
     
     setIsAuthenticated(false);
     setUser(null);
-    console.log('AuthContext - User logged out');
   };
 
   const signup = async (userData) => {
     setLoading(true);
     try {
       const response = await axios.post(`${baseUrl}/auth/signup`, userData);
-      console.log('AuthContext - Signup successful');
       return response.data.data;
     } catch (error) {
-      console.error('AuthContext - Signup failed:', error);
       throw error;
     } finally {
       setLoading(false);
