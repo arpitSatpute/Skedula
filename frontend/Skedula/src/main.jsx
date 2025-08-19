@@ -16,7 +16,7 @@ import Profiles from './components/User/Profile.jsx'
 import Contact from './components/Contact.jsx'
 import BookAppointment from './components/Appointments/BookAppointment.jsx'
 import Login from './components/Auth/Login.jsx'
-import SignUp from './components/Auth/Signup.jsx'
+import Signup from './components/Auth/Signup.jsx'
 import Protected from './components/Auth/Protected.jsx'
 import { AuthProvider } from './components/Auth/AuthContext.jsx'
 
@@ -35,7 +35,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/signup",
-        element: <SignUp />
+        element: <Signup />
       },
       {
         path: "/about",
