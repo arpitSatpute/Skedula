@@ -29,7 +29,7 @@ const Login = () => {
       const response = await apiClient.get(`customer/get/currentCustomer`);
       console.log("Customer data:", await response.data.data);
       localStorage.setItem('customerData', JSON.stringify(await response.data.data));
-      navigate('/');
+      navigate('/profile');
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
