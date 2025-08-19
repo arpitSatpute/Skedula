@@ -27,7 +27,7 @@ const Login = () => {
       console.log("Done Login");
 
       
-      navigate('/');
+      navigate('/profile');
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {

@@ -175,6 +175,9 @@ function Appointments() {
     } catch (err) {
       console.error('Cancel failed', err)
       toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000) 
     }
   }
 
@@ -193,6 +196,9 @@ function Appointments() {
     } catch (err) {
       console.error('Cancel failed', err)
       toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000) 
     }
   }
 
@@ -212,6 +218,9 @@ function Appointments() {
     } catch (err) {
       console.error('Approve failed', err)
       toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000) 
     }
   }
 
@@ -232,6 +241,9 @@ function Appointments() {
     } catch (err) {
       console.error('Mark done failed', err)
       toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000) 
     }
   }
 
