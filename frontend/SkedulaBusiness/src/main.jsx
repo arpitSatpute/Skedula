@@ -8,7 +8,7 @@ import Layout from './components/Layout/Layout.jsx'
 import Home from './components/Home.jsx'
 import Business from './components/Business/Business.jsx'
 import Login from './components/Auth/Login.jsx'
-import SignUp from './components/Auth/Signup.jsx'
+// import Signup from './components/Auth/Signup.jsx'
 import ListServices from './components/Services/ListServices.jsx'
 import Services from './components/Services/Services.jsx'
 import AddService from './components/Services/AddService.jsx'
@@ -57,10 +57,10 @@ const router = createBrowserRouter([
             path: "/login",
             element: <Login />
           },
-          {
-            path: "/signup",
-            element: <SignUp />
-          },
+          // {
+          //   path: "/signup",
+          //   element: <Signup />
+          // },
       //   ]
       // },
       // Protected routes that require authentication
