@@ -54,7 +54,6 @@ function getStatusConfig(status) {
 function Appointments() {
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [filter, setFilter] = useState('all')
   const [selectedDate, setSelectedDate] = useState('') // Empty string means "All Dates"
   const navigate = useNavigate()
@@ -66,12 +65,9 @@ function Appointments() {
     const fetchData = async () => {
       try {
         const customerId = JSON.parse(localStorage.getItem('customerData')).id;
-        console.log("Fetching appointments for customer ID:", customerId);
-        console.log("Customer ID:", customerId);
         const response = await apiClient.get(`/appointments/get/customer/${customerId}`);
         if (ignore) return; // Ignore updates if component unmounted
         toast.success('Appointments loaded successfully!');
-        console.log("Appointments data:", response.data.data);
         
         // Sort appointments by date (newest first)
         const sortedAppointments = (response.data.data || []).sort((a, b) => {
@@ -84,13 +80,10 @@ function Appointments() {
       catch (err) {
         if (ignore) return; // Ignore updates if component unmounted
         if(err.response && err.response.status === 404) {
-          console.log(err.response.data.error.message || 'No appointments found for this customer');
           toast.error('No appointments found for this customer');
           setAppointments([]); // No appointments found, set to empty array
           return;
         }
-        console.error("Error fetching appointments:", err);
-        setError(err.response?.data?.message || 'Failed to load appointments');
         toast.error(err.response?.data?.error?.message || 'Failed to load appointments');
       }
       finally {
@@ -203,16 +196,13 @@ function Appointments() {
   const handleCancelAppointment = async (appointmentId) => {
     try {
       const response = await apiClient.patch(`/appointments/cancel/customer/${appointmentId}`)
-      console.log("response.data.data");
       toast.success('Appointment cancelled successfully!');
       setTimeout(() => {
         window.location.reload(); // Reload to fetch updated appointments
       }, 2000)
     }
     catch (err) {
-      console.error("Error cancelling appointment:", err);
       toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment');
-      setError(err.response?.data?.message || 'Failed to cancel appointment');
     }
 
   }
@@ -220,7 +210,6 @@ function Appointments() {
   const handleCancelBooking = async (appointmentId) => {
     try {
       const response = await apiClient.patch(`/appointments/cancelBooking/${appointmentId}`)
-      console.log("response.data.data");
       toast('Appointment booking cancelled successfully!');
       toast.info("10% charges applied for cancellation");
       setTimeout(() => {
@@ -228,9 +217,7 @@ function Appointments() {
       }, 2000) // Reload to fetch updated appointments
     }
     catch (err) {
-      console.error("Error cancelling appointment:", err);
       toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment');
-      setError(err.response?.data?.message || 'Failed to cancel appointment');
     }
 
   }
@@ -248,16 +235,7 @@ function Appointments() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="container py-5">
-        <div className="alert alert-danger" role="alert">
-          <i className="bi bi-exclamation-triangle me-2"></i>
-          {error}
-        </div>
-      </div>
-    );
-  }
+  
 
   return (
     <div className="container py-4">

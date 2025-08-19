@@ -138,23 +138,10 @@ function Profile() {
     </div>
   )
 
-  const ErrorDisplay = () => (
-    <div className="bg-light min-vh-100">
-      <div className="container py-5">
-        <div className="alert alert-danger text-center">
-          <i className="bi bi-exclamation-circle fs-1 mb-3"></i>
-          <h5>{userData.error}</h5>
-          <button className="btn btn-primary mt-3" onClick={loadUserProfile}>
-            <i className="bi bi-arrow-clockwise me-2"></i>
-            Try Again
-          </button>
-        </div>
-      </div>
-    </div>
-  )
+  
 
   if (userData.loading) return <LoadingSpinner />
-  if (userData.error) return <ErrorDisplay />
+  if (userData.error) return toast.error(userData.error)
 
   const { user, customer } = userData
 
@@ -172,7 +159,6 @@ function Profile() {
       setShowEditImage(false)
       loadUserProfile() // ✅ Reload after update
     } catch (error) {
-      console.error('Upload failed:', error)
       toast.error('Failed to upload image. Please try again.')
     }
   }

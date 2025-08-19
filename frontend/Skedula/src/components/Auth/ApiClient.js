@@ -12,15 +12,13 @@ apiClient.interceptors.request.use(
         
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
-            console.log("🔑 ApiClient: Added token to request");
         } else {
-            console.log("⚠️ ApiClient: No token found for request");
+            console.log("No token found for request");
         }
         
         return config;
     },
     (error) => {
-        console.error("❌ ApiClient: Request interceptor error:", error);
         return Promise.reject(error);
     }
 );
@@ -33,13 +31,11 @@ apiClient.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        console.log("⚠️ ApiClient: Response error:", error.response?.status);
 
         if (error.response && error.response.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {
-                console.log("🔄 ApiClient: 401 received, attempting token refresh...");
 
                 // Call refresh API with proper format
                 const refreshResponse = await axios.post(
@@ -53,7 +49,6 @@ apiClient.interceptors.response.use(
                     }
                 );
 
-                console.log("✅ ApiClient: Refresh response received:", refreshResponse.data);
 
                 // Extract new access token
                 let newAccessToken = refreshResponse.data.data?.accessToken || 
@@ -63,18 +58,15 @@ apiClient.interceptors.response.use(
                 if (newAccessToken) {
                     // Store new access token
                     localStorage.setItem('accessToken', newAccessToken);
-                    console.log("✅ ApiClient: New access token stored");
 
                     // Update the failed request with new token and retry
                     originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-                    console.log("🔄 ApiClient: Retrying original request with new token");
                     return apiClient.request(originalRequest);
                 } else {
                     throw new Error('No access token received from refresh');
                 }
 
             } catch (refreshError) {
-                console.error('❌ ApiClient: Unable to refresh token:', refreshError);
                 
                 // Clear all auth data on refresh failure
                 localStorage.removeItem('accessToken');

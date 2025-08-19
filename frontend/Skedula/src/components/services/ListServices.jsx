@@ -8,7 +8,6 @@ import { toast } from 'react-toastify';
 const ListServices = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
 
@@ -23,12 +22,9 @@ const ListServices = () => {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_BASE_URL}/public/getAllServices`);
         if(ignore) return; // Ignore updates if component unmounted
         setServices(response.data.data);
-        console.log("Services loaded:", response.data.data);
         toast.info('Services loaded successfully!');
       } catch (error) {
         if(ignore) return; // Ignore updates if component unmounted
-        console.error("Error loading services:", error);
-        setError(error.response?.data?.message || 'Failed to load services');
         toast.error(error.response?.data?.error?.message || 'Failed to load services');
       } finally {
         if(!ignore) setLoading(false);
@@ -52,19 +48,6 @@ const ListServices = () => {
         </div>
       );
     }
-
-
-  if (error) {
-    return (
-      <div className="container py-5">
-        <div className="alert alert-danger" role="alert">
-          <i className="bi bi-exclamation-triangle me-2"></i>
-          {error}
-        </div>
-      </div>
-    );
-  }
-
 
     const filteredServices = services.filter(service =>
       service.name.toLowerCase().includes(search.toLowerCase()) ||

@@ -22,11 +22,8 @@ const Signup = () => {
     setError(null);
     
     try {
-      console.log("Entered Signup");
       await signup({ name, email, password, phone, role });
-      console.log("Done Signup");
       navigate('/login');
-      console.log("Navigated to Login");
     } catch (err) {
       setError(err.message || 'Signup failed. Please try again.');
     } finally {

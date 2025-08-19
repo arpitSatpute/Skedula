@@ -9,7 +9,6 @@ import {toast} from 'react-toastify';
 
 function Services() {
   const [service, setService] = useState([]);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const {id} = useParams();
   const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
@@ -19,17 +18,13 @@ function Services() {
     let ignore = false;
     const fetchData = async () => {
       setLoading(true);
-      setError('');
       try {
         const response = await axios.get(`${baseUrl}/public/getService/${id}`)
         if (ignore) return; // Ignore updates if component unmounted
         setService(response.data.data);
-        console.log("Service loaded:", response.data.data);
         toast.success('Service loaded successfully!');
       } catch (error) {
         if (ignore) return; // Ignore updates if component unmounted
-        console.error("Error loading service:", error);
-        setError(error.response.data.error.message || 'Failed to load service');
         toast.error(error.response.data.error.message || 'Failed to load service');
       } finally {
         if(!ignore) setLoading(false);
@@ -67,16 +62,7 @@ function Services() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="container py-5">
-        <div className="alert alert-danger" role="alert">
-          <i className="bi bi-exclamation-triangle me-2"></i>
-          {error}
-        </div>
-      </div>
-    );
-  }
+  
 
 
   return (

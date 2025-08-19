@@ -7,7 +7,6 @@ function Header({ isDarkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useContext(AuthContext); // Use AuthContext directly
   
-  console.log("Header - Auth State:", { isAuthenticated, user });
 
   // Get current user data - prioritize AuthContext user over localStorage
   const getCurrentUser = () => {

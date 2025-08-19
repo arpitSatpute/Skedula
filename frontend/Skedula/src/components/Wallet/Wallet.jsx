@@ -9,7 +9,6 @@ const Owner_Page = import.meta.env.VITE_FRONTEND_OWNER_URL;
 function Wallet() {
   const [walletData, setWalletData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [showAddMoneyModal, setShowAddMoneyModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [amount, setAmount] = useState('');
@@ -24,18 +23,14 @@ function Wallet() {
     const fetchWalletData = async () => {
 
     setLoading(true)
-    setError('')
 
     try {
       const response = await apiClient.get('/wallet/get');
       if (ignore) return; // Ignore updates if component unmounted
       await setWalletData(response.data.data);
       toast.info('Wallet loaded successfully!')
-      console.log('Wallet data fetched successfully:', response.data.data);
     }
     catch (err) {
-      console.error('Error fetching wallet data:', err)
-      setError('Failed to load wallet information')
       toast.error(err.response?.data?.error?.message || 'Failed to load wallet information')
     }
     finally {
@@ -107,19 +102,7 @@ function Wallet() {
     )
   }
 
-  if (error) {
-    return (
-      <div className="container py-5">
-        <div className="alert alert-danger" role="alert">
-          <i className="bi bi-exclamation-triangle me-2"></i>
-          {error}
-          <button className="btn btn-outline-danger btn-sm ms-3" onClick={fetchWalletData}>
-            <i className="bi bi-arrow-clockwise me-1"></i>Retry
-          </button>
-        </div>
-      </div>
-    )
-  }
+
 
   return (
     <div className="bg-light min-vh-100">

@@ -21,7 +21,6 @@ const Footer = () => {
           setIsAuthenticated(false);
         }
       } catch (error) {
-        console.error('Error checking auth status:', error);
         setUser(null);
         setIsAuthenticated(false);
       }

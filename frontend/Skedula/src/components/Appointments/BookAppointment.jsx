@@ -10,7 +10,6 @@ function BookAppointment() {
   const [dateTime, setDateTime] = useState('')
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
 
   const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL
@@ -18,14 +17,11 @@ function BookAppointment() {
   const handleSubmit = async e => {
     e.preventDefault()
     setLoading(true)
-    setError(null)
-    setSuccess(null)
     
     try {
 
       const response = await apiClient.get(`customer/get/currentCustomer`);
-      console.log("Customer data:", (await response).data.data);
-      console.log("Booking appointment for service:", serviceId, "at business:", businessId);
+      
       const payload = { 
         date: new Date(dateTime).toISOString(), 
         serviceOffered: serviceId,
@@ -36,7 +32,6 @@ function BookAppointment() {
       }
       
       await apiClient.post(`/appointments/create`, payload)
-      setSuccess('Appointment booked successfully!')
       toast.success('Appointment booked successfully!')
       
       // Reset form
@@ -49,8 +44,6 @@ function BookAppointment() {
       }, 2000)
       
     } catch (err) {
-      console.error('Booking error:', err)
-      setError(err.response?.data?.error?.message || 'Failed to book appointment.')
       toast.error(err.response?.data?.error?.message || 'Failed to book appointment.')
     } finally {
       setLoading(false)
@@ -134,19 +127,9 @@ function BookAppointment() {
                 </div>
 
                 {/* Alert Messages */}
-                {error && (
-                  <div className="alert alert-danger rounded-3" role="alert">
-                    <i className="bi bi-exclamation-triangle me-2"></i>
-                    {error}
-                  </div>
-                )}
+                
 
-                {success && (
-                  <div className="alert alert-success rounded-3" role="alert">
-                    <i className="bi bi-check-circle me-2"></i>
-                    {success}
-                  </div>
-                )}
+                
 
                 {/* Action Buttons */}
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">

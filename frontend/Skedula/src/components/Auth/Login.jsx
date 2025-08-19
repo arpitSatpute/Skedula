@@ -21,13 +21,10 @@ const Login = () => {
     setError(null);
     
     try {
-      console.log("Entered Login");
-      console.log("Login Data:", { email, password, role });
+      
       await login(email, password, role);
-      console.log("Done Login");
 
       const response = await apiClient.get(`customer/get/currentCustomer`);
-      console.log("Customer data:", await response.data.data);
       localStorage.setItem('customerData', JSON.stringify(await response.data.data));
       navigate('/profile');
     } catch (err) {

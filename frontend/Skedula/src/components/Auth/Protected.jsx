@@ -39,7 +39,6 @@ const Protected = () => {
           setUser(decoded);
           localStorage.setItem("customer", JSON.stringify(decoded));
         } catch (err) {
-          console.error("Error decoding refreshed token:", err);
         }
 
         setIsAuthenticated(true);
@@ -48,7 +47,6 @@ const Protected = () => {
       }
       return false;
     } catch (error) {
-      console.error("Refresh token failed:", error.response?.status, error.message);
       setRefreshAttempted(false);
       if (error.response?.status === 401 || error.response?.status === 403) clearAuthData();
       return false;
@@ -93,13 +91,11 @@ const Protected = () => {
           setUser(decoded);
           localStorage.setItem("customer", JSON.stringify(decoded));
         } catch (err) {
-          console.error("Error decoding token:", err);
         }
       }
 
       setIsAuthenticated(true);
     } catch (error) {
-      console.error("Auth check error:", error);
       clearAuthData();
     } finally {
       setLocalLoading(false);

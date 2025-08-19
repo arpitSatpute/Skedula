@@ -45,7 +45,6 @@ function ListBusiness() {
     } catch (error) {
       if (!ignore) {
         toast.error(error.response?.data?.error?.message || 'Failed to load businesses');
-        console.error("Error fetching businesses:", error);
         setBusinesses([]);
         setTotalBusinesses(0);
         setTotalPages(0);

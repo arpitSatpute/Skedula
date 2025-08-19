@@ -12,7 +12,6 @@ const Business = () => {
   const [business, setBusiness] = useState(null);
   const [loading, setLoading] = useState(true);
   const [services, setServices] = useState([]);
-  const [error, setError] = useState('');
   const navigate = useNavigate();
   const baseURl = import.meta.env.VITE_BACKEND_BASE_URL;
  
@@ -25,8 +24,6 @@ const Business = () => {
       try {
         const response = await axios.get(`${baseURl}/public/getBusiness/${id}`);
         if(ignore ) return; // Ignore updates if component unmounted
-          console.log("Business data loaded:", response.status);
-          console.log("Business data loaded:", response.data.data);
           toast.info('Business loaded successfully!');
           setBusiness(response.data.data);
       } catch (err) {
@@ -35,7 +32,6 @@ const Business = () => {
             setBusiness(null);
             toast.error('Business not found');
           }
-          console.error("Error loading business data:", err);
       } finally {
         if(!ignore) setLoading(false);
       }
@@ -46,11 +42,9 @@ const Business = () => {
       try {
         const response = await axios.get(`${baseURl}/public/getServiceByBusinessId/${id}`);
         if (ignore) return; // Ignore updates if component unmounted
-        console.log("Services loaded:", response.data.data);
         setServices(response.data.data || []);
       } catch (error) {
         if (ignore) return;
-        console.log(error);
         if (error.status === 404) {
           setServices([]);
           toast.error('No services found for this business');
@@ -86,27 +80,7 @@ const Business = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="bg-light min-vh-100 d-flex align-items-center">
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-lg-6">
-              <div className="alert alert-danger shadow-lg border-0" role="alert">
-                <div className="d-flex align-items-center">
-                  <i className="bi bi-exclamation-triangle fs-2 me-3"></i>
-                  <div>
-                    <h5 className="alert-heading mb-1">Error Loading Business</h5>
-                    <p className="mb-0">{error}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  
 
   // No business available - show add business option only
   if (!business) {
