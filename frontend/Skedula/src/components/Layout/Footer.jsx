@@ -245,7 +245,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li className="mb-2">
-                <a href="mailto:support@skedula.com" className="text-secondary text-decoration-none hover-text-primary">
+                <a href="mailto:arpitrameshsatpute6986@gmail.com" className="text-secondary text-decoration-none hover-text-primary">
                   <i className="bi bi-envelope me-1"></i> Email Support
                 </a>
               </li>

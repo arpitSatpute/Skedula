@@ -245,7 +245,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li className="mb-2">
-                <a href="mailto:support@skedula.com" className="text-secondary text-decoration-none hover-text-primary">
+                <a href="mailto:arpitrameshsatpute6986@gmail.com" className="text-secondary text-decoration-none hover-text-primary">
                   <i className="bi bi-envelope me-1"></i> Email Support
                 </a>
               </li>
@@ -278,24 +278,7 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Custom Styles */}
-      {/* <style jsx>{`
-        .hover-text-primary:hover {
-          color: var(--bs-primary) !important;
-          transition: color 0.3s ease;
-        }
-        
-        .alert {
-          border: none;
-          border-radius: 8px;
-        }
-        
-        @media (max-width: 768px) {
-          .col-lg-2 {
-            margin-bottom: 2rem;
-          }
-        }
-      `}</style> */}
+   
     </footer>
   );
 };
