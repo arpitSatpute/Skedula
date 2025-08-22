@@ -5,6 +5,7 @@ import apiClient from '../Auth/ApiClient.js';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { toast } from 'react-toastify';
+import logo from '../../assets/skedula.png';
 
 
 const Business = () => {
