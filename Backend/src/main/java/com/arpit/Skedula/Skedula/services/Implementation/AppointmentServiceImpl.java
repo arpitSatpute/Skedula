@@ -271,10 +271,10 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
-     public List<AppointmentCard> getAppointmentsOnAndAfterDate(LocalDate date, Long businessId) {
+     public List<AppointmentCard> getAppointmentsOnAndAfterDate(Long businessId) {
         Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
-        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateTimeIsGreaterThanEqual(businessId, date);
+        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateTimeIsGreaterThanEqual(businessId, LocalDateTime.now());
 
         return appointments.stream()
                 .map(this::convertToCard)
@@ -282,10 +282,10 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
-    public List<AppointmentCard> getAppointmentsBeforeDate(LocalDate date, Long businessId) {
+    public List<AppointmentCard> getAppointmentsBeforeDate(Long businessId) {
         Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
-        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateTimeBefore(businessId, date);
+        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateTimeBefore(businessId, LocalDateTime.now());
         return appointments.stream()
                 .map(this::convertToCard)
                 .collect(Collectors.toList());

@@ -33,6 +33,7 @@ const UserProfile = () => {
       const businessResponse = await apiClient.get('/business/get/user');
       if (!ignore) {
         setBusiness(businessResponse.data.data);
+        console.log(businessResponse.data.data);
       }
     } catch (err) {
       if (err.response?.status === 404) {
@@ -71,8 +72,10 @@ const UserProfile = () => {
   // Update these calculations to handle null business
   const totalAppointments = business?.appointments?.length || 0;
   const totalServices = business?.serviceOffered?.length || 0;
-  const totalAppointmentsCompleted = business?.appointments?.filter(a => a.appointmentStatus === 'DONE').length || 0;
-  const totalAppointmentsCancelled = business?.appointments?.filter(a => a.appointmentStatus === 'CANCELLED').length || 0;
+  const appointmentsCompleted = business?.appointments?.filter(a => a.appointmentStatus === 'DONE') || [];
+  const totalAppointmentsCompleted = appointmentsCompleted.length || 0;
+  const appointmentsCancelled = business?.appointments?.filter(a => a.appointmentStatus === 'CANCELLED') || [];
+  const totalAppointmentsCancelled = appointmentsCancelled.length || 0;
   const totalCustomerServed = business?.appointments ?
     [...new Set(
     business.appointments
@@ -81,7 +84,29 @@ const UserProfile = () => {
   )].length 
   : 0;
 
+  
+
   const completionRate = totalAppointments > 0 ? (totalAppointmentsCompleted/(totalAppointments - totalAppointmentsCancelled) * 100).toFixed(2) : 0;
+  const revenueGenerated  = () => {
+    const servicesPrice = new Map();
+    business?.serviceOffered?.forEach(service => {
+      servicesPrice.set(service.id, service.price || 0);
+    });
+
+    let revenue = 0;
+    appointmentsCompleted.forEach(appointment => {
+      revenue += servicesPrice.get(appointment.serviceOffered) || 0;
+    });
+
+    return revenue;
+
+
+  }
+
+  const totalRevenue = revenueGenerated();
+  const avgRevenuePerAppointment = totalRevenue / (totalAppointmentsCompleted || 1) || 0;
+  const avgRevenuePerCustomer = totalRevenue / (totalCustomerServed || 1) || 0;
+
 
   const handleImageChange = () => {
     setShowEditImage(true);
@@ -350,7 +375,12 @@ const UserProfile = () => {
                                     <small className="text-muted">ID: {appointment.appointmentId}</small>
                                   </td>
                                   <td className="px-4 py-3">
-                                    {new Date(appointment.date).toLocaleDateString('en-IN')}
+                                    {new Date(appointment.dateTime).toLocaleDateString('en-US', {
+                                      weekday: 'long',
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    })}
                                   </td>
                                   <td className="px-4 py-3">
                                     <span className={getStatusBadge(appointment.appointmentStatus)}>
@@ -505,17 +535,17 @@ const UserProfile = () => {
                     </div>
                     <div className="card-body text-center">
                       <div className="mb-4">
-                        <h2 className="text-success">₹{500}k</h2>
+                        <h2 className="text-success">₹{totalRevenue}</h2>
                         <p className="text-muted">Total Revenue</p>
                       </div>
                       <div className="mb-3">
                         <div className="row">
                           <div className="col-6">
-                            <h5>₹{250}</h5>
+                            <h5>₹{avgRevenuePerAppointment}</h5>
                             <small className="text-muted">Avg per Appointment</small>
                           </div>
                           <div className="col-6">
-                            <h5>₹{150}</h5>
+                            <h5>₹{avgRevenuePerCustomer}</h5>
                             <small className="text-muted">Avg per Customer</small>
                           </div>
                         </div>

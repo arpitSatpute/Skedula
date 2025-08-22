@@ -8,6 +8,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -24,7 +25,7 @@ public class SchedulingServices {
     @Scheduled(cron = "1 0 0 * * ?") // Runs daily at midnight
     private void cancelPendingAppointments() {
         List<Appointment> appointments = appointmentRepository.findAllByAppointmentDateTimeBeforeAndAppointmentStatus(
-                LocalDate.now(),
+                LocalDateTime.now(),
                 AppointmentStatus.PENDING
         );
         if(appointments.isEmpty()){

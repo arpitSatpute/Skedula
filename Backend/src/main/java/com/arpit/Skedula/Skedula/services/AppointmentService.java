@@ -6,6 +6,7 @@ import com.arpit.Skedula.Skedula.entity.Appointment;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -41,9 +42,9 @@ public interface AppointmentService {
 
     AppointmentDTO convertToDTO(Appointment newAppointment);
 
-    List<AppointmentCard> getAppointmentsOnAndAfterDate(LocalDate date, Long businessId);
+    List<AppointmentCard> getAppointmentsOnAndAfterDate(Long businessId);
 
-    List<AppointmentCard> getAppointmentsBeforeDate(LocalDate date, Long businessId);
+    List<AppointmentCard> getAppointmentsBeforeDate(Long businessId);
 
     List<AppointmentCard> getAppointmentBydate(LocalDate date, Long businessId);
 

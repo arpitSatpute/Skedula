@@ -38,9 +38,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     List<Appointment> findByBusiness_IdAndServiceOffered_Id(Long businessId, Long serviceId);
 
-    List<Appointment> findByBusiness_IdAndAppointmentDateTimeIsGreaterThanEqual(Long businessId, LocalDate AppointmentDateTimeIsGreaterThan);
+    List<Appointment> findByBusiness_IdAndAppointmentDateTimeIsGreaterThanEqual(Long businessId, LocalDateTime AppointmentDateTimeIsGreaterThan);
 
-    List<Appointment> findByBusiness_IdAndAppointmentDateTimeBefore(Long businessId, LocalDate AppointmentDateTimeBefore);
+    List<Appointment> findByBusiness_IdAndAppointmentDateTimeBefore(Long businessId, LocalDateTime AppointmentDateTimeBefore);
 
     List<Appointment> findByBusiness_IdAndAppointmentDateTime(Long businessId, LocalDate date);
 
@@ -48,7 +48,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     List<Appointment> findByServiceOffered_Id(Long id);
 
-    List<Appointment> findAllByAppointmentDateTimeBeforeAndAppointmentStatus(LocalDate AppointmentDateTimeBefore, AppointmentStatus appointmentStatus);
+    List<Appointment> findAllByAppointmentDateTimeBeforeAndAppointmentStatus(LocalDateTime appointmentDateTime, AppointmentStatus appointmentStatus);
 
     boolean existsByServiceOffered_IdAndAppointmentDateTimeAndAppointmentStatus(Long serviceOffered, @NotNull(message = "Appointment Date cannot be null") LocalDateTime dateTime, AppointmentStatus appointmentStatus);
 

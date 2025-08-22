@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -126,21 +127,21 @@ public class AppointmentController {
     }
 
 
-    @GetMapping("/get/upcoming/{date}/{businessId}")
-    public ResponseEntity<List<AppointmentCard>> getAppointmentsOnAndAfterDate(@PathVariable LocalDate date, @PathVariable Long businessId) {
-        if (date == null || businessId == null) {
+    @GetMapping("/get/upcoming/{businessId}")
+    public ResponseEntity<List<AppointmentCard>> getAppointmentsOnAndAfterDate(@PathVariable Long businessId) {
+        if (businessId == null) {
             return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.ok(appointmentService.getAppointmentsOnAndAfterDate(date, businessId));
+        return ResponseEntity.ok(appointmentService.getAppointmentsOnAndAfterDate(businessId));
     }
 
 
-    @GetMapping("/get/previous/{date}/{businessId}")
-    public ResponseEntity<List<AppointmentCard>> getAppointmentsBeforeDate(@PathVariable LocalDate date, @PathVariable Long businessId) {
-        if (date == null || businessId == null) {
+    @GetMapping("/get/previous/{businessId}")
+    public ResponseEntity<List<AppointmentCard>> getAppointmentsBeforeDate(@PathVariable Long businessId) {
+        if (businessId == null) {
             return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.ok(appointmentService.getAppointmentsBeforeDate(date, businessId));
+        return ResponseEntity.ok(appointmentService.getAppointmentsBeforeDate(businessId));
     }
 
     @GetMapping("/get/date/{date}/{businessId}")

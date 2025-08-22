@@ -71,51 +71,54 @@ function Appointments() {
   ]
 
   // Function to fetch appointments based on tab, date and service
-  
+  const fetchAppointments = async (tabType = activeTab, date = selectedDate) => {
+    setLoading(true)
+    
+    try {
+      let apiUrl = ''
+      
+      // Determine API endpoint based on tab type and service
+      if (tabType === null) {
+        apiUrl = `/appointments/get/date/${date}/${id}`
+      }
+      else if (!serviceId) {
+        if (tabType === 'upcoming') {
+          apiUrl = `/appointments/get/upcoming/${id}`
+        } else {
+          apiUrl = `/appointments/get/previous/${id}`
+        }
+      } else {
+        // Service-specific appointments
+        apiUrl = `/appointments/get/business/service/${id}/${serviceId}`  
+      }
+      
+      const response = await apiClient.get(apiUrl)
+      setAppointments((response.data.data).reverse())
+      console.log(response.data.data)
+      
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || `Failed to load ${tabType} appointments`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Initial load when component mounts or dependencies change
   useEffect(() => {
     let ignore = false; // Flag to ignore updates if component unmounts
-      
-    const fetchAppointments = async (tabType = activeTab, date = selectedDate) => {
-        setLoading(true)
-        
-        try {
-          let apiUrl = ''
-          
-          // Determine API endpoint based on tab type and service
-          if (tabType === null) {
-            apiUrl = `/appointments/get/date/${date}/${id}`
-          }
-          else if (!serviceId) {
-            if (tabType === 'upcoming') {
-              apiUrl = `/appointments/get/upcoming/${date}/${id}`
-            } else {
-              apiUrl = `/appointments/get/previous/${date}/${id}`
-            }
-          } else {
-            // Service-specific appointments
-            apiUrl = `/appointments/get/business/service/${id}/${serviceId}`  
-          }
-          
-          
-          const response = await apiClient.get(apiUrl)
-          if (ignore) return; // Ignore updates if component unmounted
-          setAppointments((response.data.data).reverse())
-          console.log(response.data.data)
-          
-          
-        } catch (err) {
-          if (ignore) return; // Ignore updates if component unmounted
-          toast.error(err.response?.data?.error?.message || `Failed to load ${tabType} appointments`)
-        } finally {
-          if(!ignore) setLoading(false)
-        }
+    
+    const loadAppointments = async () => {
+      if (!ignore) {
+        await fetchAppointments(activeTab, selectedDate)
       }
-    fetchAppointments(activeTab, selectedDate)
+    }
+    
+    loadAppointments()
+    
     return () => {
       ignore = true; // Set ignore flag to true on cleanup
     }
-  }, [id, serviceId]) // Only depend on id and serviceId for initial load
+  }, [id, serviceId]) // Only depend on id and serviceId for initial
 
   // Handle tab change
   const handleTabChange = (newTab) => {
