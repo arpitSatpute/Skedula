@@ -67,16 +67,16 @@ const Home = () => {
       
 
       {/* Hero Section */}
-      <section className="position-relative overflow-hidden" style={{ paddingTop: '100px', minHeight: "100vh" }}>
-        {/* Background Pattern */}
-        <div className="position-absolute top-0 start-0 w-100 h-100" style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          opacity: 0.05,
-          zIndex: -1
-        }}></div>
+      <section className="position-relative overflow-hidden vh-100 d-flex align-items-center" style={{ paddingTop: '0' }}>
+  {/* Background Pattern */}
+  <div className="position-absolute top-0 start-0 w-100 h-100" style={{
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    opacity: 0.05,
+    zIndex: -1
+  }}></div>
         
         <div className="container">
-          <div className="row align-items-center min-vh-100">
+          <div className="row align-items-center" style={{ paddingTop: '80px', minHeight: "calc(100vh - 160px)" }}>
             <div className="col-lg-6">
               <div className="pe-lg-5">
                 <h1 className="display-3 fw-bold mb-4">
@@ -128,6 +128,8 @@ const Home = () => {
                 {/* Trust Indicators */}
                 
               </div>
+              
+    
             </div>
             
             <div className="col-lg-6">
@@ -180,7 +182,13 @@ const Home = () => {
                 </div>
               </div>
             </div>
+            <div className="col-11 text-center mt-4 fs-5">
+                  <p className="text-primary"> </p>
+                  
+            </div>
           </div>
+
+
         </div>
       </section>
 

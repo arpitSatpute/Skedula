@@ -45,7 +45,7 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-black text-light py-5 mt-auto">
+    <footer className="bg-light text-dark py-5 mt-auto">
       <div className="container">
         <div className="row">
           {/* Brand Section */}

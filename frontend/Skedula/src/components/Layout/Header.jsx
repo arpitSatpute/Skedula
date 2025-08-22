@@ -132,36 +132,32 @@ function Header({ isDarkMode, toggleDarkMode }) {
                     id="userDropdown"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
+                    style={{ border: 'none', background: 'transparent' }}
                   >
-                    <i className="bi bi-person-circle me-2"></i>
-                    <span className="d-none d-md-inline">
-                      {currentUser?.name || currentUser?.firstName || currentUser?.email || 'User'}
-                    </span>
+                    {/* Hamburger Menu Icon */}
+                    <div className="hamburger-menu">
+                      <i className="bi bi-list fs-5 text-dark"></i>
+                    </div>
                   </button>
                   <ul className="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userDropdown">
-                    <li>
-                      <span className="dropdown-item-text small text-muted">
-                        {currentUser?.email || 'No email'}
-                      </span>
-                    </li>
-                    <li><hr className="dropdown-divider" /></li>
+                    
                     <li>
                       <Link className="dropdown-item" to="/profile">
-                        <i className="bi bi-person me-2 text-primary"></i>
+                        <i className="bi bi-person me-2 text-dark"></i>
                         Profile
                       </Link>
                     </li>
                     
                     <li>
                       <Link className="dropdown-item" to="/appointments">
-                        <i className="bi bi-calendar-check me-2 text-success"></i>
+                        <i className="bi bi-calendar-check me-2 text-dark"></i>
                         Appointments
                       </Link>
                     </li>
                     
                     <li>
                       <Link className="dropdown-item" to="/wallet">
-                        <i className="bi bi-wallet me-2 text-info"></i>
+                        <i className="bi bi-wallet me-2 text-dark"></i>
                         Wallet
                       </Link>
                     </li>

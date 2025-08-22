@@ -45,7 +45,6 @@ function AddService() {
     submitBtn.disabled = true; // Disable button to prevent multiple submissions
     try {
       const response = await apiClient.post('/services-offered/create', formData);
-      toast.success('Service created successfully!');
       
       setServiceId(response.data.data.id);
       try {
@@ -53,7 +52,7 @@ function AddService() {
         file.append('file', image);
       
         const uploadImage = await apiClient.put(`/services-offered/uploadFile/${response.data.data.id}`, file);
-        toast.success('Service image uploaded successfully!');
+        toast.success('Service Created Successfully!');
         const imageResponse = await uploadImage.data.data;
        } catch (error) {
         toast.error(error.response?.data?.error?.message || 'Failed to upload image');

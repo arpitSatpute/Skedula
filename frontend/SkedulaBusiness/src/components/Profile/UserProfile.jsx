@@ -33,14 +33,12 @@ const UserProfile = () => {
       const businessResponse = await apiClient.get('/business/get/user');
       if (!ignore) {
         setBusiness(businessResponse.data.data);
-        toast.success('Business data loaded successfully!');
       }
     } catch (err) {
       if (err.response?.status === 404) {
         if (!ignore) {
           setBusiness(null);
           setBusinessNotFound(true);
-          toast.error('No business registered for this user.');
         }
       } else {
         if (!ignore) {
@@ -100,7 +98,7 @@ const UserProfile = () => {
           'Content-Type': 'multipart/form-data'
         }
       });
-      
+      localStorage.setItem('userimage', response.data.data.imageUrl);
       toast.success('Profile image updated successfully!');
       setShowEditImage(false);
       fetchUserProfile();
@@ -224,10 +222,10 @@ const UserProfile = () => {
                           <div className="card-body text-center p-4">
                             <div className="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
                                  style={{width: '50px', height: '50px'}}>
-                              <i className="bi bi-telephone text-success fs-4"></i>
+                              <i className="bi bi-building text-success fs-4"></i>
                             </div>
-                            <h6 className="text-muted mb-2">Phone Number</h6>
-                            <p className="fw-semibold text-dark mb-0">{user?.phone || 'Not provided'}</p>
+                            <h6 className="text-muted mb-2">Business ID</h6>
+                            <p className="fw-semibold text-dark mb-0">{business?.businessId || 'Not provided'}</p>
                           </div>
                         </div>
                       </div>

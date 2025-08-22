@@ -23,7 +23,6 @@ function Services() {
         const response = await axios.get(`${baseUrl}/public/getService/${id}`)
         if (ignore) return; // Ignore updates if component unmounted
         setService(response.data.data);
-        toast.success('Service loaded successfully!');
       } catch (error) {
         if (ignore) return; // Ignore updates if component unmounted
         toast.error(error.response.data.error.message || 'Failed to load service');
@@ -54,8 +53,7 @@ function Services() {
       setShowConfirmModal(false);
       
       const response = await apiClient.delete(`/services-offered/delete/${id}`);
-      toast.warn('Service deleted successfully!');
-      toast.
+      toast.info('Service deleted successfully!');
       
       // You can show a success message here if needed
       navigate(`/services`); // Navigate to services list instead of businesses
@@ -177,7 +175,7 @@ function Services() {
                     onClick={handleViewAppointments}
                     disabled={loading}
                   >
-                    <i className="bi bi-trash me-2"></i>
+                    <i className="bi bi-eye me-2"></i>
                     View Appointments
                   </button>
                 </small>

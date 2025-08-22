@@ -25,13 +25,11 @@ const Business = () => {
       try {
         const response = await axios.get(`${baseURl}/public/getBusiness/${id}`);
         if(ignore ) return; // Ignore updates if component unmounted
-          toast.info('Business loaded successfully!');
           setBusiness(response.data.data);
       } catch (err) {
         if (ignore) return; // Ignore updates if component unmounted
         if (err.response && err.response.status === 404) {
             setBusiness(null);
-            toast.error('Business not found');
           }
       } finally {
         if(!ignore) setLoading(false);

@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import logo from '../../assets/skedula.png';
 import axios from 'axios';
-import {toast} from 'react-toastify';
 
 
 function Services() {
@@ -22,7 +21,6 @@ function Services() {
         const response = await axios.get(`${baseUrl}/public/getService/${id}`)
         if (ignore) return; // Ignore updates if component unmounted
         setService(response.data.data);
-        toast.success('Service loaded successfully!');
       } catch (error) {
         if (ignore) return; // Ignore updates if component unmounted
         toast.error(error.response.data.error.message || 'Failed to load service');

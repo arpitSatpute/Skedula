@@ -19,11 +19,11 @@ function BookAppointment() {
     setLoading(true)
     
     try {
-
       const response = await apiClient.get(`customer/get/currentCustomer`);
       
+      // dateTime is already in "YYYY-MM-DDTHH:mm" format from input[type="datetime-local"]
       const payload = { 
-        date: new Date(dateTime).toISOString(), 
+        dateTime: dateTime, // Send as LocalDateTime string
         serviceOffered: serviceId,
         notes: notes, 
         appointmentStatus: 'PENDING',
@@ -97,7 +97,7 @@ function BookAppointment() {
                     Select Date & Time
                   </label>
                   <input
-                    type="date"
+                    type="datetime-local" // <-- changed from "date" to "datetime-local"
                     className="form-control form-control-lg rounded-3 border-2"
                     value={dateTime}
                     onChange={e => setDateTime(e.target.value)}

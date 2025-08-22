@@ -67,11 +67,10 @@ function Appointments() {
         const customerId = JSON.parse(localStorage.getItem('customerData')).id;
         const response = await apiClient.get(`/appointments/get/customer/${customerId}`);
         if (ignore) return; // Ignore updates if component unmounted
-        toast.success('Appointments loaded successfully!');
         
         // Sort appointments by date (newest first)
         const sortedAppointments = (response.data.data || []).sort((a, b) => {
-          return new Date(b.date) - new Date(a.date);
+          return new Date(b.dateTime) - new Date(a.dateTime);
         });
         
         setAppointments(sortedAppointments);
@@ -80,7 +79,6 @@ function Appointments() {
       catch (err) {
         if (ignore) return; // Ignore updates if component unmounted
         if(err.response && err.response.status === 404) {
-          toast.error('No appointments found for this customer');
           setAppointments([]); // No appointments found, set to empty array
           return;
         }
@@ -102,14 +100,14 @@ function Appointments() {
     const statusMatch = filter === 'all' || app.appointmentStatus?.toLowerCase() === filter.toLowerCase();
     
     // Date filter
-    const dateMatch = selectedDate === '' || new Date(app.date).toISOString().split('T')[0] === selectedDate;
+    const dateMatch = selectedDate === '' || new Date(app.dateTime).toISOString().split('T')[0] === selectedDate;
     
     return statusMatch && dateMatch;
   });
 
   // Get unique dates from appointments for the date selector
   const getAvailableDates = () => {
-    const dates = appointments.map(app => new Date(app.date).toISOString().split('T')[0]);
+    const dates = appointments.map(app => new Date(app.dateTime).toISOString().split('T')[0]);
     const uniqueDates = [...new Set(dates)];
     
     // Sort dates in descending order (newest first)
@@ -142,7 +140,7 @@ function Appointments() {
   const getFilteredCounts = () => {
     const dateFiltered = selectedDate === '' 
       ? appointments 
-      : appointments.filter(app => new Date(app.date).toISOString().split('T')[0] === selectedDate);
+      : appointments.filter(app => new Date(app.dateTime).toISOString().split('T')[0] === selectedDate);
 
     return {
       total: dateFiltered.length,
@@ -268,7 +266,7 @@ function Appointments() {
                     <option value="">All Dates ({appointments.length} appointments)</option>
                     {getAvailableDates().map(date => {
                       const appointmentsForDate = appointments.filter(app => 
-                        new Date(app.date).toISOString().split('T')[0] === date
+                        new Date(app.dateTime).toISOString().split('T')[0] === date
                       ).length;
                       const relativeLabel = getRelativeDateLabel(date);
                       
@@ -540,10 +538,14 @@ function Appointments() {
                       <div className="flex-grow-1">
                         <h5 className="fw-bold text-dark mb-1">
                           <i className="bi bi-calendar-date text-primary me-2"></i>
-                          {formatDate(app.date)}
+                          {formatDate(app.dateTime)}
+                          <span className="ms-2 text-primary" style={{ fontSize: '1rem' }}>
+                            <i className="bi bi-clock me-1"></i>
+                            {formatTime(app.dateTime)}
+                          </span>
                         </h5>
                         <small className="text-muted">
-                          {getRelativeDateLabel(app.date)}
+                          {getRelativeDateLabel(app.dateTime)}
                         </small>
                       </div>
                       <span className={`badge ${statusConfig.textClass} border border-2`} style={{borderColor: 'currentColor'}}>

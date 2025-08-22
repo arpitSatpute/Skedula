@@ -23,15 +23,12 @@ const Business = () => {
         const response = await apiClient.get(`/business/get/user`);
         if(!ignore) {
           setBusiness(response.data.data);
-          toast.success('Business data loaded successfully!');
         }
       } catch (err) {
         if (err.response && err.response.status === 404) {
           if(!ignore) {
-            toast.error('No business found for this user.');
               setBusiness(null);
             }
-            toast.error(err.response?.data?.error?.message || 'Failed to load business data');
           }
       } finally {
         if(!ignore) setLoading(false);
@@ -139,7 +136,7 @@ const Business = () => {
       const response = await apiClient.delete(`/business/remove/${business.id}`);
       
       if (response.status === 200) {
-        alert('Business removed successfully');
+        toast.success('Business removed successfully.');
         setBusiness(null);
       }
     } catch (error) {

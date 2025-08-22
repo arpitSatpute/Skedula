@@ -110,12 +110,7 @@ function Profile() {
         value: userData.user?.email,
         iconColor: 'text-success'
       },
-      {
-        icon: 'bi-telephone',
-        label: 'Phone Number',
-        value: userData.user?.phone,
-        iconColor: 'text-info'
-      },
+    
       {
         icon: 'bi-hash',
         label: 'Customer ID',

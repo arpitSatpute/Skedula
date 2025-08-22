@@ -54,7 +54,7 @@ function EditService() {
             // Optionally navigate back after a delay
             setTimeout(() => {
                 navigate(`/businesses`);
-            }, 2000);
+            }, 500);
             
         } catch (err) {
             toast.error(err.response?.data?.error?.message || 'Failed to update service');

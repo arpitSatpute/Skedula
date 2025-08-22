@@ -65,9 +65,9 @@ function Appointments() {
     { value: 'All', label: 'All Appointments', icon: 'bi-list' },
     { value: 'PENDING', label: 'PENDING', icon: 'bi-clock' },
     { value: 'BOOKED', label: 'BOOKED', icon: 'bi-check-circle' },
-    { value: 'Done', label: 'Completed', icon: 'bi-check-circle-fill' },
-    { value: 'CANCELLED', label: 'Cancelled', icon: 'bi-x-circle' },
-    { value: 'REJECTED', label: 'Rejected', icon: 'bi-x-circle-fill' }
+    { value: 'DONE', label: 'DONE', icon: 'bi-check-circle-fill' },
+    { value: 'CANCELLED', label: 'CANCELLED', icon: 'bi-x-circle' },
+    { value: 'REJECTED', label: 'REJECTED', icon: 'bi-x-circle-fill' }
   ]
 
   // Function to fetch appointments based on tab, date and service
@@ -100,8 +100,8 @@ function Appointments() {
           
           const response = await apiClient.get(apiUrl)
           if (ignore) return; // Ignore updates if component unmounted
-          toast.success(`Appointments loaded successfully!`  )
           setAppointments((response.data.data).reverse())
+          console.log(response.data.data)
           
           
         } catch (err) {
@@ -155,7 +155,7 @@ function Appointments() {
       const response = await apiClient.put(`/appointments/cancel/business/${appointmentId}`)
       setAppointments(prev =>
         prev.map(app =>
-          app.id === appointmentId ? { ...app, status: 'Cancelled' } : app
+          app.id === appointmentId ? { ...app, appointmentStatus: 'CANCELLED' } : app
         )
       )
       setTimeout(() => {
@@ -175,7 +175,7 @@ function Appointments() {
       const response = await apiClient.patch(`/appointments/reject/${appointmentId}`)
       setAppointments(prev =>
         prev.map(app =>
-          app.id === appointmentId ? { ...app, status: 'REJECTED' } : app
+          app.id === appointmentId ? { ...app, appointmentStatus: 'REJECTED' } : app
         )
       )
       toast.warn('Appointment rejected successfully!')
@@ -183,7 +183,7 @@ function Appointments() {
         window.location.reload();
       }, 2000) 
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
+      toast.error(err.response?.data?.error?.message || 'Failed to reject appointment')
       setTimeout(() => {
         window.location.reload();
       }, 2000) 
@@ -196,14 +196,16 @@ function Appointments() {
       await apiClient.patch(`/appointments/approve/${appointmentId}`)
       setAppointments(prev =>
         prev.map(app =>
-          app.id === appointmentId ? { ...app, status: 'BOOKED' } : app
+          app.id === appointmentId ? { ...app, appointmentStatus: 'BOOKED' } : app
         )
       )
       
       toast.info('Appointment approved successfully!')
-      // Wait for 1 second before reloading
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000) 
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
+      toast.error(err.response?.data?.error?.message || 'Failed to approve appointment')
       setTimeout(() => {
         window.location.reload();
       }, 2000) 
@@ -216,7 +218,7 @@ function Appointments() {
       const response = await apiClient.patch(`/appointments/done/${appointmentId}`)
       setAppointments(prev =>
         prev.map(app =>
-          app.id === appointmentId ? { ...app, status: 'Done' } : app
+          app.id === appointmentId ? { ...app, appointmentStatus: 'DONE' } : app
         )
       )
       toast.info('Appointment marked as done successfully!')
@@ -225,7 +227,7 @@ function Appointments() {
         window.location.reload();
       }, 2000) 
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment')
+      toast.error(err.response?.data?.error?.message || 'Failed to mark appointment as done')
       setTimeout(() => {
         window.location.reload();
       }, 2000) 
@@ -279,49 +281,57 @@ function Appointments() {
 
           {/* Card Body */}
           <div className="card-body p-4">
-            {/* Date & Time */}
+            {/* Date & Time - FIXED: Changed from app.date to app.dateTime */}
             <div className="mb-3">
               <h5 className="card-title fw-bold text-dark mb-2">
                 <i className="bi bi-calendar3 text-primary me-2"></i>
-                {new Date(app.date).toLocaleDateString('en-US', {
+                {new Date(app.dateTime).toLocaleDateString('en-US', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric'
                 })}
+                <span className="ms-2 text-primary" style={{ fontSize: '1rem' }}>
+                  <i className="bi bi-clock me-1"></i>
+                  {new Date(app.dateTime).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </span>
               </h5>
             </div>
 
-            {/* Service Info */}
+            {/* Service Info - FIXED: Updated icons and layout */}
             <div className="row mb-3">
               <div className="col-12">
                 <div className="bg-light rounded-3 p-3">
-                  <div className="d-flex align-items-center">
-                    <i className="bi bi-gear text-success fs-4 me-3 mb-3"></i>
+                  <div className="d-flex align-items-center mb-2">
+                    <i className="bi bi-hash text-primary fs-5 me-3"></i>
                     <div>
-                      <h6 className="fw-bold mb-0 text-black">{`${app.appointmentId}`}</h6>
-                      <small className="text-muted">Appointment Id</small>
+                      <h6 className="fw-bold mb-0 text-black">{app.appointmentId}</h6>
+                      <small className="text-muted">Appointment ID</small>
+                    </div>
+                  </div>
+                  <div className="d-flex align-items-center mb-2">
+                    <i className="bi bi-gear text-success fs-5 me-3"></i>
+                    <div>
+                      <h6 className="fw-bold mb-0 text-black">{app.serviceOfferedId}</h6>
+                      <small className="text-muted">Service ID</small>
+                    </div>
+                  </div>
+                  <div className="d-flex align-items-center mb-2">
+                    <i className="bi bi-building text-warning fs-5 me-3"></i>
+                    <div>
+                      <h6 className="fw-bold mb-0 text-black">{app.bid}</h6>
+                      <small className="text-muted">Business ID</small>
                     </div>
                   </div>
                   <div className="d-flex align-items-center">
-                    <i className="bi bi-gear text-success fs-4 me-3 mb-3"></i>
-                    <div>
-                      <h6 className="fw-bold mb-0 text-black">{`${app.serviceOfferedId}`}</h6>
-                      <small className="text-muted">Service Type</small>
-                    </div>
-                  </div>
-                  <div className="d-flex align-items-center">
-                    <i className="bi bi-gear text-success fs-4 me-3 mb-3"></i>
-                    <div>
-                      <h6 className="fw-bold mb-0 text-black">{`${app.bid}`}</h6>
-                      <small className="text-muted">Business Id</small>
-                    </div>
-                  </div>
-                  <div className="d-flex align-items-center">
-                    <i className="bi bi-gear text-success fs-4 me-3 mb-3"></i>
+                    <i className="bi bi-person text-info fs-5 me-3"></i>
                     <div>
                       <h6 className="fw-bold mb-0">{app.customerId}</h6>
-                      <small className="text-muted">Customer Id</small>
+                      <small className="text-muted">Customer ID</small>
                     </div>
                   </div>
                 </div>
@@ -335,11 +345,11 @@ function Appointments() {
                 Notes
               </h6>
               <p className="card-text text-dark bg-light rounded-2 p-2 mb-0">
-                {app.notes}
+                {app.notes || 'No additional notes'}
               </p>
             </div>
 
-            {/* Action Buttons - Only show for upcoming appointments */}
+            {/* Action Buttons - Keep existing logic */}
             <div className="d-grid gap-2">
               {activeTab === 'upcoming' && app.appointmentStatus === 'PENDING' && (
                 <div className="row g-2">
@@ -387,7 +397,6 @@ function Appointments() {
                 </div>
               )}
 
-              {/* No actions for previous appointments or completed statuses */}
               {(activeTab === 'previous' || !['PENDING', 'BOOKED'].includes(app.appointmentStatus)) && (
                 <button className="btn btn-outline-secondary btn-sm" disabled>
                   <i className="bi bi-info-circle me-1"></i>

@@ -88,7 +88,7 @@ const Header = () => {
       <div className="container">
         {/* Brand Logo */}
         <Link className="navbar-brand fw-bold fs-3" to="/">
-          <span className="text-primary">Skedula</span>
+          <span className="text-primary">Skedula Business</span>
         </Link>
 
         {/* Mobile toggle button */}
@@ -144,41 +144,37 @@ const Header = () => {
                     id="userDropdown"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
+                    style={{ border: 'none', background: 'transparent' }}
                   >
-                    <i className="bi bi-person-circle me-2"></i>
-                    <span className="d-none d-md-inline">
-                      {currentUser?.name || currentUser?.email || 'User'}
-                    </span>
+                    {/* Hamburger Menu Icon */}
+                    <div className="hamburger-menu">
+                      <i className="bi bi-list fs-5 text-dark"></i>
+                    </div>
                   </button>
+                  
                   <ul className="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userDropdown">
-                    
-                    <li><hr className="dropdown-divider" /></li>
+                    {/* User Info Header */}                    
                     <li>
                       <Link className="dropdown-item" to="/profile">
-                        <i className="bi bi-person me-2 text-primary"></i>
+                        <i className="bi bi-person me-2 text-dark"></i>
                         Profile
                       </Link>
                     </li>
                     {currentUser?.role === 'OWNER' && (
                       <li>
                         <Link className="dropdown-item" to="/businesses">
-                          <i className="bi bi-building me-2 text-warning"></i>
+                          <i className="bi bi-building me-2 text-dark"></i>
                           My Businesses
                         </Link>
                       </li>
                     )}
                     <li>
                       <Link className="dropdown-item" to="/wallet">
-                        <i className="bi bi-wallet me-2 text-info"></i>
+                        <i className="bi bi-wallet me-2 text-dark"></i>
                         Wallet
                       </Link>
                     </li>
-                    <li>
-                      <Link className="dropdown-item" to="/settings">
-                        <i className="bi bi-gear me-2 text-secondary"></i>
-                        Settings
-                      </Link>
-                    </li>
+                   
                     <li><hr className="dropdown-divider" /></li>
                     <li>
                       <button 

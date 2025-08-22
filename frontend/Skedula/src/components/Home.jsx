@@ -67,25 +67,25 @@ const Home = () => {
       
 
       {/* Hero Section */}
-      <section className="position-relative overflow-hidden" style={{ paddingTop: '100px', minHeight: "100vh" }}>
-        {/* Background Pattern */}
-        <div className="position-absolute top-0 start-0 w-100 h-100" style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          opacity: 0.05,
-          zIndex: -1
-        }}></div>
+      <section className="position-relative overflow-hidden vh-100 d-flex align-items-center" style={{ paddingTop: '0' }}>
+  {/* Background Pattern */}
+  <div className="position-absolute top-0 start-0 w-100 h-100" style={{
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    opacity: 0.05,
+    zIndex: -1
+  }}></div>
         
         <div className="container">
-          <div className="row align-items-center min-vh-100">
+          <div className="row align-items-center" style={{ paddingTop: '80px', minHeight: "calc(100vh - 160px)" }}>
             <div className="col-lg-6">
               <div className="pe-lg-5">
                 <h1 className="display-3 fw-bold mb-4">
-                  Schedule Smarter with 
+                  Schedule Smarter with
                   <span className="text-primary"> Skedula</span>
                 </h1>
                 <p className="lead text-muted mb-4 fs-5">
-                  The all-in-one platform that connects businesses and customers through seamless appointment scheduling, 
-                  service management, and business discovery.
+The all-in-one platform that connects businesses and customers through seamless appointment scheduling,
+service management, and business discovery.
                 </p>
                 
                 {/* Key Benefits */}
@@ -129,6 +129,8 @@ const Home = () => {
                 {/* Trust Indicators */}
                 
               </div>
+              
+    
             </div>
             
             <div className="col-lg-6">
@@ -181,7 +183,13 @@ const Home = () => {
                 </div>
               </div>
             </div>
+            <div className="col-11 text-center mt-4 fs-5">
+                  <p className="text-primary"> </p>
+                  
+            </div>
           </div>
+
+
         </div>
       </section>
 
@@ -324,9 +332,9 @@ const Home = () => {
         <div className="container position-relative">
           <div className="row justify-content-center text-center text-white">
             <div className="col-lg-8">
-              <h2 className="display-5 fw-bold mb-4">Ready to Transform Your Business?</h2>
+              <h2 className="display-5 fw-bold mb-4">Ready to Transform Your Scheduling?</h2>
               <p className="lead mb-4">
-                Join Skedula to streamline the operations and delight our customers.
+                Join Skedula to streamline the operations.
               </p>
               <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center">
                 <button 
