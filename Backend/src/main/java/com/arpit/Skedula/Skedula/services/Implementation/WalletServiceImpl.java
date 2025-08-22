@@ -125,7 +125,6 @@ public class WalletServiceImpl implements WalletService {
         userDTO.setId(user.getId());
         userDTO.setEmail(user.getEmail());
         userDTO.setName(user.getName());
-        userDTO.setPhone(user.getPhone());
         userDTO.setRoles(user.getRoles());
 
         ResponseWalletDTO responseWalletDTO = new ResponseWalletDTO();

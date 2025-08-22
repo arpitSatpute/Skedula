@@ -37,6 +37,10 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Transactional
     public AppointmentDTO bookAppointment(AppointmentDTO appointmentDTO) {
 
+        if(appointmentDTO.getDate().isBefore(LocalDate.now())) {
+            throw new RuntimeException("Appointment date cannot be in the past.");
+        }
+
         // Getting Total Slots Count in ServiceOffered
         Business business = businessRepository.findById(appointmentDTO.getBusinessId()).orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + appointmentDTO.getBusinessId()));
 
@@ -68,6 +72,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
 
+        if(appointment.getAppointmentDate().isBefore(LocalDate.now())) {
+            throw new RuntimeException("Cannot approve appointment for past date.");
+        }
 
         BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(appointment.getServiceOffered().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + appointment.getServiceOffered().getId()));

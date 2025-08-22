@@ -80,7 +80,6 @@ public class AuthServiceImpl implements AuthService {
         User mappedUser = new User();
         mappedUser.setName(signupDto.getName());
         mappedUser.setEmail(signupDto.getEmail());
-        mappedUser.setPhone(signupDto.getPhone());
         mappedUser.setImageUrl(null);
         mappedUser.setPassword(signupDto.getPassword());
         // Set the role and encode the password

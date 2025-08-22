@@ -45,4 +45,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     boolean existsByAppointmentId(String appointmentId);
 
     List<Appointment> findByServiceOffered_Id(Long id);
+
+    List<Appointment> findAllByAppointmentDateBeforeAndAppointmentStatus(LocalDate appointmentDateBefore, AppointmentStatus appointmentStatus);
 }

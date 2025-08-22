@@ -28,8 +28,6 @@ public class User implements UserDetails {
 
     private String password;
 
-    private String phone;
-
     private String imageUrl;
 
     @ElementCollection(fetch = FetchType.EAGER)
