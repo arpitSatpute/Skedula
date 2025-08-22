@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 
 @Data
@@ -19,7 +19,7 @@ public class AppointmentDTO {
     private Long id;
     private String appointmentId;
     @NotNull(message = "Appointment Date cannot be null")
-    private LocalDate date;
+    private LocalDateTime dateTime;
 
 
     private AppointmentStatus appointmentStatus;

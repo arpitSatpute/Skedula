@@ -1,11 +1,9 @@
 package com.arpit.Skedula.Skedula.card;
 
 import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 
 @Data
@@ -17,7 +15,7 @@ public class AppointmentCard {
 
     private Long id;
     private String appointmentId;
-    private LocalDate date;
+    private LocalDateTime dateTime;
     private AppointmentStatus appointmentStatus;
     private String notes;
     // BusinessServiceOffered ID

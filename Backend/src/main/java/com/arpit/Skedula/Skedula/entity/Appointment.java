@@ -4,7 +4,6 @@ import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -19,7 +18,7 @@ public class Appointment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String appointmentId;
-    private LocalDate appointmentDate;
+    private LocalDateTime appointmentDateTime;
 
     @Enumerated(EnumType.STRING)
     private AppointmentStatus appointmentStatus;

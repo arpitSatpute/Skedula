@@ -23,7 +23,7 @@ public class SchedulingServices {
 
     @Scheduled(cron = "1 0 0 * * ?") // Runs daily at midnight
     private void cancelPendingAppointments() {
-        List<Appointment> appointments = appointmentRepository.findAllByAppointmentDateBeforeAndAppointmentStatus(
+        List<Appointment> appointments = appointmentRepository.findAllByAppointmentDateTimeBeforeAndAppointmentStatus(
                 LocalDate.now(),
                 AppointmentStatus.PENDING
         );

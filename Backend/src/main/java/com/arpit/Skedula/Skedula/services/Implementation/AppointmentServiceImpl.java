@@ -4,7 +4,6 @@ package com.arpit.Skedula.Skedula.services.Implementation;
 import com.arpit.Skedula.Skedula.card.AppointmentCard;
 import com.arpit.Skedula.Skedula.dto.AppointmentDTO;
 import com.arpit.Skedula.Skedula.entity.*;
-import com.arpit.Skedula.Skedula.entity.enums.Role;
 import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
 import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.*;
@@ -12,11 +11,11 @@ import com.arpit.Skedula.Skedula.services.AppointmentService;
 
 import com.arpit.Skedula.Skedula.services.PaymentService;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,7 +25,6 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final BusinessRepository businessRepository;
-    private final ModelMapper modelMapper;
     private final BusinessServiceOfferedRepository businessServiceOfferedRepository;
     private final CustomerRepository customerRepository;
     private final PaymentService paymentService;
@@ -37,18 +35,44 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Transactional
     public AppointmentDTO bookAppointment(AppointmentDTO appointmentDTO) {
 
-        if(appointmentDTO.getDate().isBefore(LocalDate.now())) {
+        LocalDateTime apptDateTime = appointmentDTO.getDateTime().withSecond(0).withNano(0);
+        appointmentDTO.setDateTime(apptDateTime);
+        if(apptDateTime.isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Appointment date cannot be in the past.");
+        }
+
+        if(appointmentRepository.existsByServiceOffered_IdAndAppointmentDateTimeAndAppointmentStatus(
+                appointmentDTO.getServiceOffered(),
+                appointmentDTO.getDateTime(),
+                AppointmentStatus.BOOKED)) {
+            throw new RuntimeException("Requested Slot is not available. Please choose another time or date.");
         }
 
         // Getting Total Slots Count in ServiceOffered
         Business business = businessRepository.findById(appointmentDTO.getBusinessId()).orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + appointmentDTO.getBusinessId()));
 
+
         BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(appointmentDTO.getServiceOffered()).orElseThrow(() -> new ResourceNotFoundException("Service not found"));
+
+        if(apptDateTime.toLocalTime().isBefore(business.getOpenTime()) || apptDateTime.toLocalTime().isAfter(business.getCloseTime().minusMinutes(serviceOffered.getDuration()))) {
+            throw new RuntimeException("Appointment time must be within business operating hours: " + business.getOpenTime() + " - " + business.getCloseTime().minusMinutes(serviceOffered.getDuration()));
+        }
+
         Long total = serviceOffered.getTotalSlots();
 
         // Getting count of already available services, date and status
-        Long booked = appointmentRepository.countByServiceOffered_IdAndAppointmentDateAndAppointmentStatus(appointmentDTO.getServiceOffered(), appointmentDTO.getDate(), AppointmentStatus.BOOKED);
+
+        LocalDateTime startOfDay = apptDateTime.toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = apptDateTime.toLocalDate().atTime(23, 59, 59);
+
+        Long booked = appointmentRepository.countByServiceOffered_IdAndAppointmentDateTimeBetweenAndAppointmentStatus(
+                appointmentDTO.getServiceOffered(),
+                startOfDay,
+                endOfDay,
+                AppointmentStatus.BOOKED
+        );
+
+//        Long booked = appointmentRepository.countByServiceOffered_IdAndAppointmentDateTimeAndAppointmentStatus(appointmentDTO.getServiceOffered(), appointmentDTO.getDateTime().toLocalDate(), AppointmentStatus.BOOKED);
         Customer customer = customerRepository.findById(appointmentDTO.getBookedBy())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointmentDTO.getBookedBy()));
         Wallet customerWallet = walletRepository.findByUser_Id(customer.getUser().getId()).orElseThrow(() -> new ResourceNotFoundException("Customer wallet not found with id: " + customer.getUser().getId()));
@@ -72,7 +96,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
 
-        if(appointment.getAppointmentDate().isBefore(LocalDate.now())) {
+        LocalDateTime apptDateTime = appointment.getAppointmentDateTime().withSecond(0).withNano(0);
+
+        if(apptDateTime.isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Cannot approve appointment for past date.");
         }
 
@@ -80,7 +106,18 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + appointment.getServiceOffered().getId()));
         Customer customer = customerRepository.findById(appointment.getBookedBy().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointment.getBookedBy().getId()));
-        Long booked = appointmentRepository.countByServiceOffered_IdAndAppointmentDateAndAppointmentStatus(appointment.getServiceOffered().getId(), appointment.getAppointmentDate(), AppointmentStatus.BOOKED);
+
+
+        LocalDateTime startOfDay = apptDateTime.toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = apptDateTime.toLocalDate().atTime(23, 59, 59);
+
+        Long booked = appointmentRepository.countByServiceOffered_IdAndAppointmentDateTimeBetweenAndAppointmentStatus(
+                serviceOffered.getId(),
+                startOfDay,
+                endOfDay,
+                AppointmentStatus.BOOKED
+        );
+
         Long total = serviceOffered.getTotalSlots();
 
         Wallet customerWallet = walletRepository.findByUser_Id(customer.getUser().getId())
@@ -237,7 +274,7 @@ public class AppointmentServiceImpl implements AppointmentService {
      public List<AppointmentCard> getAppointmentsOnAndAfterDate(LocalDate date, Long businessId) {
         Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
-        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateIsGreaterThanEqual(businessId, date);
+        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateTimeIsGreaterThanEqual(businessId, date);
 
         return appointments.stream()
                 .map(this::convertToCard)
@@ -248,7 +285,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     public List<AppointmentCard> getAppointmentsBeforeDate(LocalDate date, Long businessId) {
         Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
-        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateBefore(businessId, date);
+        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateTimeBefore(businessId, date);
         return appointments.stream()
                 .map(this::convertToCard)
                 .collect(Collectors.toList());
@@ -258,7 +295,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     public List<AppointmentCard> getAppointmentBydate(LocalDate date, Long businessId) {
         Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
-        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDate(businessId, date);
+        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateTime(businessId, date);
         return appointments.stream()
                 .map(this::convertToCard)
                 .collect(Collectors.toList());
@@ -336,7 +373,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         result.setCustomerId(newAppointment.getBookedBy().getCustomerId());
         result.setServiceOffered(newAppointment.getServiceOffered().getId());
         result.setServiceOfferedId(newAppointment.getServiceOffered().getServiceOfferedId());
-        result.setDate(newAppointment.getAppointmentDate());
+        result.setDateTime(newAppointment.getAppointmentDateTime());
         result.setAppointmentStatus(newAppointment.getAppointmentStatus());
         result.setNotes(newAppointment.getNotes());
         result.setBusinessId(newAppointment.getServiceOffered().getBusiness().getId());
@@ -351,7 +388,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         result.setAppointmentId(newAppointment.getAppointmentId());
         result.setBookedBy(newAppointment.getBookedBy().getId());
         result.setServiceOffered(newAppointment.getServiceOffered().getId());
-        result.setDate(newAppointment.getAppointmentDate());
+        result.setDateTime(newAppointment.getAppointmentDateTime());
         result.setAppointmentStatus(newAppointment.getAppointmentStatus());
         result.setNotes(newAppointment.getNotes());
         result.setBusinessId(newAppointment.getServiceOffered().getBusiness().getId());
@@ -363,7 +400,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         appointment.setId(appointmentDTO.getId());
         appointment.setAppointmentId(appointmentDTO.getAppointmentId());
-        appointment.setAppointmentDate(appointmentDTO.getDate());
+        appointment.setAppointmentDateTime(appointmentDTO.getDateTime());
         appointment.setNotes(appointmentDTO.getNotes());
         appointment.setAppointmentStatus(appointmentDTO.getAppointmentStatus());
         appointment.setServiceOffered(serviceOffered);
