@@ -145,11 +145,11 @@ public class AppointmentController {
     }
 
     @GetMapping("/get/date/{date}/{businessId}")
-    public ResponseEntity<List<AppointmentCard>> getAppointmentsByDate(@PathVariable LocalDate date, @PathVariable Long businessId) {
-        if (date == null || businessId == null) {
+    public ResponseEntity<List<AppointmentCard>> getAppointmentsByDate(@PathVariable LocalDateTime dateTime, @PathVariable Long businessId) {
+        if (dateTime == null || businessId == null) {
             return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.ok(appointmentService.getAppointmentBydate(date, businessId));
+        return ResponseEntity.ok(appointmentService.getAppointmentBydate(dateTime, businessId));
     }
 
     @PatchMapping("/cancelBooking/{id}")

@@ -292,10 +292,13 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
-    public List<AppointmentCard> getAppointmentBydate(LocalDate date, Long businessId) {
+    public List<AppointmentCard> getAppointmentBydate(LocalDateTime dateTime, Long businessId) {
         Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
-        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateTime(businessId, date);
+        LocalDateTime startOfDay = dateTime.toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = dateTime.toLocalDate().atTime(23, 59, 59);
+
+        List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateTimeBetween(businessId, startOfDay, endOfDay);
         return appointments.stream()
                 .map(this::convertToCard)
                 .collect(Collectors.toList());

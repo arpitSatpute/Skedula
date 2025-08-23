@@ -42,7 +42,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     List<Appointment> findByBusiness_IdAndAppointmentDateTimeBefore(Long businessId, LocalDateTime AppointmentDateTimeBefore);
 
-    List<Appointment> findByBusiness_IdAndAppointmentDateTime(Long businessId, LocalDate date);
+    List<Appointment> findByBusiness_IdAndAppointmentDateTimeBetween(Long businessId, LocalDateTime appointmentDateTimeAfter, LocalDateTime appointmentDateTimeBefore);
 
     boolean existsByAppointmentId(String appointmentId);
 
