@@ -144,7 +144,7 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentService.getAppointmentsBeforeDate(businessId));
     }
 
-    @GetMapping("/get/date/{date}/{businessId}")
+    @GetMapping("/get/date/{dateTime}/{businessId}")
     public ResponseEntity<List<AppointmentCard>> getAppointmentsByDate(@PathVariable LocalDateTime dateTime, @PathVariable Long businessId) {
         if (dateTime == null || businessId == null) {
             return ResponseEntity.badRequest().build();
