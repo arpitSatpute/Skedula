@@ -53,4 +53,5 @@ public interface AppointmentService {
     void cancelAllAppointmentsByBusinessId(Long id);
 
     void cancelAllAppointmentsByServiceOfferedId(Long id);
+
 }
