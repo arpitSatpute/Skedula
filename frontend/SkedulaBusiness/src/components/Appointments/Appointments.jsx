@@ -79,7 +79,8 @@ function Appointments() {
       
       // Determine API endpoint based on tab type and service
       if (tabType === null) {
-        apiUrl = `/appointments/get/date/${date}/${id}`
+        const dateTime = `${date}T00:00:00`;
+        apiUrl = `/appointments/get/date/${dateTime}/${id}`
       }
       else if (!serviceId) {
         if (tabType === 'upcoming') {
