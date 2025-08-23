@@ -47,7 +47,7 @@ function Wallet() {
 
   const handleAddMoney = async () => {
     toast.info('Redirecting to payment page...');
-    window.open(`${baseUrl}/payment.html`, '_blank');
+    navigate('/payment');
   }
 
   const handleWithdraw = async () => {

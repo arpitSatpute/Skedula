@@ -22,6 +22,7 @@ import Protected from './components/Auth/Protected.jsx'
 import AuthRoute from './components/Auth/AuthRoute.jsx'
 import UserProfile from './components/Profile/UserProfile.jsx'
 import EditService from './components/Services/EditService.jsx';
+import Payment from './components/Wallet/Payment.jsx';
 
 // Create a wrapper component that provides AuthContext inside Router
 // const AppWithAuth = () => {
@@ -110,6 +111,10 @@ const router = createBrowserRouter([
           {
             path: "/wallet",
             element: <Wallet />
+          },
+          {
+            path: "/payment",
+            element: <Payment />
           },
           
         ]
