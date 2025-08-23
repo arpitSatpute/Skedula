@@ -19,6 +19,7 @@ import Login from './components/Auth/Login.jsx'
 import Signup from './components/Auth/Signup.jsx'
 import Protected from './components/Auth/Protected.jsx'
 import { AuthProvider } from './components/Auth/AuthContext.jsx'
+import Payment from './components/Wallet/Payment.jsx'
 
 const router = createBrowserRouter([
   {
@@ -62,6 +63,10 @@ const router = createBrowserRouter([
           {
             path: "/wallet",
             element: <Wallet />
+          },
+          {
+            path: "/payment",
+            element: <Payment />
           },
           {
             path: "/businesses/:id",

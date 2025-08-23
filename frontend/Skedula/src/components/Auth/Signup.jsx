@@ -22,7 +22,7 @@ const Signup = () => {
     setError(null);
     
     try {
-      await signup({ name, email, password, phone, role });
+      await signup({ name, email, password, role });
       navigate('/login');
     } catch (err) {
       setError(err.message || 'Signup failed. Please try again.');
@@ -344,21 +344,7 @@ const Signup = () => {
                   </div>
 
                   {/* Phone Field */}
-                  <div className="mb-4">
-                    <label htmlFor="phone" className="form-label">
-                      Phone number
-                    </label>
-                    <input 
-                      type="tel" 
-                      className="form-control signup-form-control w-100" 
-                      id="phone" 
-                      value={phone}
-                      placeholder="Enter your phone number"
-                      onChange={(e) => setPhone(e.target.value)}
-                      disabled={loading}
-                      required
-                    />
-                  </div>
+                  
 
                   {/* Terms & Conditions */}
                   <div className="mb-4">
@@ -378,7 +364,7 @@ const Signup = () => {
                     <button 
                       type="submit" 
                       className="btn signup-btn"
-                      disabled={loading || !name || !email || !password || !phone}
+                      disabled={loading || !name || !email || !password}
                     >
                       {loading ? (
                         <>
