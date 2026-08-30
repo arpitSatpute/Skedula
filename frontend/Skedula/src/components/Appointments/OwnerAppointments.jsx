@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient';
 import { toast } from 'react-toastify';
+import RescheduleModal from './RescheduleModal';
 
 function getStatusBadge(status) {
   switch (status?.toUpperCase()) {
@@ -51,6 +52,7 @@ function OwnerAppointments() {
   const [activeTab, setActiveTab] = useState('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [rescheduleTarget, setRescheduleTarget] = useState(null);
   const { id, serviceId } = useParams();
 
   const statusOptions = [
@@ -96,7 +98,7 @@ function OwnerAppointments() {
       } else {
         apiUrl = `/appointments/get/business/service/${effectiveId}/${serviceId}`;
       }
-      
+
       const response = await apiClient.get(apiUrl);
       setAppointments((response.data.data || []).reverse());
     } catch (err) {
@@ -282,11 +284,10 @@ function OwnerAppointments() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                    selectedDate === new Date().toISOString().split('T')[0]
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${selectedDate === new Date().toISOString().split('T')[0]
                       ? 'bg-brand-primary text-white shadow-2xs'
                       : 'bg-neutral-background text-brand-primary hover:bg-neutral-border border border-neutral-border/60'
-                  }`}
+                    }`}
                   onClick={setToday}
                   disabled={loading}
                 >
@@ -312,22 +313,20 @@ function OwnerAppointments() {
               <button
                 type="button"
                 onClick={() => handleTabChange('upcoming')}
-                className={`flex-1 sm:flex-none px-6 py-2.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'upcoming'
+                className={`flex-1 sm:flex-none px-6 py-2.5 rounded-full text-xs font-bold transition-all cursor-pointer ${activeTab === 'upcoming'
                     ? 'bg-brand-primary text-white shadow-2xs'
                     : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
-                }`}
+                  }`}
               >
                 Upcoming Slots
               </button>
               <button
                 type="button"
                 onClick={() => handleTabChange('previous')}
-                className={`flex-1 sm:flex-none px-6 py-2.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'previous'
+                className={`flex-1 sm:flex-none px-6 py-2.5 rounded-full text-xs font-bold transition-all cursor-pointer ${activeTab === 'previous'
                     ? 'bg-brand-primary text-white shadow-2xs'
                     : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
-                }`}
+                  }`}
               >
                 Historical Bookings
               </button>
@@ -356,9 +355,14 @@ function OwnerAppointments() {
             return (
               <div
                 key={app.id}
-                className="bg-white rounded-3xl p-6 sm:p-7 border border-neutral-border shadow-sm hover:shadow-card transition-all space-y-5 flex flex-col justify-between"
+                className="bg-white rounded-3xl p-6 sm:p-7 border border-neutral-border shadow-sm hover:shadow-card transition-all space-y-5 flex flex-col justify-between relative overflow-hidden"
                 data-animation-on-scroll=""
               >
+                {app.rescheduledAt && (
+                  <div className="absolute top-0 right-0 bg-brand-primary text-white text-[9px] font-bold px-3 py-0.5 rounded-bl-xl uppercase tracking-wider">
+                    Rescheduled
+                  </div>
+                )}
                 <div className="space-y-4">
                   {/* Card Header */}
                   <div className="flex items-start justify-between gap-3">
@@ -429,20 +433,29 @@ function OwnerAppointments() {
                   )}
 
                   {activeTab === 'upcoming' && app.appointmentStatus === 'BOOKED' && (
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => handleMarkDone(app.id)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-full text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <i className="bi bi-check2-all"></i>
+                          <span>Mark Done</span>
+                        </button>
+                        <button
+                          onClick={() => handleCancel(app.id)}
+                          className="bg-red-50 hover:bg-red-100 text-red-600 py-2.5 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <i className="bi bi-x-circle"></i>
+                          <span>Cancel</span>
+                        </button>
+                      </div>
                       <button
-                        onClick={() => handleMarkDone(app.id)}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-full text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        onClick={() => setRescheduleTarget(app)}
+                        className="w-full bg-neutral-background hover:bg-neutral-border/70 text-brand-primary py-2 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-neutral-border/80"
                       >
-                        <i className="bi bi-check2-all"></i>
-                        <span>Mark Done</span>
-                      </button>
-                      <button
-                        onClick={() => handleCancel(app.id)}
-                        className="bg-red-50 hover:bg-red-100 text-red-600 py-2.5 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <i className="bi bi-x-circle"></i>
-                        <span>Cancel Booking</span>
+                        <i className="bi bi-calendar2-range"></i>
+                        <span>Reschedule Slot</span>
                       </button>
                     </div>
                   )}
@@ -471,6 +484,14 @@ function OwnerAppointments() {
             </div>
           )}
         </div>
+        {/* Reschedule Modal */}
+        {rescheduleTarget && (
+          <RescheduleModal
+            appointment={rescheduleTarget}
+            onClose={() => setRescheduleTarget(null)}
+            onSuccess={() => fetchAppointments()}
+          />
+        )}
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { AuthContext } from "../Auth/AuthContext";
 function Header() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isOwner, logout, isAuthenticated } = useContext(AuthContext);
+  const { user, isOwner, isAdmin, logout, isAuthenticated } = useContext(AuthContext);
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -89,6 +89,11 @@ function Header() {
           {isOwner && (
             <span className="ml-2 bg-brand-secondary text-brand-primary text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-brand-primary/10">
               Business
+            </span>
+          )}
+          {isAdmin && (
+            <span className="ml-2 bg-purple-100 text-purple-800 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-purple-300">
+              Admin
             </span>
           )}
         </Link>
@@ -187,7 +192,7 @@ function Header() {
                     : "text-text-secondary hover:text-brand-primary hover:bg-black/5"
                 }`}
               >
-                Businesses
+                Find Businesses
               </Link>
               <Link
                 to="/services/explore"
@@ -222,6 +227,20 @@ function Header() {
           >
             Contact
           </Link>
+
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ml-2 ${
+                isActive('/admin')
+                  ? "bg-purple-700 text-white shadow-sm"
+                  : "text-purple-700 hover:bg-purple-50 border border-purple-200"
+              }`}
+            >
+              <i className="bi bi-shield-lock-fill text-xs"></i>
+              <span>Admin Portal</span>
+            </Link>
+          )}
         </nav>
 
         {/* Right Action Area */}
@@ -309,6 +328,16 @@ function Header() {
                       <i className="bi bi-wallet2 text-base text-amber-600"></i>
                       <span>Wallet & Payments</span>
                     </Link>
+
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-purple-700 hover:bg-purple-50 font-bold transition-colors"
+                      >
+                        <i className="bi bi-shield-lock-fill text-base"></i>
+                        <span>Admin Control Center</span>
+                      </Link>
+                    )}
                   </div>
 
                   <div className="border-t border-neutral-border/60 pt-1">

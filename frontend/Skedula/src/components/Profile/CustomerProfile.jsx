@@ -18,7 +18,7 @@ function CustomerProfile() {
     let ignore = false;
     try {
       setUserData(prev => ({ ...prev, loading: true, error: null }));
-      
+
       const [customerResult, userResult] = await Promise.allSettled([
         apiClient.get('/customer/get/currentCustomer'),
         apiClient.get('/user/getCurrentUser')
@@ -208,7 +208,7 @@ function CustomerProfile() {
 
         {/* Edit Image Modal */}
         {showEditImage && (
-          <EditImage 
+          <EditImage
             onImageSelect={handleImageSelect}
             currentImage={user?.imageUrl}
             onCancel={() => setShowEditImage(false)}

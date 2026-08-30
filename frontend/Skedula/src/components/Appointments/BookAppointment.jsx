@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -11,20 +11,36 @@ function BookAppointment() {
 
   const [service, setService] = useState(null);
   const [business, setBusiness] = useState(null);
-  const [dateTime, setDateTime] = useState('');
+  const [walletBalance, setWalletBalance] = useState(null);
+  const [customer, setCustomer] = useState(null);
+
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
-  const [selectedTime, setSelectedTime] = useState('10:00');
+  const [selectedTime, setSelectedTime] = useState('');
+  const [dateTime, setDateTime] = useState('');
   const [notes, setNotes] = useState('');
+
+  const [slots, setSlots] = useState([]);
+  const [fetchingSlots, setFetchingSlots] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fetchingDetails, setFetchingDetails] = useState(true);
 
-  const timeSlots = [
-    "09:30", "10:30", "11:30", "14:00", "15:30", "16:30", "17:30", "18:30"
-  ];
+  // Load Razorpay script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
 
+  // Fetch Service, Business, and Wallet Balance
   useEffect(() => {
     let ignore = false;
-    const fetchServiceAndBusiness = async () => {
+    const fetchInitialData = async () => {
       setFetchingDetails(true);
       try {
         const [srvRes, bizRes] = await Promise.allSettled([
@@ -35,17 +51,67 @@ function BookAppointment() {
         if (ignore) return;
         if (srvRes.status === 'fulfilled') setService(srvRes.value.data?.data);
         if (bizRes.status === 'fulfilled') setBusiness(bizRes.value.data?.data);
+
+        // Fetch wallet and current customer
+        try {
+          const [walletRes, custRes] = await Promise.allSettled([
+            apiClient.get('/wallet/get'),
+            apiClient.get('/customer/get/currentCustomer')
+          ]);
+          if (!ignore) {
+            if (walletRes.status === 'fulfilled') {
+              setWalletBalance(walletRes.value.data?.data?.balance ?? 0);
+            }
+            if (custRes.status === 'fulfilled') {
+              setCustomer(custRes.value.data?.data);
+            }
+          }
+        } catch {
+          // Unauthenticated or customer profile not loaded yet
+        }
       } catch (e) {
         // silent fail
       } finally {
         if (!ignore) setFetchingDetails(false);
       }
     };
-    fetchServiceAndBusiness();
+
+    fetchInitialData();
     return () => {
       ignore = true;
     };
   }, [serviceId, businessId, baseUrl]);
+
+  // Fetch Dynamic Available Slots whenever selectedDate or serviceId changes
+  useEffect(() => {
+    let ignore = false;
+    const fetchSlots = async () => {
+      if (!serviceId || !selectedDate) return;
+      setFetchingSlots(true);
+      try {
+        const res = await axios.get(`${baseUrl}/public/services/${serviceId}/slots?date=${selectedDate}`);
+        if (ignore) return;
+        const availableSlots = res.data || [];
+        setSlots(availableSlots);
+
+        // Automatically select the first available slot if current selectedTime is invalid
+        const firstAvailable = availableSlots.find(s => s.available);
+        if (firstAvailable && (!selectedTime || !availableSlots.some(s => s.time?.slice(0, 5) === selectedTime && s.available))) {
+          setSelectedTime(firstAvailable.time?.slice(0, 5));
+        }
+      } catch (e) {
+        // Fallback slots if network fails
+        setSlots([]);
+      } finally {
+        if (!ignore) setFetchingSlots(false);
+      }
+    };
+
+    fetchSlots();
+    return () => {
+      ignore = true;
+    };
+  }, [serviceId, selectedDate, baseUrl]);
 
   // Sync dateTime whenever selectedDate or selectedTime changes
   useEffect(() => {
@@ -60,36 +126,114 @@ function BookAppointment() {
     setSelectedDate(d.toISOString().slice(0, 10));
   };
 
+  const servicePrice = Number(service?.price || 0);
+  const currentBalance = Number(walletBalance ?? 0);
+  const remainingRequired = Math.max(0, servicePrice - currentBalance);
+  const hasSufficientBalance = currentBalance >= servicePrice;
+
+  // Execute Appointment Booking directly from Wallet
+  const executeBooking = async (customerId) => {
+    const payload = {
+      dateTime: dateTime,
+      serviceOffered: Number(serviceId),
+      notes: notes,
+      appointmentStatus: 'PENDING',
+      bookedBy: customerId,
+      businessId: Number(businessId)
+    };
+
+    await apiClient.post('/appointments/create', payload);
+    toast.success('Appointment booked successfully in escrow!');
+    setTimeout(() => {
+      navigate('/appointments');
+    }, 1200);
+  };
+
+  // Handle Submit: either direct booking or Inline Top-Up & Book
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!dateTime) {
-      toast.warn('Please specify a valid appointment time');
+    if (!dateTime || !selectedTime) {
+      toast.warn('Please select an available appointment time slot');
       return;
     }
+
     setLoading(true);
 
     try {
-      const response = await apiClient.get(`customer/get/currentCustomer`);
+      // Get customer profile if not already loaded
+      let cust = customer;
+      if (!cust) {
+        const custRes = await apiClient.get('/customer/get/currentCustomer');
+        cust = custRes.data?.data;
+        setCustomer(cust);
+      }
 
-      const payload = { 
-        dateTime: dateTime,
-        serviceOffered: serviceId,
-        notes: notes, 
-        appointmentStatus: 'PENDING',
-        bookedBy: response.data?.data?.id,
-        businessId: businessId
+      if (!cust?.id) {
+        toast.error('Unable to locate your customer profile. Please sign in again.');
+        setLoading(false);
+        return;
+      }
+
+      // Case 1: Wallet has sufficient funds
+      if (hasSufficientBalance) {
+        await executeBooking(cust.id);
+        return;
+      }
+
+      // Case 2: Insufficient Wallet Balance -> Inline Top-Up & Book via Razorpay
+      const userEmail = cust.user?.email || localStorage.getItem('userEmail');
+      const orderRes = await apiClient.post('/razorpay/pay', {
+        amount: remainingRequired,
+        currency: 'INR',
+        email: userEmail
+      });
+
+      const orderData = orderRes.data;
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_1osnPBeF2xSAFe',
+        amount: orderData.amount, // in paise
+        currency: orderData.currency,
+        name: business?.name || 'Skedula',
+        description: `Top-up ₹${remainingRequired} & Book ${service?.name || 'Appointment'}`,
+        order_id: orderData.razorpayOrderId,
+        handler: async (response) => {
+          try {
+            toast.info('Verifying payment & securing appointment...');
+            await apiClient.post('/razorpay/verify', {
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpaySignature: response.razorpay_signature,
+              email: userEmail
+            });
+
+            // Immediately execute the booking with the newly topped-up balance
+            await executeBooking(cust.id);
+          } catch (verifyErr) {
+            toast.error(verifyErr.response?.data?.error?.message || 'Payment verification failed.');
+            setLoading(false);
+          }
+        },
+        prefill: {
+          name: cust.user?.name || '',
+          email: userEmail || ''
+        },
+        theme: {
+          color: '#1A3C26'
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+            toast.info('Top-up cancelled. Your booking was not placed.');
+          }
+        }
       };
 
-      await apiClient.post(`/appointments/create`, payload);
-      toast.success('Appointment scheduled successfully in escrow!');
-
-      setTimeout(() => {
-        navigate('/appointments');
-      }, 1000);
+      const rzp = new window.Razorpay(options);
+      rzp.open();
 
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Failed to book appointment.');
-    } finally {
       setLoading(false);
     }
   };
@@ -121,26 +265,26 @@ function BookAppointment() {
             </p>
           </div>
 
-          {/* Service & Business Summary Banner */}
-          {service && (
-            <div className="bg-neutral-background p-5 rounded-2xl border border-neutral-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* Service & Business Meta Summary */}
+          {fetchingDetails ? (
+            <div className="p-6 bg-neutral-background/40 rounded-2xl border border-neutral-border/60 animate-pulse space-y-2">
+              <div className="h-4 bg-neutral-border rounded-sm w-1/3"></div>
+              <div className="h-6 bg-neutral-border rounded-sm w-1/2"></div>
+            </div>
+          ) : (
+            <div className="p-6 bg-neutral-background/60 rounded-2xl border border-neutral-border/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary">
-                  Target Service & Sanctuary
-                </span>
-                <h3 className="font-bold font-primary text-brand-primary text-lg leading-tight">
-                  {service.name}
-                </h3>
-                <p className="text-xs text-text-secondary flex items-center gap-2">
-                  <span>{business?.name || 'Verified Business'}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">Selected Session</span>
+                <h2 className="text-xl font-bold font-primary text-brand-primary">{service?.name}</h2>
+                <div className="flex items-center gap-3 text-xs text-text-secondary">
+                  <span><i className="bi bi-geo-alt-fill text-brand-primary mr-1"></i>{business?.name}</span>
                   <span>•</span>
-                  <span>{service.duration} Mins</span>
-                </p>
+                  <span><i className="bi bi-clock-fill text-amber-600 mr-1"></i>{service?.duration} mins</span>
+                </div>
               </div>
-
-              <div className="bg-brand-primary text-white px-4 py-2.5 rounded-2xl text-center sm:text-right shrink-0">
-                <span className="text-[10px] text-white/70 block uppercase font-bold">Escrow Fee</span>
-                <span className="text-xl font-bold font-primary text-brand-secondary">₹{service.price}</span>
+              <div className="sm:text-right shrink-0">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-text-secondary block">Price</span>
+                <span className="text-2xl font-bold text-brand-primary">₹{service?.price}</span>
               </div>
             </div>
           )}
@@ -166,11 +310,10 @@ function BookAppointment() {
                       key={preset.label}
                       type="button"
                       onClick={() => handleQuickDate(preset.offset)}
-                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                        isSelected
+                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${isSelected
                           ? 'bg-brand-primary text-white shadow-2xs'
                           : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
-                      }`}
+                        }`}
                     >
                       {preset.label}
                     </button>
@@ -179,59 +322,72 @@ function BookAppointment() {
               </div>
             </div>
 
-            {/* Date & Exact Time Pickers */}
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
-                  Calendar Date *
-                </label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  min={new Date().toISOString().slice(0, 10)}
-                  onChange={e => setSelectedDate(e.target.value)}
-                  required
-                  disabled={loading}
-                  className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-xl py-3 px-4 text-xs font-bold text-brand-primary outline-none transition-all cursor-pointer"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
-                  Arrival Time *
-                </label>
-                <input
-                  type="time"
-                  value={selectedTime}
-                  onChange={e => setSelectedTime(e.target.value)}
-                  required
-                  disabled={loading}
-                  className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-xl py-3 px-4 text-xs font-bold text-brand-primary outline-none transition-all cursor-pointer"
-                />
-              </div>
+            {/* Date Picker Input */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+                Calendar Date *
+              </label>
+              <input
+                type="date"
+                value={selectedDate}
+                min={new Date().toISOString().slice(0, 10)}
+                onChange={e => setSelectedDate(e.target.value)}
+                required
+                disabled={loading}
+                className="w-full sm:w-1/2 bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-xl py-3 px-4 text-xs font-bold text-brand-primary outline-none transition-all cursor-pointer"
+              />
             </div>
 
-            {/* Quick Time Slots Chips */}
-            <div className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-text-secondary block">
-                Recommended Daily Slots:
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {timeSlots.map(slot => (
-                  <button
-                    key={slot}
-                    type="button"
-                    onClick={() => setSelectedTime(slot)}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all cursor-pointer ${
-                      selectedTime === slot
-                        ? 'bg-brand-primary text-white shadow-2xs'
-                        : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
-                    }`}
-                  >
-                    {slot}
-                  </button>
-                ))}
+            {/* Dynamic Slot Picker Grid */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-text-secondary block">
+                  Available Operating Slots ({service?.duration || 60}m sessions):
+                </span>
+                {fetchingSlots && (
+                  <span className="text-xs text-text-secondary flex items-center gap-1.5">
+                    <span className="w-3 h-3 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></span>
+                    <span>Checking availability...</span>
+                  </span>
+                )}
               </div>
+
+              {slots.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+                  {slots.map(slot => {
+                    const timeStr = slot.time?.slice(0, 5);
+                    const isSelected = selectedTime === timeStr;
+                    const isAvailable = slot.available;
+
+                    return (
+                      <button
+                        key={timeStr}
+                        type="button"
+                        disabled={!isAvailable || loading}
+                        onClick={() => setSelectedTime(timeStr)}
+                        className={`p-2.5 rounded-xl text-center border transition-all text-xs font-mono font-semibold relative ${
+                          isSelected
+                            ? 'bg-brand-primary text-white border-brand-primary shadow-xs'
+                            : isAvailable
+                              ? 'bg-neutral-background hover:bg-neutral-border/60 text-brand-primary border-neutral-border/70 cursor-pointer'
+                              : 'bg-neutral-border/30 text-text-secondary/50 border-neutral-border/40 cursor-not-allowed opacity-60'
+                        }`}
+                      >
+                        <span className={!isAvailable ? 'line-through' : ''}>{timeStr}</span>
+                        {!isAvailable && (
+                          <span className="block text-[9px] font-sans font-medium text-text-secondary/70 mt-0.5">
+                            {slot.reason || 'Booked'}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-4 bg-neutral-background/60 rounded-xl border border-neutral-border/60 text-xs text-text-secondary text-center">
+                  {fetchingSlots ? 'Loading time slots...' : 'No available operating slots for this date. Please choose another date.'}
+                </div>
+              )}
             </div>
 
             {/* Notes Field */}
@@ -247,6 +403,38 @@ function BookAppointment() {
                 disabled={loading}
                 className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-xl py-3 px-4 text-xs text-brand-primary outline-none transition-all resize-none"
               />
+            </div>
+
+            {/* Inline Payment & Wallet Financial Breakdown Card */}
+            <div className="p-5 rounded-2xl border border-neutral-border/80 bg-neutral-background/50 space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold text-brand-primary pb-2 border-b border-neutral-border/60">
+                <span className="flex items-center gap-1.5">
+                  <i className="bi bi-wallet2 text-sm text-brand-primary"></i>
+                  <span>Escrow Checkout Breakdown</span>
+                </span>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  hasSufficientBalance ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                }`}>
+                  {hasSufficientBalance ? '● Wallet Ready' : '● Top-Up Needed'}
+                </span>
+              </div>
+
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center justify-between text-text-secondary">
+                  <span>Session Price:</span>
+                  <span className="font-semibold text-brand-primary">₹{servicePrice.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex items-center justify-between text-text-secondary">
+                  <span>Available Wallet Balance:</span>
+                  <span className="font-semibold text-brand-primary">₹{currentBalance.toLocaleString('en-IN')}</span>
+                </div>
+                {!hasSufficientBalance && (
+                  <div className="flex items-center justify-between pt-2 border-t border-neutral-border/60 font-bold text-brand-primary">
+                    <span className="text-amber-800">Remaining Amount to Pay:</span>
+                    <span className="text-sm text-brand-primary">₹{remainingRequired.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Reassurance Feature Grid */}
@@ -265,6 +453,7 @@ function BookAppointment() {
               </div>
             </div>
 
+            {/* Actions */}
             <div className="pt-4 border-t border-neutral-border/60 flex items-center justify-end gap-3">
               <button
                 type="button"
@@ -274,20 +463,26 @@ function BookAppointment() {
               >
                 Cancel
               </button>
+
               <button
                 type="submit"
-                disabled={loading || !dateTime}
+                disabled={loading || !selectedTime}
                 className="bg-brand-primary text-white hover:bg-brand-dark px-8 py-3.5 rounded-full text-xs font-bold shadow-card hover:shadow-card-hover transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {loading ? (
                   <>
                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    <span>Locking Slot...</span>
+                    <span>Processing Payment & Securing Slot...</span>
+                  </>
+                ) : hasSufficientBalance ? (
+                  <>
+                    <span>Confirm Booking (From Wallet)</span>
+                    <i className="bi bi-arrow-right text-brand-secondary"></i>
                   </>
                 ) : (
                   <>
-                    <span>Confirm & Hold Slot</span>
-                    <i className="bi bi-arrow-right text-brand-secondary"></i>
+                    <span>Top Up ₹{remainingRequired.toLocaleString('en-IN')} & Book</span>
+                    <i className="bi bi-lightning-charge-fill text-brand-secondary"></i>
                   </>
                 )}
               </button>

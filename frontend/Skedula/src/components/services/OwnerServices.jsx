@@ -49,7 +49,7 @@ const OwnerServices = () => {
   const filteredServices = services.filter(service => {
     const matchesSearch = service.name?.toLowerCase().includes(search.toLowerCase()) ||
       service.description?.toLowerCase().includes(search.toLowerCase());
-    
+
     let matchesDuration = true;
     if (filterDuration === 'short') matchesDuration = service.duration <= 30;
     else if (filterDuration === 'medium') matchesDuration = service.duration > 30 && service.duration <= 60;

@@ -140,7 +140,7 @@ function Services() {
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/80 via-brand-dark/20 to-transparent"></div>
-            
+
             <div className="absolute top-6 right-6">
               <span className="bg-brand-secondary text-brand-primary text-sm sm:text-base font-bold px-4 py-1.5 rounded-full shadow-md">
                 ₹{service.price}

@@ -33,7 +33,7 @@ function Payment() {
           setFormData(prev => ({ ...prev, email: parsed.email }));
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }, []);
 
   const validateForm = () => {
@@ -104,7 +104,7 @@ function Payment() {
 
     try {
       const response = await createOrder();
-      
+
       if (!response || !response.data || !response.data.razorpayOrderId) {
         toast.error("Failed to create payment order");
         setLoading(false);
@@ -121,9 +121,9 @@ function Payment() {
         handler: async function (res) {
           try {
             await verifyRazorpayPaymentAndAdd(
-              res.razorpay_payment_id, 
-              res.razorpay_order_id, 
-              res.razorpay_signature, 
+              res.razorpay_payment_id,
+              res.razorpay_order_id,
+              res.razorpay_signature,
               formData.email
             );
           } catch (error) {
@@ -138,7 +138,7 @@ function Payment() {
           color: "#1A3C26"
         },
         modal: {
-          ondismiss: function() {
+          ondismiss: function () {
             setLoading(false);
           }
         }
@@ -202,13 +202,12 @@ function Payment() {
                     max="50000"
                     disabled={loading}
                     required
-                    className={`w-full bg-neutral-background/60 border rounded-xl py-3 pl-9 pr-4 text-sm font-bold text-brand-primary outline-none transition-all ${
-                      errors.amount ? 'border-red-500 bg-red-50/50' : 'border-neutral-border focus:border-brand-primary focus:bg-white'
-                    }`}
+                    className={`w-full bg-neutral-background/60 border rounded-xl py-3 pl-9 pr-4 text-sm font-bold text-brand-primary outline-none transition-all ${errors.amount ? 'border-red-500 bg-red-50/50' : 'border-neutral-border focus:border-brand-primary focus:bg-white'
+                      }`}
                   />
                 </div>
                 {errors.amount && <p className="text-[11px] text-red-600 mt-1">{errors.amount}</p>}
-                
+
                 {/* Quick preset amount pills */}
                 <div className="flex flex-wrap gap-2 mt-2">
                   {['250', '500', '1000', '2500'].map(preset => (
@@ -236,9 +235,8 @@ function Payment() {
                   onChange={handleInputChange}
                   disabled={loading}
                   required
-                  className={`w-full bg-neutral-background/60 border rounded-xl py-3 px-4 text-sm text-brand-primary outline-none transition-all ${
-                    errors.email ? 'border-red-500 bg-red-50/50' : 'border-neutral-border focus:border-brand-primary focus:bg-white'
-                  }`}
+                  className={`w-full bg-neutral-background/60 border rounded-xl py-3 px-4 text-sm text-brand-primary outline-none transition-all ${errors.email ? 'border-red-500 bg-red-50/50' : 'border-neutral-border focus:border-brand-primary focus:bg-white'
+                    }`}
                 />
                 {errors.email && <p className="text-[11px] text-red-600 mt-1">{errors.email}</p>}
                 <p className="text-[11px] text-text-secondary mt-1">

@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient';
 import { toast } from 'react-toastify';
+import RescheduleModal from './RescheduleModal';
+import CancellationModal from './CancellationModal';
+import ReviewModal from './ReviewModal';
 
 function getStatusBadge(status) {
   switch (status?.toLowerCase()) {
@@ -50,60 +53,58 @@ function Appointments() {
   const [filter, setFilter] = useState('all');
   const [selectedDate, setSelectedDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Modals state
+  const [rescheduleTarget, setRescheduleTarget] = useState(null);
+  const [cancellationTarget, setCancellationTarget] = useState(null);
+  const [reviewTarget, setReviewTarget] = useState(null);
+
   const navigate = useNavigate();
 
-  useEffect(() => {
-    let ignore = false;
-
-    const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    try {
+      let customerId = null;
       try {
-        let customerId = null;
-        try {
-          const cached = localStorage.getItem('customerData');
-          if (cached) customerId = JSON.parse(cached).id;
-        } catch (e) {}
+        const cached = localStorage.getItem('customerData');
+        if (cached) customerId = JSON.parse(cached).id;
+      } catch (e) { }
 
-        if (!customerId) {
-          const custRes = await apiClient.get('/customer/get/currentCustomer');
-          if (custRes.data?.data) {
-            customerId = custRes.data.data.id;
-            localStorage.setItem('customerData', JSON.stringify(custRes.data.data));
-          }
+      if (!customerId) {
+        const custRes = await apiClient.get('/customer/get/currentCustomer');
+        if (custRes.data?.data) {
+          customerId = custRes.data.data.id;
+          localStorage.setItem('customerData', JSON.stringify(custRes.data.data));
         }
-
-        if (!customerId) {
-          if (!ignore) setAppointments([]);
-          return;
-        }
-
-        const response = await apiClient.get(`/appointments/get/customer/${customerId}`);
-        if (ignore) return;
-        
-        const sortedAppointments = (response.data.data || []).sort((a, b) => {
-          return new Date(b.dateTime) - new Date(a.dateTime);
-        });
-        
-        setAppointments(sortedAppointments);
-      } catch (err) {
-        if (ignore) return;
-        if (err.response && err.response.status === 404) {
-          setAppointments([]);
-          return;
-        }
-      } finally {
-        if (!ignore) setLoading(false);
       }
-    };
-    fetchData();
-    return () => {
-      ignore = true;
-    };
+
+      if (!customerId) {
+        setAppointments([]);
+        return;
+      }
+
+      const response = await apiClient.get(`/appointments/get/customer/${customerId}`);
+      const sortedAppointments = (response.data.data || []).sort((a, b) => {
+        return new Date(b.dateTime) - new Date(a.dateTime);
+      });
+
+      setAppointments(sortedAppointments);
+    } catch (err) {
+      if (err.response && err.response.status === 404) {
+        setAppointments([]);
+      }
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filteredAppointments = appointments.filter(app => {
     const statusMatch = filter === 'all' || app.appointmentStatus?.toLowerCase() === filter.toLowerCase();
     const dateMatch = selectedDate === '' || new Date(app.dateTime).toISOString().split('T')[0] === selectedDate;
-    const searchMatch = !searchQuery || 
+    const searchMatch = !searchQuery ||
       String(app.appointmentId || app.id).includes(searchQuery) ||
       (app.notes && app.notes.toLowerCase().includes(searchQuery.toLowerCase()));
     return statusMatch && dateMatch && searchMatch;
@@ -160,34 +161,6 @@ function Appointments() {
     });
   };
 
-  const handleCancelAppointment = async (appointmentId) => {
-    try {
-      await apiClient.patch(`/appointments/cancel/customer/${appointmentId}`);
-      toast.success('Appointment request cancelled. Refund processed.');
-      setAppointments(prev =>
-        prev.map(app =>
-          app.id === appointmentId ? { ...app, appointmentStatus: 'CANCELLED' } : app
-        )
-      );
-    } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment');
-    }
-  };
-
-  const handleCancelBooking = async (appointmentId) => {
-    try {
-      await apiClient.patch(`/appointments/cancelBooking/${appointmentId}`);
-      toast.success('Booking cancelled. Escrow refund credited back to wallet.');
-      setAppointments(prev =>
-        prev.map(app =>
-          app.id === appointmentId ? { ...app, appointmentStatus: 'CANCELLED' } : app
-        )
-      );
-    } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to cancel booking');
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center py-20 bg-mesh-subtle">
@@ -212,7 +185,7 @@ function Appointments() {
               My Appointments & Schedules
             </h1>
             <p className="text-xs sm:text-sm text-text-secondary">
-              Review confirmed visits, track real-time slot status, and manage escrow refunds.
+              Review confirmed visits, reschedule slots dynamically, and submit verified reviews.
             </p>
           </div>
 
@@ -220,137 +193,131 @@ function Appointments() {
             to="/services/explore"
             className="bg-brand-primary text-white hover:bg-brand-dark px-6 py-3 rounded-full text-xs font-bold shadow-card hover:shadow-card-hover transition-all flex items-center gap-2 self-start md:self-auto cursor-pointer"
           >
-            <i className="bi bi-plus-circle-fill text-brand-secondary"></i>
-            <span>Book New Appointment</span>
+            <i className="bi bi-plus-circle text-brand-secondary"></i>
+            <span>Book New Service</span>
           </Link>
         </div>
 
-        {/* Date & Filter Control Bar */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-neutral-border shadow-card space-y-6" data-animation-on-scroll="">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-            {/* Search Input */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
-                Search Bookings
-              </label>
+        {/* Filter Pills */}
+        <div className="bg-white rounded-3xl p-6 border border-neutral-border shadow-card space-y-6" data-animation-on-scroll="">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { id: 'all', label: 'All', count: counts.total },
+                { id: 'pending', label: 'Pending', count: counts.pending },
+                { id: 'booked', label: 'Confirmed', count: counts.booked },
+                { id: 'done', label: 'Completed', count: counts.done },
+                { id: 'cancelled', label: 'Cancelled', count: counts.cancelled },
+                { id: 'rejected', label: 'Declined', count: counts.rejected },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setFilter(tab.id)}
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${filter === tab.id
+                      ? 'bg-brand-primary text-white shadow-2xs'
+                      : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
+                    }`}
+                >
+                  <span>{tab.label}</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${filter === tab.id ? 'bg-white/20 text-white' : 'bg-neutral-border text-text-secondary'
+                    }`}>
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Search */}
+            <div className="w-full sm:w-64">
               <div className="relative">
-                <i className="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary text-xs"></i>
                 <input
                   type="text"
+                  placeholder="Search by ID or notes..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Search ID, notes..."
-                  className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-2xl py-2.5 pl-9 pr-3 text-xs text-brand-primary outline-none transition-all"
+                  className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-full py-2 pl-9 pr-4 text-xs font-bold text-brand-primary outline-none transition-all"
                 />
-              </div>
-            </div>
-
-            {/* Date Select */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
-                Filter by Date
-              </label>
-              <select
-                className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-2xl py-2.5 px-4 text-xs font-semibold text-brand-primary outline-none transition-all cursor-pointer"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-              >
-                <option value="">✦ All Dates ({appointments.length} Total)</option>
-                {getAvailableDates().map(date => (
-                  <option key={date} value={date}>
-                    {new Date(date).toLocaleDateString('en-IN', {
-                      weekday: 'short',
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric'
-                    })}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Quick Date Pills */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
-                Quick Jump
-              </label>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={setToday}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                    selectedDate === new Date().toISOString().split('T')[0]
-                      ? 'bg-brand-primary text-white shadow-2xs'
-                      : 'bg-neutral-background text-brand-primary hover:bg-neutral-border border border-neutral-border/60'
-                  }`}
-                >
-                  Today
-                </button>
-                <button
-                  onClick={setTomorrow}
-                  className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-neutral-background text-brand-primary hover:bg-neutral-border border border-neutral-border/60 transition-all cursor-pointer"
-                >
-                  Tomorrow
-                </button>
-                {selectedDate && (
-                  <button
-                    onClick={clearDateFilter}
-                    className="px-3.5 py-1.5 rounded-full text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-all cursor-pointer"
-                  >
-                    Reset Date ✕
-                  </button>
-                )}
+                <i className="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary text-xs"></i>
               </div>
             </div>
           </div>
 
-          <hr className="border-neutral-border/60" />
-
-          {/* Status Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {[
-              { key: 'all', label: 'All', count: counts.total },
-              { key: 'pending', label: 'Pending', count: counts.pending },
-              { key: 'booked', label: 'Booked', count: counts.booked },
-              { key: 'done', label: 'Completed', count: counts.done },
-              { key: 'cancelled', label: 'Cancelled', count: counts.cancelled },
-              { key: 'rejected', label: 'Declined', count: counts.rejected }
-            ].map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setFilter(tab.key)}
-                className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                  filter === tab.key
-                    ? 'bg-brand-primary text-white shadow-2xs'
-                    : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
+          {/* Quick Date Filters */}
+          <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-neutral-border/60">
+            <span className="text-xs font-bold uppercase tracking-wider text-text-secondary mr-2">Filter by Date:</span>
+            <button
+              onClick={setToday}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${selectedDate === new Date().toISOString().split('T')[0]
+                  ? 'bg-brand-primary text-white'
+                  : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
                 }`}
+            >
+              Today
+            </button>
+            <button
+              onClick={setTomorrow}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${selectedDate === new Date(Date.now() + 86400000).toISOString().split('T')[0]
+                  ? 'bg-brand-primary text-white'
+                  : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
+                }`}
+            >
+              Tomorrow
+            </button>
+
+            <select
+              value={selectedDate}
+              onChange={e => setSelectedDate(e.target.value)}
+              className="bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-xl py-1.5 px-3 text-xs font-bold text-brand-primary outline-none transition-all cursor-pointer"
+            >
+              <option value="">Specific Date</option>
+              {getAvailableDates().map(date => (
+                <option key={date} value={date}>
+                  {formatDate(date)}
+                </option>
+              ))}
+            </select>
+
+            {selectedDate && (
+              <button
+                onClick={clearDateFilter}
+                className="text-xs font-bold text-brand-primary hover:underline ml-2 cursor-pointer"
               >
-                {tab.label} ({tab.count})
+                Clear Date
               </button>
-            ))}
+            )}
           </div>
         </div>
 
-        {/* Appointments Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Appointments List Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-animation-on-scroll="">
           {filteredAppointments.map(app => {
             const badge = getStatusBadge(app.appointmentStatus);
+            const isBooked = app.appointmentStatus?.toLowerCase() === 'booked';
+            const isPending = app.appointmentStatus?.toLowerCase() === 'pending';
+            const isDone = app.appointmentStatus?.toLowerCase() === 'done';
+
             return (
               <div
                 key={app.id}
-                className="bg-white rounded-3xl p-6 sm:p-7 border border-neutral-border shadow-sm hover:shadow-card transition-all space-y-5 flex flex-col justify-between"
-                data-animation-on-scroll=""
+                className="bg-white rounded-3xl p-6 sm:p-7 border border-neutral-border shadow-card hover:shadow-card-hover transition-all flex flex-col justify-between space-y-6 relative overflow-hidden group"
               >
+                {app.rescheduledAt && (
+                  <div className="absolute top-0 right-0 bg-brand-primary text-white text-[9px] font-bold px-3 py-0.5 rounded-bl-xl uppercase tracking-wider">
+                    Rescheduled
+                  </div>
+                )}
+
                 <div className="space-y-4">
-                  {/* Top Bar with Status Badge */}
+                  {/* Card Header */}
                   <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
+                    <div>
                       <div className="flex items-center gap-2">
-                        <i className="bi bi-calendar3 text-brand-primary"></i>
-                        <span className="text-base font-bold text-brand-primary font-primary">
+                        <i className="bi bi-calendar-event text-brand-primary"></i>
+                        <h3 className="text-base font-bold font-primary text-brand-primary">
                           {formatDate(app.dateTime)}
-                        </span>
+                        </h3>
                       </div>
-                      <p className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
+                      <p className="text-xs font-semibold text-text-secondary flex items-center gap-1.5 mt-0.5">
                         <i className="bi bi-clock text-amber-600"></i>
                         <span>{formatTime(app.dateTime)}</span>
                       </p>
@@ -383,36 +350,50 @@ function Appointments() {
                   )}
                 </div>
 
-                {/* Actions & Policy */}
-                <div className="pt-4 border-t border-neutral-border/60 space-y-2">
-                  {app.appointmentStatus?.toLowerCase() === 'pending' && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-text-secondary">Free cancellation before confirmation</span>
+                {/* Actions & Policy Area */}
+                <div className="pt-4 border-t border-neutral-border/60 space-y-3">
+                  {(isPending || isBooked) && (
+                    <div className="flex items-center justify-between gap-2">
+                      {/* Reschedule Button */}
                       <button
-                        onClick={() => handleCancelAppointment(app.id)}
-                        className="px-4 py-1.5 rounded-full text-xs font-bold text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                        onClick={() => setRescheduleTarget(app)}
+                        className="px-3.5 py-1.5 rounded-full text-xs font-bold text-brand-primary bg-neutral-background hover:bg-neutral-border/70 border border-neutral-border/80 transition-colors flex items-center gap-1.5 cursor-pointer"
                       >
-                        Cancel Request
+                        <i className="bi bi-calendar2-range"></i>
+                        <span>Reschedule</span>
+                      </button>
+
+                      {/* Cancel Button */}
+                      <button
+                        onClick={() => setCancellationTarget(app)}
+                        className="px-3.5 py-1.5 rounded-full text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <i className="bi bi-x-circle"></i>
+                        <span>Cancel Booking</span>
                       </button>
                     </div>
                   )}
 
-                  {app.appointmentStatus?.toLowerCase() === 'booked' && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-text-secondary">10% cancellation charge applies</span>
+                  {isDone && (
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-emerald-700 font-semibold flex items-center gap-1.5">
+                        <i className="bi bi-check2-circle"></i>
+                        <span>Completed</span>
+                      </p>
+
                       <button
-                        onClick={() => handleCancelBooking(app.id)}
-                        className="px-4 py-1.5 rounded-full text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors cursor-pointer"
+                        onClick={() => setReviewTarget(app)}
+                        className="px-3.5 py-1.5 rounded-full text-xs font-bold text-brand-primary bg-brand-secondary/40 hover:bg-brand-secondary/80 border border-brand-primary/20 transition-all flex items-center gap-1.5 cursor-pointer"
                       >
-                        Cancel Booking
+                        <i className="bi bi-star-fill text-amber-500"></i>
+                        <span>Review Experience</span>
                       </button>
                     </div>
                   )}
 
-                  {app.appointmentStatus?.toLowerCase() === 'done' && (
-                    <p className="text-xs text-emerald-700 font-semibold flex items-center gap-1.5">
-                      <i className="bi bi-check2-circle"></i>
-                      <span>Treatment completed & settled</span>
+                  {app.appointmentStatus?.toLowerCase() === 'cancelled' && (
+                    <p className="text-[11px] text-slate-500 italic">
+                      Slot released. Escrow funds refunded.
                     </p>
                   )}
                 </div>
@@ -438,6 +419,33 @@ function Appointments() {
             </div>
           )}
         </div>
+
+        {/* Reschedule Modal */}
+        {rescheduleTarget && (
+          <RescheduleModal
+            appointment={rescheduleTarget}
+            onClose={() => setRescheduleTarget(null)}
+            onSuccess={fetchData}
+          />
+        )}
+
+        {/* Cancellation Preview & Confirm Modal */}
+        {cancellationTarget && (
+          <CancellationModal
+            appointment={cancellationTarget}
+            onClose={() => setCancellationTarget(null)}
+            onSuccess={fetchData}
+          />
+        )}
+
+        {/* Review & Rating Modal */}
+        {reviewTarget && (
+          <ReviewModal
+            appointment={reviewTarget}
+            onClose={() => setReviewTarget(null)}
+            onSuccess={fetchData}
+          />
+        )}
       </div>
     </div>
   );

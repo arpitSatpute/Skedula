@@ -129,11 +129,10 @@ const ListServices = () => {
               <button
                 key={pill.id}
                 onClick={() => setDurationFilter(pill.id)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                  durationFilter === pill.id
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${durationFilter === pill.id
                     ? 'bg-brand-primary text-white shadow-2xs'
                     : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
-                }`}
+                  }`}
               >
                 {pill.label}
               </button>

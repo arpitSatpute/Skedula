@@ -14,7 +14,7 @@ function AddService() {
     totalSlots: '10',
     business: id || ''
   });
-  
+
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -41,7 +41,7 @@ function AddService() {
     setLoading(true);
     try {
       const response = await apiClient.post('/services-offered/create', formData);
-      
+
       if (image && response.data?.data?.id) {
         try {
           const file = new FormData();
@@ -133,11 +133,10 @@ function AddService() {
                         key={preset}
                         type="button"
                         onClick={() => handleInputChange('duration', preset)}
-                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                          formData.duration === preset
+                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${formData.duration === preset
                             ? 'bg-brand-primary text-white shadow-2xs'
                             : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
-                        }`}
+                          }`}
                       >
                         {preset}m
                       </button>

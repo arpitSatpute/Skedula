@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient.js';
 import ConfirmationModal from '../Common/ConfirmationModal.jsx';
+import BusinessQrModal from './BusinessQrModal.jsx';
 import { toast } from 'react-toastify';
 
 const OwnerBusiness = () => {
   const [business, setBusiness] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -177,6 +180,93 @@ const OwnerBusiness = () => {
             </div>
           </div>
 
+          {/* 1-Tap Shareable Direct Booking Link Card */}
+          <div className="bg-brand-dark text-white rounded-3xl p-6 sm:p-7 border border-white/10 shadow-card space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-brand-secondary text-brand-primary flex items-center justify-center text-xl font-bold shadow-xs">
+                  <i className="bi bi-link-45deg"></i>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-brand-secondary uppercase tracking-wider">
+                      1-Tap Shareable Booking Link
+                    </span>
+                    <span className="bg-white/10 text-brand-secondary text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/10">
+                      Instagram & WhatsApp Ready
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold font-primary text-white mt-0.5">
+                    Direct Client Booking Portal
+                  </h3>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const directUrl = `${window.location.origin}/b/${business.id}`;
+                    navigator.clipboard.writeText(directUrl);
+                    setCopiedLink(true);
+                    toast.success('Direct Booking Link copied to clipboard!');
+                    setTimeout(() => setCopiedLink(false), 2500);
+                  }}
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                    copiedLink
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-brand-secondary text-brand-primary hover:bg-brand-secondary/90 border-brand-secondary'
+                  }`}
+                >
+                  <i className={`bi ${copiedLink ? 'bi-check2' : 'bi-clipboard'} text-sm`}></i>
+                  <span>{copiedLink ? 'Copied!' : 'Copy Link'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const directUrl = `${window.location.origin}/b/${business.id}`;
+                    const text = `📅 Book your appointment directly with *${business.name}* on Skedula:\n👉 ${directUrl}\n\n1-tap instant reservation with escrow security!`;
+                    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+                  }}
+                  className="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <i className="bi bi-whatsapp text-emerald-400 text-sm"></i>
+                  <span>WhatsApp</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowQrModal(true)}
+                  className="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <i className="bi bi-qr-code text-brand-secondary text-sm"></i>
+                  <span>QR Stand</span>
+                </button>
+
+                <a
+                  href={`/b/${business.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5"
+                >
+                  <i className="bi bi-box-arrow-up-right text-xs"></i>
+                  <span>Preview</span>
+                </a>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 font-mono bg-white/5 p-2.5 rounded-xl border border-white/10 overflow-x-auto text-brand-secondary">
+                <span className="text-white/60">Live URL:</span>
+                <span className="truncate">{window.location.origin}/b/{business.id}</span>
+              </div>
+              <p className="text-[11px] text-white/70">
+                💡 Paste in your Instagram Bio and Google Business listing so clients can book directly in 1 tap.
+              </p>
+            </div>
+          </div>
+
           {/* Contact and Operational Details */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60 space-y-1">
@@ -306,6 +396,15 @@ const OwnerBusiness = () => {
           </div>
         </div>
       </div>
+
+      {/* QR Code Stand Modal */}
+      {showQrModal && (
+        <BusinessQrModal
+          business={business}
+          bookingUrl={`${window.location.origin}/b/${business?.id}`}
+          onClose={() => setShowQrModal(false)}
+        />
+      )}
 
       {/* Confirmation Modal */}
       <ConfirmationModal

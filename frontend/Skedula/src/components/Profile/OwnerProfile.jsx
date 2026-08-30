@@ -69,11 +69,11 @@ const OwnerProfile = () => {
       business.appointments
         .map(appointment => appointment.bookedBy)
         .filter(Boolean)
-    )].length 
+    )].length
     : 0;
 
   const completionRate = totalAppointments > 0 ? (totalAppointmentsCompleted / (totalAppointments - totalAppointmentsCancelled || 1) * 100).toFixed(1) : 0;
-  
+
   const revenueGenerated = () => {
     const servicesPrice = new Map();
     business?.serviceOffered?.forEach(service => {
@@ -95,7 +95,7 @@ const OwnerProfile = () => {
   const handleImageSelect = async (imageFile) => {
     const formData = new FormData();
     formData.append('file', imageFile);
-    
+
     try {
       const response = await apiClient.put(`/user/update/image/${user.id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -211,22 +211,20 @@ const OwnerProfile = () => {
             <div className="flex items-center gap-3 border-b border-neutral-border/60 pb-4" data-animation-on-scroll="">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`px-6 py-2.5 rounded-full text-xs font-bold transition-all ${
-                  activeTab === 'overview'
+                className={`px-6 py-2.5 rounded-full text-xs font-bold transition-all ${activeTab === 'overview'
                     ? 'bg-brand-primary text-white shadow-xs'
                     : 'bg-white text-text-secondary hover:text-brand-primary border border-neutral-border'
-                }`}
+                  }`}
               >
                 <i className="bi bi-grid me-1.5"></i>
                 Overview
               </button>
               <button
                 onClick={() => setActiveTab('statistics')}
-                className={`px-6 py-2.5 rounded-full text-xs font-bold transition-all ${
-                  activeTab === 'statistics'
+                className={`px-6 py-2.5 rounded-full text-xs font-bold transition-all ${activeTab === 'statistics'
                     ? 'bg-brand-primary text-white shadow-xs'
                     : 'bg-white text-text-secondary hover:text-brand-primary border border-neutral-border'
-                }`}
+                  }`}
               >
                 <i className="bi bi-graph-up me-1.5"></i>
                 Performance Analytics
@@ -385,7 +383,7 @@ const OwnerProfile = () => {
 
         {/* Edit Image Modal */}
         {showEditImage && (
-          <EditImage 
+          <EditImage
             onImageSelect={handleImageSelect}
             currentImage={user?.imageUrl}
             onCancel={() => setShowEditImage(false)}

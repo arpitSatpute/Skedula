@@ -1,51 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { toast } from 'react-toastify';
-import logo from '../../assets/skedula.png';
+import logo from '../logo/logo.png';
 
 const Business = () => {
   const { id } = useParams();
   const [business, setBusiness] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [services, setServices] = useState([]);
-  const navigate = useNavigate();
+  const [reviewSummary, setReviewSummary] = useState({ averageRating: 5.0, totalReviews: 0, reviews: [] });
+  const [loading, setLoading] = useState(true);
   const baseURl = import.meta.env.VITE_BACKEND_BASE_URL;
+  const navigate = useNavigate();
 
   useEffect(() => {
     let ignore = false;
-    const loadBusiness = async () => {
+
+    const loadData = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`${baseURl}/public/getBusiness/${id}`);
+        const [bizRes, srvRes, revRes] = await Promise.allSettled([
+          axios.get(`${baseURl}/public/getBusiness/${id}`),
+          axios.get(`${baseURl}/public/getServiceByBusinessId/${id}`),
+          axios.get(`${baseURl}/public/reviews/business/${id}`)
+        ]);
+
         if (ignore) return;
-        setBusiness(response.data.data);
+        if (bizRes.status === 'fulfilled') setBusiness(bizRes.value.data?.data || bizRes.value.data);
+        if (srvRes.status === 'fulfilled') setServices(srvRes.value.data?.data || srvRes.value.data || []);
+        if (revRes.status === 'fulfilled') setReviewSummary(revRes.value.data || { averageRating: 5.0, totalReviews: 0, reviews: [] });
       } catch (err) {
-        if (ignore) return;
-        if (err.response && err.response.status === 404) {
-          setBusiness(null);
-        }
+        // silent fail
       } finally {
         if (!ignore) setLoading(false);
       }
     };
 
-    const loadServices = async () => {
-      try {
-        const response = await axios.get(`${baseURl}/public/getServiceByBusinessId/${id}`);
-        if (ignore) return;
-        setServices(response.data.data || []);
-      } catch (error) {
-        if (ignore) return;
-        if (error.response?.status === 404) {
-          setServices([]);
-          return;
-        }
-      }
-    };
-
-    loadBusiness();
-    loadServices();
+    loadData();
     return () => {
       ignore = true;
     };
@@ -114,6 +104,7 @@ const Business = () => {
 
   const open = isOpenNow(business.openTime, business.closeTime);
   const fullAddress = [business.address, business.city, business.state, business.country, business.zipCode].filter(Boolean).join(', ');
+  const cutoffHours = Math.round((business.cancellationCutoffMinutes || 120) / 60);
 
   return (
     <div className="py-12 md:py-16 px-4 sm:px-6 bg-mesh-subtle">
@@ -132,7 +123,7 @@ const Business = () => {
         {/* Business Hero Header */}
         <div className="bg-white rounded-3xl p-8 sm:p-10 border border-neutral-border shadow-card space-y-8" data-animation-on-scroll="">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 pb-6 border-b border-neutral-border/60">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="bg-brand-secondary text-brand-primary text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
                   Verified Sanctuary
@@ -146,6 +137,13 @@ const Business = () => {
                 </span>
                 <span className="text-xs font-mono text-text-secondary bg-neutral-background px-2.5 py-0.5 rounded-full border border-neutral-border/60">
                   ID: #{business.businessId}
+                </span>
+
+                {/* Rating Badge */}
+                <span className="bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold px-3 py-0.5 rounded-full flex items-center gap-1">
+                  <i className="bi bi-star-fill text-amber-500 text-[11px]"></i>
+                  <span>{(reviewSummary.averageRating || 5.0).toFixed(1)}</span>
+                  <span className="text-text-secondary font-normal">({reviewSummary.totalReviews || 0} reviews)</span>
                 </span>
               </div>
 
@@ -184,78 +182,54 @@ const Business = () => {
             </div>
           </div>
 
-          {/* Details & Compliance Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Quick Meta Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60 space-y-1">
-              <div className="flex items-center gap-2 text-brand-primary text-xs font-bold uppercase tracking-wider">
-                <i className="bi bi-clock-history"></i>
-                <span>Operating Hours</span>
-              </div>
-              <p className="text-sm font-bold text-brand-primary">
-                {formatTime(business.openTime)} - {formatTime(business.closeTime)}
+              <span className="text-[10px] uppercase font-bold text-text-secondary">Location</span>
+              <p className="text-xs font-semibold text-brand-primary truncate">{fullAddress || 'Address on file'}</p>
+            </div>
+            <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60 space-y-1">
+              <span className="text-[10px] uppercase font-bold text-text-secondary">Operating Hours</span>
+              <p className="text-xs font-semibold text-brand-primary">
+                {formatTime(business.openTime)} – {formatTime(business.closeTime)}
               </p>
             </div>
-
             <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60 space-y-1">
-              <div className="flex items-center gap-2 text-brand-primary text-xs font-bold uppercase tracking-wider">
-                <i className="bi bi-envelope"></i>
-                <span>Official Email</span>
-              </div>
-              <p className="text-sm font-semibold text-brand-primary truncate">
-                {business.email || 'N/A'}
-              </p>
+              <span className="text-[10px] uppercase font-bold text-text-secondary">Contact Email</span>
+              <p className="text-xs font-semibold text-brand-primary truncate">{business.email || 'Email on file'}</p>
             </div>
-
             <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60 space-y-1">
-              <div className="flex items-center gap-2 text-brand-primary text-xs font-bold uppercase tracking-wider">
-                <i className="bi bi-geo-alt"></i>
-                <span>Location</span>
-              </div>
-              <p className="text-xs font-semibold text-brand-primary truncate">
-                {fullAddress || 'Address on file'}
-              </p>
-            </div>
-
-            <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60 space-y-1">
-              <div className="flex items-center gap-2 text-brand-primary text-xs font-bold uppercase tracking-wider">
-                <i className="bi bi-patch-check-fill text-emerald-700"></i>
-                <span>Tax & Registry</span>
-              </div>
-              <p className="text-xs font-mono font-semibold text-brand-primary truncate">
-                GST: {business.gstnumber || business.GSTNumber || 'Verified'}
+              <span className="text-[10px] uppercase font-bold text-text-secondary">Cancellation Policy</span>
+              <p className="text-xs font-semibold text-brand-primary">
+                100% Refund &gt; {cutoffHours}h
               </p>
             </div>
           </div>
         </div>
 
-        {/* Services Offered Section */}
+        {/* Services Section */}
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="bg-brand-secondary text-brand-primary text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
-                Service Catalog
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-bold font-primary text-brand-primary mt-1">
-                Available Treatments & Services
-              </h2>
-              <p className="text-xs sm:text-sm text-text-secondary">
-                Select a treatment to review time requirements and reserve an escrow-protected slot.
-              </p>
-            </div>
-            <span className="text-xs font-bold bg-brand-primary text-white px-3.5 py-1 rounded-full shadow-2xs">
-              {services.length} Listed Service{services.length !== 1 ? 's' : ''}
+          <div>
+            <span className="bg-brand-secondary text-brand-primary text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+              Available Treatments & Services
             </span>
+            <h2 className="text-2xl sm:text-3xl font-bold font-primary text-brand-primary mt-2">
+              Book Real-Time Appointment Slots
+            </h2>
+            <p className="text-xs sm:text-sm text-text-secondary mt-1">
+              All appointments are escrow-protected with automated refund guarantees.
+            </p>
           </div>
 
+          {/* Services Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map(service => (
               <div
                 key={service.id}
-                className="bg-white rounded-3xl border border-neutral-border shadow-sm hover:shadow-card hover:-translate-y-1 transition-all overflow-hidden flex flex-col justify-between group"
-                data-animation-on-scroll=""
+                className="bg-white rounded-3xl overflow-hidden border border-neutral-border shadow-card hover:shadow-card-hover transition-all flex flex-col justify-between group"
               >
                 <div>
-                  {/* Service Image Cover */}
+                  {/* Service Image */}
                   <div className="h-48 w-full bg-neutral-background overflow-hidden relative">
                     <img
                       src={service.imageUrl || logo}
@@ -282,7 +256,7 @@ const Business = () => {
                         <span className="font-bold text-brand-primary">{service.duration} mins</span>
                       </div>
                       <div className="bg-neutral-background p-2.5 rounded-xl text-center border border-neutral-border/50">
-                        <span className="text-text-secondary block text-[10px] uppercase font-bold">Daily Slots</span>
+                        <span className="text-text-secondary block text-[10px] uppercase font-bold">Operating Slots</span>
                         <span className="font-bold text-brand-primary">{service.totalSlots} Slots</span>
                       </div>
                     </div>
@@ -315,11 +289,96 @@ const Business = () => {
             )}
           </div>
         </div>
+
+        {/* Verified Reviews Section */}
+        <div className="bg-white rounded-3xl p-8 sm:p-10 border border-neutral-border shadow-card space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-neutral-border/60">
+            <div>
+              <span className="bg-brand-secondary text-brand-primary text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+                Customer Testimonials
+              </span>
+              <h3 className="text-2xl font-bold font-primary text-brand-primary mt-2">
+                Verified Client Reviews
+              </h3>
+              <p className="text-xs sm:text-sm text-text-secondary mt-0.5">
+                Authentic feedback from verified customers who completed appointments.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 bg-neutral-background px-5 py-3 rounded-2xl border border-neutral-border/60">
+              <div className="text-center">
+                <span className="text-3xl font-bold font-primary text-brand-primary block">
+                  {(reviewSummary.averageRating || 5.0).toFixed(1)}
+                </span>
+                <div className="flex items-center gap-0.5 text-amber-500 text-xs">
+                  {[...Array(5)].map((_, i) => (
+                    <i
+                      key={i}
+                      className={`bi ${
+                        i < Math.round(reviewSummary.averageRating || 5)
+                          ? 'bi-star-fill'
+                          : 'bi-star'
+                      }`}
+                    ></i>
+                  ))}
+                </div>
+              </div>
+              <div className="border-l border-neutral-border/60 pl-3 text-xs text-text-secondary">
+                <span className="font-bold text-brand-primary block">{reviewSummary.totalReviews || 0} Ratings</span>
+                <span>100% Verified Visits</span>
+              </div>
+            </div>
+          </div>
+
+          {reviewSummary.reviews && reviewSummary.reviews.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {reviewSummary.reviews.map(rev => (
+                <div
+                  key={rev.id}
+                  className="p-5 rounded-2xl bg-neutral-background/60 border border-neutral-border/60 space-y-2.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-brand-primary block">{rev.customerName}</span>
+                      <span className="text-[10px] text-text-secondary">
+                        Treatment: {rev.serviceName || 'Standard Consultation'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-0.5 text-amber-500 text-xs">
+                      {[...Array(5)].map((_, i) => (
+                        <i
+                          key={i}
+                          className={`bi ${i < rev.rating ? 'bi-star-fill' : 'bi-star'}`}
+                        ></i>
+                      ))}
+                    </div>
+                  </div>
+
+                  {rev.comment ? (
+                    <p className="text-xs text-text-primary italic leading-relaxed">
+                      "{rev.comment}"
+                    </p>
+                  ) : (
+                    <p className="text-xs text-text-secondary italic">
+                      "Great overall experience and smooth appointment process."
+                    </p>
+                  )}
+
+                  <span className="text-[10px] text-text-secondary/70 block">
+                    Verified appointment • {new Date(rev.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center bg-neutral-background/40 rounded-2xl border border-neutral-border/50 text-xs text-text-secondary">
+              No written reviews yet. Be the first client to complete a treatment and leave a review!
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
 export default Business;
-
-

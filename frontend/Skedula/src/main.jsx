@@ -21,6 +21,7 @@ import ListBusiness from './components/business/ListBusiness.jsx';
 import Business from './components/business/Business.jsx';
 import OwnerBusiness from './components/business/OwnerBusiness.jsx';
 import AddBusiness from './components/business/AddBusiness.jsx';
+import ShareableBookingPage from './components/business/ShareableBookingPage.jsx';
 
 // Services Components
 import ServicesRouter from './components/services/ServicesRouter.jsx';
@@ -40,6 +41,9 @@ import ProfileRouter from './components/Profile/ProfileRouter.jsx';
 // Wallet & Payment Components
 import Wallet from './components/Wallet/Wallet.jsx';
 import Payment from './components/Wallet/Payment.jsx';
+
+// Admin Components
+import AdminDashboard from './components/Admin/AdminDashboard.jsx';
 
 const router = createBrowserRouter([
   {
@@ -76,6 +80,14 @@ const router = createBrowserRouter([
       {
         path: "/businesses/explore",
         element: <ListBusiness />
+      },
+      {
+        path: "/b/:slug",
+        element: <ShareableBookingPage />
+      },
+      {
+        path: "/biz/:slug",
+        element: <ShareableBookingPage />
       },
       {
         path: "/services",
@@ -159,6 +171,17 @@ const router = createBrowserRouter([
           {
             path: "/appointments/business/service/:id/:serviceId",
             element: <OwnerAppointments />
+          }
+        ]
+      },
+
+      // Protected Admin-Only Routes
+      {
+        element: <Protected allowedRoles={['ADMIN']} />,
+        children: [
+          {
+            path: "/admin",
+            element: <AdminDashboard />
           }
         ]
       }

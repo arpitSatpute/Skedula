@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -14,34 +14,66 @@ function ListBusiness() {
   const [totalBusinesses, setTotalBusinesses] = useState(0);
   const [pageSize] = useState(10);
 
+  // Location / "Near Me" Discovery States
+  const [nearMeActive, setNearMeActive] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locating, setLocating] = useState(false);
+  const [radiusKm, setRadiusKm] = useState(10);
+  const [selectedCity, setSelectedCity] = useState("all");
+  const [selectedState, setSelectedState] = useState("all");
+
   const navigate = useNavigate();
   const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
   const debounceRef = useRef(null);
 
   const categories = ["all", "Wellness & Spa", "Clinics & Health", "Salons & Aesthetics", "Automotive", "Consulting", "Creative Studio"];
 
-  const fetchBusinesses = async (pageOffset = 0, searchTerm = "", ignore = false) => {
+  const fetchBusinesses = useCallback(async (pageOffset = 0, searchTerm = "", ignore = false) => {
     try {
       setLoading(true);
-      const params = { pageOffset, pageSize };
 
+      // If Near Me mode or Location filters are active, use nearby endpoint
+      if (nearMeActive && userLocation) {
+        const res = await axios.get(`${baseUrl}/public/businesses/nearby`, {
+          params: {
+            lat: userLocation.lat,
+            lng: userLocation.lng,
+            radius: radiusKm,
+            city: selectedCity !== 'all' ? selectedCity : undefined,
+            state: selectedState !== 'all' ? selectedState : undefined
+          }
+        });
+        if (ignore) return;
+        const list = res.data || [];
+        setBusinesses(list);
+        setTotalBusinesses(list.length);
+        setTotalPages(1);
+        return;
+      }
+
+      // Standard search / pagination
+      const params = { pageOffset, pageSize };
       let endpoint = `${baseUrl}/public/getAllBusiness`;
       if (searchTerm && searchTerm.trim() !== "") {
         endpoint = `${baseUrl}/public/getBusinessByKeyword`;
         params.Keyword = searchTerm.trim();
       }
 
-      const response = await axios.get(endpoint, { 
+      const response = await axios.get(endpoint, {
         params,
         headers: { 'Content-Type': 'application/json' }
       });
 
       if (ignore) return;
-      const pageData = response.data.data;
+      const pageData = response.data?.data || response.data;
       if (pageData && pageData.content) {
         setBusinesses(pageData.content);
         setTotalBusinesses(pageData.totalElements || 0);
         setTotalPages(pageData.totalPages || 0);
+      } else if (Array.isArray(pageData)) {
+        setBusinesses(pageData);
+        setTotalBusinesses(pageData.length);
+        setTotalPages(1);
       } else {
         setBusinesses([]);
         setTotalBusinesses(0);
@@ -56,7 +88,7 @@ function ListBusiness() {
     } finally {
       if (!ignore) setLoading(false);
     }
-  };
+  }, [baseUrl, nearMeActive, userLocation, radiusKm, selectedCity, selectedState, pageSize]);
 
   useEffect(() => {
     let ignore = false;
@@ -71,11 +103,43 @@ function ListBusiness() {
       ignore = true;
       clearTimeout(debounceRef.current);
     };
-  }, [currentPage, search]);
+  }, [currentPage, search, fetchBusinesses]);
 
   useEffect(() => {
     setCurrentPage(0);
-  }, [search, selectedCategory, onlyOpenNow]);
+  }, [search, selectedCategory, onlyOpenNow, nearMeActive, radiusKm, selectedCity, selectedState]);
+
+  // Handle Geolocation trigger
+  const handleToggleNearMe = () => {
+    if (nearMeActive) {
+      setNearMeActive(false);
+      setUserLocation(null);
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        });
+        setNearMeActive(true);
+        setLocating(false);
+        toast.success('Location acquired! Showing businesses near you.');
+      },
+      (err) => {
+        setLocating(false);
+        toast.warn('Could not acquire your location. Using default directory.');
+      },
+      { timeout: 10000 }
+    );
+  };
 
   const handlePageChange = (newPage) => {
     if (newPage >= 0 && newPage < totalPages && newPage !== currentPage) {
@@ -111,15 +175,25 @@ function ListBusiness() {
     }
   };
 
+  // Derive unique cities and states from current list
+  const availableCities = Array.from(new Set(businesses.map(b => b.city).filter(Boolean)));
+  const availableStates = Array.from(new Set(businesses.map(b => b.state).filter(Boolean)));
+
   const filteredBusinesses = businesses.filter(b => {
     if (onlyOpenNow && !isOpenNow(b.openTime, b.closeTime)) {
+      return false;
+    }
+    if (selectedCity !== 'all' && b.city && b.city.toLowerCase() !== selectedCity.toLowerCase()) {
+      return false;
+    }
+    if (selectedState !== 'all' && b.state && b.state.toLowerCase() !== selectedState.toLowerCase()) {
       return false;
     }
     return true;
   });
 
   const renderPagination = () => {
-    if (totalPages <= 1) return null;
+    if (totalPages <= 1 || nearMeActive) return null;
 
     const maxVisiblePages = 5;
     let startPage = Math.max(0, currentPage - Math.floor(maxVisiblePages / 2));
@@ -146,7 +220,7 @@ function ListBusiness() {
             className={`w-10 h-10 rounded-full text-xs font-bold transition-all cursor-pointer ${
               currentPage === page
                 ? 'bg-brand-primary text-white shadow-xs'
-                : 'bg-white border border-neutral-border text-brand-primary hover:bg-neutral-background'
+                : 'border border-neutral-border bg-white text-brand-primary hover:bg-neutral-background'
             }`}
           >
             {page + 1}
@@ -181,9 +255,10 @@ function ListBusiness() {
           </p>
         </div>
 
-        {/* Search & Filter Bar */}
+        {/* Search & Location Filter Bar */}
         <div className="bg-white p-6 rounded-3xl border border-neutral-border shadow-card space-y-4" data-animation-on-scroll="">
           <div className="flex flex-col md:flex-row gap-3">
+            {/* Search Input */}
             <div className="relative flex-1">
               <i className="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-base"></i>
               <input
@@ -203,6 +278,26 @@ function ListBusiness() {
               )}
             </div>
 
+            {/* "Near Me" Geolocation Button */}
+            <button
+              type="button"
+              onClick={handleToggleNearMe}
+              disabled={locating}
+              className={`px-5 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                nearMeActive
+                  ? 'bg-brand-primary text-white shadow-xs'
+                  : 'bg-neutral-background text-brand-primary border border-neutral-border hover:bg-neutral-border/60'
+              }`}
+            >
+              {locating ? (
+                <span className="w-3.5 h-3.5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></span>
+              ) : (
+                <i className={`bi ${nearMeActive ? 'bi-geo-alt-fill text-brand-secondary' : 'bi-geo-alt'}`}></i>
+              )}
+              <span>{nearMeActive ? 'Near Me (Active)' : 'Near Me'}</span>
+            </button>
+
+            {/* Open Now Toggle */}
             <button
               onClick={() => setOnlyOpenNow(!onlyOpenNow)}
               className={`px-5 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
@@ -214,6 +309,57 @@ function ListBusiness() {
               <i className="bi bi-clock-history"></i>
               <span>Open Right Now</span>
             </button>
+          </div>
+
+          {/* Secondary Filter Row: Radius & City/State */}
+          <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-neutral-border/60">
+            {nearMeActive && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Radius:</span>
+                <select
+                  value={radiusKm}
+                  onChange={(e) => setRadiusKm(Number(e.target.value))}
+                  className="bg-neutral-background/80 border border-neutral-border rounded-xl py-1.5 px-3 text-xs font-bold text-brand-primary outline-none cursor-pointer"
+                >
+                  <option value={5}>Within 5 km</option>
+                  <option value={10}>Within 10 km</option>
+                  <option value={25}>Within 25 km</option>
+                  <option value={50}>Within 50 km</option>
+                </select>
+              </div>
+            )}
+
+            {availableCities.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">City:</span>
+                <select
+                  value={selectedCity}
+                  onChange={(e) => setSelectedCity(e.target.value)}
+                  className="bg-neutral-background/80 border border-neutral-border rounded-xl py-1.5 px-3 text-xs font-bold text-brand-primary outline-none cursor-pointer"
+                >
+                  <option value="all">All Cities</option>
+                  {availableCities.map(city => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {availableStates.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">State:</span>
+                <select
+                  value={selectedState}
+                  onChange={(e) => setSelectedState(e.target.value)}
+                  className="bg-neutral-background/80 border border-neutral-border rounded-xl py-1.5 px-3 text-xs font-bold text-brand-primary outline-none cursor-pointer"
+                >
+                  <option value="all">All States</option>
+                  {availableStates.map(st => (
+                    <option key={st} value={st}>{st}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Quick Filter Categories */}
@@ -238,6 +384,7 @@ function ListBusiness() {
         <div className="flex items-center justify-between text-xs sm:text-sm text-text-secondary px-2">
           <p className="font-semibold text-brand-primary">
             Showing <span className="font-bold">{filteredBusinesses.length}</span> listed business{filteredBusinesses.length !== 1 ? 'es' : ''}
+            {nearMeActive && <span className="text-text-secondary font-normal ml-1">(within {radiusKm}km of your location)</span>}
           </p>
           <div className="flex items-center gap-2">
             <span className="bg-brand-secondary text-brand-primary px-3 py-1 rounded-full font-bold text-xs">
@@ -259,6 +406,8 @@ function ListBusiness() {
               {filteredBusinesses.map(business => {
                 const open = isOpenNow(business.openTime, business.closeTime);
                 const fullLocation = [business.address, business.city, business.state, business.zipCode].filter(Boolean).join(', ');
+                const rating = business.averageRating || 5.0;
+                const reviewCount = business.totalReviews || 0;
 
                 return (
                   <div
@@ -282,16 +431,35 @@ function ListBusiness() {
                             }`}>
                               {open ? '● Open Now' : '○ Closed for the day'}
                             </span>
+
+                            {/* Distance Badge if available */}
+                            {business.distanceKm != null && (
+                              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                                <i className="bi bi-geo-alt-fill text-[9px]"></i>
+                                <span>{business.distanceKm} km away</span>
+                              </span>
+                            )}
                           </div>
 
                           <h3 className="text-xl font-bold font-primary text-brand-primary group-hover:text-brand-hover transition-colors">
                             {business.name}
                           </h3>
 
-                          <p className="text-xs text-text-secondary flex items-center gap-1.5 mt-1">
-                            <i className="bi bi-geo-alt text-brand-primary"></i>
-                            <span className="truncate max-w-[260px]">{fullLocation || business.city || 'Location on profile'}</span>
-                          </p>
+                          {/* Location & Rating row */}
+                          <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-text-secondary">
+                            <span className="flex items-center gap-1">
+                              <i className="bi bi-geo-alt text-brand-primary"></i>
+                              <span className="truncate max-w-[200px]">{fullLocation || business.city || 'Location on profile'}</span>
+                            </span>
+
+                            <span>•</span>
+
+                            <span className="flex items-center gap-1 text-amber-600 font-bold">
+                              <i className="bi bi-star-fill text-amber-500 text-[11px]"></i>
+                              <span>{rating.toFixed(1)}</span>
+                              <span className="text-text-secondary font-normal">({reviewCount})</span>
+                            </span>
+                          </div>
                         </div>
 
                         <div className="w-11 h-11 rounded-2xl bg-neutral-background text-brand-primary flex items-center justify-center font-bold text-base group-hover:bg-brand-primary group-hover:text-white transition-all shadow-xs shrink-0">
@@ -304,7 +472,7 @@ function ListBusiness() {
                         {business.description || 'Dedicated to providing high quality and reliable customer services with zero scheduling clashes.'}
                       </p>
 
-                      {/* Operating Hours Grid */}
+                      {/* Operating Hours & Policy Badges */}
                       <div className="grid grid-cols-2 gap-2.5 pt-1">
                         <div className="bg-neutral-background p-2.5 rounded-2xl border border-neutral-border/60 flex items-center gap-2.5">
                           <i className="bi bi-sunrise text-amber-600 text-sm"></i>
@@ -314,10 +482,12 @@ function ListBusiness() {
                           </div>
                         </div>
                         <div className="bg-neutral-background p-2.5 rounded-2xl border border-neutral-border/60 flex items-center gap-2.5">
-                          <i className="bi bi-sunset text-indigo-600 text-sm"></i>
+                          <i className="bi bi-shield-check text-emerald-700 text-sm"></i>
                           <div>
-                            <p className="text-[9px] text-text-secondary uppercase font-bold">Closes</p>
-                            <p className="text-xs font-bold text-brand-primary">{formatTime(business.closeTime)}</p>
+                            <p className="text-[9px] text-text-secondary uppercase font-bold">Cancellation</p>
+                            <p className="text-xs font-bold text-brand-primary">
+                              Free &gt; {Math.round((business.cancellationCutoffMinutes || 120) / 60)}h
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -347,10 +517,19 @@ function ListBusiness() {
                 </div>
                 <h3 className="text-lg font-bold text-brand-primary">No Matching Businesses</h3>
                 <p className="text-xs text-text-secondary">
-                  We couldn't find any business records matching your current filter keywords.
+                  We couldn't find any business records matching your current location or filter criteria.
                 </p>
                 <button
-                  onClick={() => { setSearch(""); setSelectedCategory("all"); setOnlyOpenNow(false); setCurrentPage(0); }}
+                  onClick={() => {
+                    setSearch("");
+                    setSelectedCategory("all");
+                    setOnlyOpenNow(false);
+                    setNearMeActive(false);
+                    setUserLocation(null);
+                    setSelectedCity("all");
+                    setSelectedState("all");
+                    setCurrentPage(0);
+                  }}
                   className="bg-brand-primary text-white hover:bg-brand-dark px-6 py-2.5 rounded-full text-xs font-bold shadow-sm transition-all cursor-pointer"
                 >
                   Reset All Filters
@@ -368,5 +547,3 @@ function ListBusiness() {
 }
 
 export default ListBusiness;
-
-
