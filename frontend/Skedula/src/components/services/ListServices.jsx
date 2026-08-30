@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../Auth/ApiClient';
-import logo from '../../assets/skedula.png'; // Adjust the path as necessary
+import logo from '../../assets/skedula.png';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -9,191 +8,240 @@ const ListServices = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [durationFilter, setDurationFilter] = useState("all");
+  const [priceSort, setPriceSort] = useState("default");
   const navigate = useNavigate();
+  const debounceRef = useRef(null);
+  const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
 
+  const loadServices = async (searchTerm = "", ignore = false) => {
+    setLoading(true);
+    try {
+      let endpoint = `${baseUrl}/public/getAllServices`;
+      const params = {};
+
+      if (searchTerm && searchTerm.trim() !== "") {
+        endpoint = `${baseUrl}/public/getServiceByKeyword`;
+        params.Keyword = searchTerm.trim();
+      }
+
+      const response = await axios.get(endpoint, { params });
+      if (ignore) return;
+      setServices(response.data.data || []);
+    } catch (error) {
+      if (!ignore) {
+        setServices([]);
+      }
+    } finally {
+      if (!ignore) setLoading(false);
+    }
+  };
 
   useEffect(() => {
-
-    let ignore = false; // Flag to ignore updates if component unmounts
-
-    const loadServices = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_BASE_URL}/public/getAllServices`);
-        if(ignore) return; // Ignore updates if component unmounted
-        setServices(response.data.data);
-        toast.info('Services loaded successfully!');
-      } catch (error) {
-        if(ignore) return; // Ignore updates if component unmounted
-        toast.error(error.response?.data?.error?.message || 'Failed to load services');
-      } finally {
-        if(!ignore) setLoading(false);
-      }
-    };
-    loadServices();
-    return () => {
-      ignore = true; // Set ignore flag to true on cleanup
+    let ignore = false;
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
     }
-  }, []);
+    debounceRef.current = setTimeout(() => {
+      loadServices(search, ignore);
+    }, 350);
 
-  if (loading) {
-      return (
-        <div className="container py-5">
-          <div className="text-center">
-            <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
-              <span className="visually-hidden">Loading business...</span>
+    return () => {
+      ignore = true;
+      clearTimeout(debounceRef.current);
+    };
+  }, [search]);
+
+  const filteredServices = services
+    .filter(service => {
+      if (durationFilter === "30" && service.duration > 30) return false;
+      if (durationFilter === "60" && (service.duration <= 30 || service.duration > 60)) return false;
+      if (durationFilter === "90plus" && service.duration <= 60) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (priceSort === "lowToHigh") return Number(a.price) - Number(b.price);
+      if (priceSort === "highToLow") return Number(b.price) - Number(a.price);
+      return 0;
+    });
+
+  return (
+    <div className="py-12 md:py-16 px-4 sm:px-6 bg-mesh-subtle">
+      <div className="container mx-auto max-w-6xl space-y-10">
+        {/* Header Section */}
+        <div className="text-center max-w-2xl mx-auto space-y-3" data-animation-on-scroll="">
+          <div className="inline-flex items-center gap-2 bg-brand-secondary px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-brand-primary shadow-2xs">
+            <span className="w-2 h-2 bg-brand-primary rounded-full animate-pulse"></span>
+            Curated Treatment Catalog
+          </div>
+          <h1 className="text-3xl sm:text-5xl font-bold font-primary text-brand-primary">
+            Explore All Available Services
+          </h1>
+          <p className="text-sm sm:text-base text-text-secondary">
+            Find certified practitioners, verify transparent pricing, and reserve guaranteed time slots with automated escrow.
+          </p>
+        </div>
+
+        {/* Search & Filter Controls */}
+        <div className="bg-white p-6 rounded-3xl border border-neutral-border shadow-card space-y-4" data-animation-on-scroll="">
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="relative flex-1">
+              <i className="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-base"></i>
+              <input
+                type="text"
+                className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-2xl py-3.5 pl-11 pr-4 text-xs sm:text-sm text-brand-primary outline-none transition-all font-medium"
+                placeholder="Search treatments by name, symptoms, or keyword..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-text-secondary hover:text-brand-primary font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              )}
             </div>
-            <p className="mt-3 text-muted">Loading your business information...</p>
+
+            <div className="flex gap-2">
+              <select
+                value={priceSort}
+                onChange={e => setPriceSort(e.target.value)}
+                className="bg-neutral-background/60 border border-neutral-border focus:border-brand-primary rounded-2xl px-4 py-3.5 text-xs font-bold text-brand-primary outline-none transition-all cursor-pointer"
+              >
+                <option value="default">Default Sort</option>
+                <option value="lowToHigh">Price: Low to High</option>
+                <option value="highToLow">Price: High to Low</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Duration Chips */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none">
+            <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider mr-1">Duration:</span>
+            {[
+              { id: 'all', label: 'All Durations' },
+              { id: '30', label: '⚡ Quick (≤ 30 mins)' },
+              { id: '60', label: '⏱ Standard (30-60 mins)' },
+              { id: '90plus', label: '🌿 Extended (60+ mins)' }
+            ].map(pill => (
+              <button
+                key={pill.id}
+                onClick={() => setDurationFilter(pill.id)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  durationFilter === pill.id
+                    ? 'bg-brand-primary text-white shadow-2xs'
+                    : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
+                }`}
+              >
+                {pill.label}
+              </button>
+            ))}
           </div>
         </div>
-      );
-    }
 
-    const filteredServices = services.filter(service =>
-      service.name.toLowerCase().includes(search.toLowerCase()) ||
-      service.description.toLowerCase().includes(search.toLowerCase())
-    )
-
-    const handleBook = (serviceName) => {
-      alert(`Appointment booked for: ${serviceName}`)
-    }
-
-   return (
-  <div className="container py-4">
-    {/* Header Section */}
-    <div className="text-center mb-5">
-      <h2 className="fw-bold text-dark mb-2">
-        <i className="bi bi-gear-fill text-primary me-2"></i>
-        Our Services
-      </h2>
-      <p className="text-muted">Discover our premium services tailored for you</p>
-    </div>
-
-    {/* Search Section */}
-    <div className="row justify-content-center mb-5">
-      <div className="col-md-6">
-        <div className="input-group shadow-sm">
-          <span className="input-group-text bg-white border-end-0">
-            <i className="bi bi-search text-muted"></i>
+        {/* Summary Count Bar */}
+        <div className="flex items-center justify-between text-xs sm:text-sm text-text-secondary px-2">
+          <p className="font-semibold text-brand-primary">
+            Showing <span className="font-bold">{filteredServices.length}</span> curated service{filteredServices.length !== 1 ? 's' : ''}
+          </p>
+          <span className="bg-brand-secondary text-brand-primary font-bold px-3 py-1 rounded-full text-xs">
+            Instant Escrow Confirmation
           </span>
-          <input
-            type="text"
-            className="form-control border-start-0 ps-0"
-            placeholder="Search services..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
         </div>
+
+        {/* Loading Spinner */}
+        {loading ? (
+          <div className="py-20 text-center space-y-3">
+            <div className="w-10 h-10 border-3 border-brand-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="text-sm font-semibold text-text-secondary">Discovering available treatments & schedules...</p>
+          </div>
+        ) : (
+          /* Services Grid */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredServices.map(service => (
+              <div
+                key={service.id}
+                className="bg-white rounded-3xl border border-neutral-border shadow-sm hover:shadow-card hover:-translate-y-1 transition-all overflow-hidden flex flex-col justify-between group"
+                data-animation-on-scroll=""
+              >
+                <div>
+                  {/* Image Section */}
+                  <div className="h-48 w-full bg-neutral-background overflow-hidden relative">
+                    <img
+                      src={service.imageUrl || logo}
+                      alt={service.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-3 right-3 bg-brand-secondary text-brand-primary text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                      ₹{service.price}
+                    </div>
+                    {service.status && (
+                      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs text-brand-primary text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-2xs border border-neutral-border/60">
+                        {service.status}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card Body */}
+                  <div className="p-6 space-y-3">
+                    <h3 className="text-lg font-bold font-primary text-brand-primary leading-snug">
+                      {service.name}
+                    </h3>
+                    <p className="text-xs text-text-secondary line-clamp-2 leading-relaxed">
+                      {service.description || 'Verified booking with expert practitioners.'}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2 pt-2 text-xs">
+                      <div className="bg-neutral-background p-2.5 rounded-xl text-center border border-neutral-border/50">
+                        <span className="text-text-secondary block text-[10px] uppercase font-bold">Duration</span>
+                        <span className="font-bold text-brand-primary">{service.duration} mins</span>
+                      </div>
+                      <div className="bg-neutral-background p-2.5 rounded-xl text-center border border-neutral-border/50">
+                        <span className="text-text-secondary block text-[10px] uppercase font-bold">Daily Slots</span>
+                        <span className="font-bold text-brand-primary">{service.totalSlots} Slots</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <div className="p-6 pt-0">
+                  <button
+                    onClick={() => navigate(`/services/${service.id}`)}
+                    className="w-full bg-brand-primary text-white hover:bg-brand-dark py-3 rounded-full text-xs font-bold shadow-card hover:shadow-card-hover transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>View Details & Schedule</span>
+                    <i className="bi bi-arrow-right text-brand-secondary"></i>
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Empty State */}
+            {filteredServices.length === 0 && (
+              <div className="col-span-full bg-white rounded-3xl p-12 text-center border border-neutral-border space-y-4 max-w-md mx-auto shadow-card">
+                <div className="w-16 h-16 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center text-2xl mx-auto">
+                  <i className="bi bi-search"></i>
+                </div>
+                <h4 className="text-base font-bold text-brand-primary">No Matching Services</h4>
+                <p className="text-xs text-text-secondary">
+                  We couldn't find any services matching your search or duration filter.
+                </p>
+                <button
+                  onClick={() => { setSearch(''); setDurationFilter('all'); setPriceSort('default'); }}
+                  className="bg-brand-primary text-white hover:bg-brand-dark px-6 py-2.5 rounded-full text-xs font-bold shadow-sm transition-all cursor-pointer"
+                >
+                  Clear All Filters
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
+  );
+};
 
-    {/* Services Grid */}
-    <div className="row g-4">
-      {filteredServices.map(service => (
-        <div className="col-lg-6 col-md-6 mb-4" key={service.id}>
-          <div className="card h-100 shadow-lg border-0 rounded-4 overflow-hidden hover-lift">
-            {/* Image Section */}
-            <div className="position-relative">
-              <img 
-                src={service.imageUrl || logo} 
-                className="card-img-top" 
-                alt={service.name} 
-                style={{height: "220px", objectFit: "cover"}}
-              />
-              
-            </div>
-
-            {/* Card Body */}
-            <div className="card-body p-4">
-              <div className="d-flex justify-content-between align-items-start mb-3">
-                <h5 className="card-title fw-bold text-dark mb-0 flex-grow-1">
-                  {service.name}
-                </h5>
-                <span className="badge bg-success ms-2 px-2 py-1">
-                  {service.status}
-                </span>
-              </div>
-              
-              <p className="card-text text-muted mb-4 lh-base">
-                {service.description}
-              </p>
-
-              {/* Service Details */}
-              <div className="row g-3 mb-4">
-                <div className="col-4">
-                  <div className="text-center p-2 bg-light rounded-3">
-                    <i className="bi bi-clock text-primary fs-5 mb-1"></i>
-                    <div className="small fw-semibold text-dark">{service.duration} min</div>
-                    <div className="x-small text-muted">Duration</div>
-                  </div>
-                </div>
-                <div className="col-4">
-                  <div className="text-center p-2 bg-light rounded-3">
-                    <i className="bi bi-currency-rupee text-success fs-5 mb-1"></i>
-                    <div className="small fw-semibold text-dark">₹{service.price}</div>
-                    <div className="x-small text-muted">Price</div>
-                  </div>
-                </div>
-                <div className="col-4">
-                  <div className="text-center p-2 bg-light rounded-3">
-                    <i className="bi bi-calendar-check text-info fs-5 mb-1"></i>
-                    <div className="small fw-semibold text-dark">{service.totalSlots}</div>
-                    <div className="x-small text-muted">Slots</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="d-grid gap-2 d-md-flex">
-                <button className="btn btn-primary flex-fill rounded-3 fw-semibold" onClick={() => {navigate(`/services/${service.id}`)}}>
-                  <i className="bi bi-calendar-plus me-2"></i>
-                  View
-                </button>
-                <button className="btn btn-outline-secondary rounded-3">
-                  <i className="bi bi-info-circle"></i>
-                </button>
-              </div>
-            </div>
-
-            {/* Card Footer */}
-            <div className="card-footer bg-transparent border-0 px-4 pb-4 pt-0">
-              <div className="d-flex align-items-center justify-content-between text-muted small">
-                <span>
-                  <i className="bi bi-people me-1"></i>
-                  50+ bookings
-                </span>
-                <span>
-                  <i className="bi bi-star-fill text-warning me-1"></i>
-                  4.8 rating
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-      
-      {/* No Services Found */}
-      {filteredServices.length === 0 && (
-        <div className="col-12">
-          <div className="text-center py-5">
-            <div className="mb-4">
-              <i className="bi bi-search display-1 text-muted opacity-50"></i>
-            </div>
-            <h4 className="text-muted mb-2">No services found</h4>
-            <p className="text-muted">Try adjusting your search criteria</p>
-            <button 
-              className="btn btn-outline-primary"
-              onClick={() => setSearch('')}
-            >
-              <i className="bi bi-arrow-clockwise me-2"></i>
-              Clear Search
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  </div>
-)
-  }
-
-export default ListServices
+export default ListServices;

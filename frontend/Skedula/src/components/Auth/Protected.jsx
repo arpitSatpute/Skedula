@@ -1,45 +1,56 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { AuthContext } from "./AuthContext";
+import { AuthContext, normalizeRole } from "./AuthContext";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
+import RoleMismatch from "./RoleMismatch";
 
-const Protected = () => {
-  const { isAuthenticated, loading, setIsAuthenticated, setLoading, setUser, user } = useContext(AuthContext);
+const Protected = ({ allowedRoles = null }) => {
+  const {
+    isAuthenticated,
+    loading,
+    setIsAuthenticated,
+    setLoading,
+    setUser,
+    user,
+    role,
+    setRole,
+    clearAuthData
+  } = useContext(AuthContext);
+
   const [localLoading, setLocalLoading] = useState(true);
   const [refreshAttempted, setRefreshAttempted] = useState(false);
   const location = useLocation();
   const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
 
-  // 🔹 Clear auth data
-  const clearAuthData = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("customer");
-    localStorage.removeItem("token");
-    localStorage.removeItem("userRole");
-    setIsAuthenticated(false);
-    setUser(null);
-    setRefreshAttempted(false);
-  };
-
-  // 🔹 Refresh token
+  // Refresh token
   const refreshToken = async () => {
     if (refreshAttempted) return false;
     try {
       setRefreshAttempted(true);
-      const response = await axios.post(`${baseUrl}/auth/refresh`, {}, { withCredentials: true });
-      let newAccessToken = response.data.data?.accessToken || response.data?.accessToken || response.data?.token;
+      const response = await axios.post(
+        `${baseUrl}/auth/refresh`,
+        {},
+        { withCredentials: true, headers: { "Content-Type": "application/json" } }
+      );
+      const newAccessToken =
+        response.data.data?.accessToken ||
+        response.data?.accessToken ||
+        response.data?.token;
 
       if (newAccessToken) {
         localStorage.setItem("accessToken", newAccessToken);
 
-        // decode and set user
         try {
           const decoded = jwtDecode(newAccessToken);
+          const detectedRole = normalizeRole(null, decoded, null);
+          if (detectedRole) {
+            setRole(detectedRole);
+            localStorage.setItem("userRole", detectedRole);
+          }
           setUser(decoded);
           localStorage.setItem("customer", JSON.stringify(decoded));
-        } catch (err) {
-        }
+        } catch (err) {}
 
         setIsAuthenticated(true);
         setRefreshAttempted(false);
@@ -48,24 +59,26 @@ const Protected = () => {
       return false;
     } catch (error) {
       setRefreshAttempted(false);
-      if (error.response?.status === 401 || error.response?.status === 403) clearAuthData();
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        clearAuthData();
+      }
       return false;
     }
   };
 
-  // 🔹 Check expiry
+  // Check token expiry
   const isTokenExpired = (token) => {
     try {
       const decoded = jwtDecode(token);
       const currentTime = Date.now() / 1000;
-      return decoded.exp < currentTime;
+      return decoded.exp && decoded.exp < currentTime;
     } catch (error) {
       return true;
     }
   };
 
-  // 🔹 Main auth check
-  const checkAuthStatus = async () => {
+  // Check auth status
+  const checkAuthStatus = React.useCallback(async () => {
     setLocalLoading(true);
     setLoading(true);
 
@@ -77,39 +90,44 @@ const Protected = () => {
         return;
       }
 
-      // If expired → refresh
       if (isTokenExpired(accessToken)) {
         const refreshed = await refreshToken();
-        if (!refreshed) clearAuthData();
-        return;
-      }
-
-      // ✅ If valid, just decode locally (no backend call)
-      if (!user) {
-        try {
-          const decoded = jwtDecode(accessToken);
-          setUser(decoded);
-          localStorage.setItem("customer", JSON.stringify(decoded));
-        } catch (err) {
+        if (!refreshed) {
+          clearAuthData();
+          return;
         }
       }
 
+      // Valid token -> sync user and role if missing
+      try {
+        const decoded = jwtDecode(accessToken);
+        const detectedRole = normalizeRole(role, decoded, user);
+        if (detectedRole && detectedRole !== role) {
+          setRole(detectedRole);
+          localStorage.setItem("userRole", detectedRole);
+        }
+        if (!user) {
+          setUser(decoded);
+        }
+      } catch {
+        // Non-critical token parse failure
+      }
+
       setIsAuthenticated(true);
-    } catch (error) {
+    } catch {
       clearAuthData();
     } finally {
       setLocalLoading(false);
       setLoading(false);
     }
-  };
+  }, [clearAuthData, role, setRole, setUser, setIsAuthenticated, setLoading, user]);
 
-  // 🔹 Run on mount / route change
   useEffect(() => {
     setRefreshAttempted(false);
     checkAuthStatus();
-  }, [location.pathname]);
+  }, [location.pathname, checkAuthStatus]);
 
-  // Loader
+  // Loading spinner
   if (loading || localLoading) {
     return (
       <div className="d-flex justify-content-center align-items-center min-vh-100 bg-light">
@@ -119,28 +137,31 @@ const Protected = () => {
           </div>
           <h5 className="text-muted mb-2">Verifying Your Session</h5>
           <p className="text-muted small">Please wait while we authenticate your access...</p>
-          <div className="mt-3">
-            <small className="text-muted">
-              Accessing: <code>{location.pathname}</code>
-            </small>
-          </div>
         </div>
       </div>
     );
   }
 
-  // Redirect if not authenticated
+  // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return (
       <Navigate
         to="/login"
         state={{
           from: location,
-          message: `Please log in to access ${location.pathname}`,
+          message: `Please log in to access this page`,
         }}
         replace
       />
     );
+  }
+
+  // Check role authorization
+  if (allowedRoles && allowedRoles.length > 0) {
+    const currentRole = role || normalizeRole(null, null, user) || localStorage.getItem('userRole');
+    if (!allowedRoles.includes(currentRole)) {
+      return <RoleMismatch allowedRoles={allowedRoles} />;
+    }
   }
 
   return <Outlet />;

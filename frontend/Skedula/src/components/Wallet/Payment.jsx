@@ -1,192 +1,149 @@
-import React, { useEffect, useState } from 'react'
-import { toast } from 'react-toastify'
-import { useNavigate } from 'react-router-dom'
-import apiClient from '../Auth/ApiClient'
+import React, { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
+import { useNavigate, Link } from 'react-router-dom';
+import apiClient from '../Auth/ApiClient';
 
 function Payment() {
-  const [email, setEmail] = useState('')
   const [formData, setFormData] = useState({
     amount: '',
     currency: 'INR',
     email: ''
-  })
-  const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState({})
-  const navigate = useNavigate()
+  });
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
 
-  // Load Razorpay script
   useEffect(() => {
-    const script = document.createElement('script')
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-    script.async = true
-    document.body.appendChild(script)
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script)
-    }
-  }, [])
+      document.body.removeChild(script);
+    };
+  }, []);
 
-  // Load email from localStorage on component mount
   useEffect(() => {
     try {
-      const customerData = localStorage.getItem('customer')
+      const customerData = localStorage.getItem('customerData') || localStorage.getItem('customer');
       if (customerData) {
-        const parsedCustomer = JSON.parse(customerData)
-        const storedEmail = parsedCustomer.email || ''
-        setFormData(prev => ({
-          ...prev,
-          email: storedEmail
-        }))
-        setEmail(storedEmail)
+        const parsed = JSON.parse(customerData);
+        if (parsed.email) {
+          setFormData(prev => ({ ...prev, email: parsed.email }));
+        }
       }
-    } catch (error) {
-      toast.error('Error parsing customer data');
-    }
-  }, [])
-
-  const currencies = [
-    { value: 'INR', label: 'INR - Indian Rupee', symbol: '₹' },
-  ]
+    } catch (e) {}
+  }, []);
 
   const validateForm = () => {
-    const newErrors = {}
+    const newErrors = {};
 
-    // Amount validation
     if (!formData.amount) {
-      newErrors.amount = 'Amount is required'
+      newErrors.amount = 'Amount is required';
     } else if (isNaN(formData.amount) || parseFloat(formData.amount) <= 0) {
-      newErrors.amount = 'Please enter a valid amount greater than 0'
-    } else if (parseFloat(formData.amount) > 10000) {
-      newErrors.amount = 'Amount cannot exceed ₹10,000'
+      newErrors.amount = 'Please enter a valid amount greater than ₹0';
+    } else if (parseFloat(formData.amount) > 50000) {
+      newErrors.amount = 'Single deposit limit is ₹50,000';
     }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email) {
-      newErrors.email = 'Email is required'
+      newErrors.email = 'Email is required';
     } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address'
+      newErrors.email = 'Please enter a valid email address';
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-
-    // Clear error when user starts typing
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }))
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
-  }
+  };
 
-  // Razorpay payment verification function
   const verifyRazorpayPaymentAndAdd = async (paymentId, orderId, signature, email) => {
     try {
-      const response = await apiClient.post('/razorpay/verify', {
+      await apiClient.post('/razorpay/verify', {
         razorpayPaymentId: paymentId,
         razorpayOrderId: orderId,
         razorpaySignature: signature,
         email: email
       });
-
-      toast.success('Payment verified successfully!');
+      toast.success('Wallet funds deposited successfully!');
     } catch (error) {
-        toast.error('Payment verification error');
+      toast.error('Payment verification failed');
+    } finally {
+      setLoading(false);
+      navigate('/wallet');
     }
-    finally {
-        setLoading(false);
-        navigate('/wallet');
-    }
-  }
+  };
 
-  // Create Razorpay order
   const createOrder = async () => {
-    toast.info("---- Initiating Payment Process ----");
     const { amount, currency, email } = formData;
+    const response = await apiClient.post('/razorpay/pay', {
+      amount: parseFloat(amount),
+      currency: currency,
+      email: email
+    });
+    return response.data;
+  };
 
-    if (!amount || !currency) {
-      toast.error("Amount or currency is missing");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) {
+      toast.error('Please resolve the form errors');
       return;
     }
 
-    try {
-      const response = await apiClient.post('/razorpay/pay', {
-        amount: parseFloat(amount),
-        currency: currency,
-        email: email
-      });
-
-      return response.data;
-    } catch (error) {
-      toast.error('Create order error');
-      throw error;
-    }
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    if (!validateForm()) {
-      toast.error('Please fix the errors in the form')
-      return
-    }
-
-    setLoading(true)
+    setLoading(true);
 
     try {
       const response = await createOrder();
       
       if (!response || !response.data || !response.data.razorpayOrderId) {
         toast.error("Failed to create payment order");
+        setLoading(false);
         return;
       }
 
       const options = {
-        "key": "rzp_test_1osnPBeF2xSAFe",
-        "amount": response.data.amount,
-        "currency": response.data.currency,
-        "name": "Skedula Pvt Ltd",
-        "description": "Add to wallet",
-        "order_id": response.data.razorpayOrderId,
-        "handler": async function (res) {
+        key: "rzp_test_1osnPBeF2xSAFe",
+        amount: response.data.amount,
+        currency: response.data.currency,
+        name: "Skedula",
+        description: "Wallet Balance Deposit",
+        order_id: response.data.razorpayOrderId,
+        handler: async function (res) {
           try {
-            toast.success("Payment successful!");
-            
             await verifyRazorpayPaymentAndAdd(
               res.razorpay_payment_id, 
               res.razorpay_order_id, 
               res.razorpay_signature, 
               formData.email
             );
-            
           } catch (error) {
             toast.error("Payment verification failed");
             setLoading(false);
           }
         },
-        "prefill": {
-          "email": formData.email
+        prefill: {
+          email: formData.email
         },
-        "theme": {
-          "color": "#3399cc"
+        theme: {
+          color: "#1A3C26"
         },
-        "modal": {
-          "ondismiss": function() {
+        modal: {
+          ondismiss: function() {
             setLoading(false);
           }
         }
       };
 
-      
       if (window.Razorpay) {
         const rzp = new window.Razorpay(options);
         rzp.open();
@@ -194,234 +151,138 @@ function Payment() {
         toast.error("Razorpay SDK not loaded");
         setLoading(false);
       }
-      
     } catch (error) {
-      toast.error('Payment failed. Please try again.')
-      setLoading(false)
+      toast.error('Payment initiation failed. Please try again.');
+      setLoading(false);
     }
-  }
-
-  const getCurrencySymbol = (currencyCode) => {
-    const currency = currencies.find(c => c.value === currencyCode)
-    return currency ? currency.symbol : '₹'
-  }
-
-  const formatAmount = (amount) => {
-    if (!amount) return ''
-    const symbol = getCurrencySymbol(formData.currency)
-    return `${symbol}${parseFloat(amount).toFixed(2)}`
-  }
+  };
 
   return (
-    <div className="min-vh-100 bg-light d-flex align-items-center py-5">
-      <div className="container">
-        <div className="row justify-content-center">
-          <div className="col-lg-6 col-md-8">
-            <div className="card shadow-lg border-0 rounded-4">
-              <div className="card-header bg-primary text-white text-center p-4 rounded-top-4">
-                <h2 className="mb-0 fw-bold">
-                  <i className="bi bi-credit-card me-2"></i>
-                  Secure Payment
-                </h2>
-                <p className="mb-0 opacity-75">Enter your payment details below</p>
-              </div>
+    <div className="py-12 md:py-16 px-4 sm:px-6">
+      <div className="container mx-auto max-w-lg space-y-8">
+        <div>
+          <Link
+            to="/wallet"
+            className="inline-flex items-center gap-2 text-xs font-bold text-text-secondary hover:text-brand-primary transition-colors bg-white border border-neutral-border px-4 py-2 rounded-full shadow-2xs"
+          >
+            <i className="bi bi-arrow-left"></i>
+            <span>Cancel and Return to Wallet</span>
+          </Link>
+        </div>
 
-              <div className="card-body p-5">
-                <form onSubmit={handleSubmit}>
-                  {/* Amount Field */}
-                  <div className="mb-4">
-                    <label htmlFor="amount" className="form-label fw-semibold text-dark">
-                      <i className="bi bi-currency-dollar me-2 text-success"></i>
-                      Amount
-                    </label>
-                    <div className="input-group input-group-lg">
-                      <span className="input-group-text bg-light border-end-0">
-                        {getCurrencySymbol(formData.currency)}
-                      </span>
-                      <input
-                        type="number"
-                        id="amount"
-                        name="amount"
-                        className={`form-control border-start-0 ${errors.amount ? 'is-invalid' : ''}`}
-                        placeholder="0.00"
-                        value={formData.amount}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        min="0"
-                        max="10000"
-                        disabled={loading}
-                      />
-                      {errors.amount && (
-                        <div className="invalid-feedback">
-                          {errors.amount}
-                        </div>
-                      )}
-                    </div>
-                    {formData.amount && !errors.amount && (
-                      <small className="text-success">
-                        <i className="bi bi-check-circle me-1"></i>
-                        Amount: {formatAmount(formData.amount)}
-                      </small>
-                    )}
-                  </div>
+        <div className="bg-white rounded-3xl p-8 sm:p-10 border border-neutral-border shadow-card space-y-8" data-animation-on-scroll="">
+          <div className="border-b border-neutral-border/60 pb-6 text-center">
+            <span className="bg-brand-secondary text-brand-primary text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+              Razorpay Secured Gateway
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-bold font-primary text-brand-primary mt-2">
+              Deposit Wallet Funds
+            </h1>
+            <p className="text-xs sm:text-sm text-text-secondary mt-1">
+              Top up your Skedula balance for seamless one-tap appointment bookings.
+            </p>
+          </div>
 
-                  {/* Currency Field */}
-                  <div className="mb-4">
-                    <label htmlFor="currency" className="form-label fw-semibold text-dark">
-                      <i className="bi bi-globe me-2 text-info"></i>
-                      Currency
-                    </label>
-                    <select
-                      id="currency"
-                      name="currency"
-                      className="form-select form-select-lg"
-                      value={formData.currency}
-                      onChange={handleInputChange}
-                      disabled={loading}
-                    >
-                      {currencies.map(currency => (
-                        <option key={currency.value} value={currency.value}>
-                          {currency.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Email Field */}
-                  <div className="mb-4">
-                    <label htmlFor="email" className="form-label fw-semibold text-dark">
-                      <i className="bi bi-envelope me-2 text-warning"></i>
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      className={`form-control form-control-lg ${errors.email ? 'is-invalid' : ''}`}
-                      placeholder="your.email@example.com"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      disabled={loading}
-                    />
-                    {errors.email && (
-                      <div className="invalid-feedback">
-                        {errors.email}
-                      </div>
-                    )}
-                    <small className="text-muted">
-                      <i className="bi bi-info-circle me-1"></i>
-                      Receipt will be sent to this email address
-                    </small>
-                  </div>
-
-                  {/* Payment Summary */}
-                  {formData.amount && !errors.amount && (
-                    <div className="mb-4 p-3 bg-light rounded-3 border">
-                      <h6 className="fw-bold text-dark mb-2">
-                        <i className="bi bi-receipt me-2"></i>
-                        Payment Summary
-                      </h6>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span className="text-muted">Amount:</span>
-                        <span className="fw-bold text-primary fs-5">
-                          {formatAmount(formData.amount)} {formData.currency}
-                        </span>
-                      </div>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span className="text-muted">Email:</span>
-                        <span className="text-dark">{formData.email || 'Not provided'}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Submit Button */}
-                  <div className="d-grid gap-2">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+                  Deposit Amount (₹) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-brand-primary">₹</span>
+                  <input
+                    type="number"
+                    name="amount"
+                    placeholder="500.00"
+                    value={formData.amount}
+                    onChange={handleInputChange}
+                    step="0.01"
+                    min="1"
+                    max="50000"
+                    disabled={loading}
+                    required
+                    className={`w-full bg-neutral-background/60 border rounded-xl py-3 pl-9 pr-4 text-sm font-bold text-brand-primary outline-none transition-all ${
+                      errors.amount ? 'border-red-500 bg-red-50/50' : 'border-neutral-border focus:border-brand-primary focus:bg-white'
+                    }`}
+                  />
+                </div>
+                {errors.amount && <p className="text-[11px] text-red-600 mt-1">{errors.amount}</p>}
+                
+                {/* Quick preset amount pills */}
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {['250', '500', '1000', '2500'].map(preset => (
                     <button
-                      type="submit"
-                      className="btn btn-primary btn-lg fw-bold py-3"
-                      disabled={loading}
+                      key={preset}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, amount: preset }))}
+                      className="px-3 py-1 rounded-full text-xs font-bold bg-neutral-background hover:bg-neutral-border text-brand-primary border border-neutral-border/60 transition-colors cursor-pointer"
                     >
-                      {loading ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          Processing Payment...
-                        </>
-                      ) : (
-                        <>
-                          <i className="bi bi-lock-fill me-2"></i>
-                          Pay {formData.amount ? formatAmount(formData.amount) : 'Now'}
-                        </>
-                      )}
+                      +₹{preset}
                     </button>
-                  </div>
-
-                  {/* Security Info */}
-                  <div className="mt-4 text-center">
-                    <small className="text-muted">
-                      <i className="bi bi-shield-check me-1 text-success"></i>
-                      Your payment information is secure and encrypted
-                    </small>
-                  </div>
-                </form>
-              </div>
-
-              {/* Footer */}
-              <div className="card-footer bg-light text-center p-3 rounded-bottom-4">
-                <div className="d-flex justify-content-center align-items-center gap-3 text-muted">
-                  <small>
-                    <i className="bi bi-credit-card"></i>
-                    Visa
-                  </small>
-                  <small>
-                    <i className="bi bi-credit-card"></i>
-                    Mastercard
-                  </small>
-                  <small>
-                    <i className="bi bi-paypal"></i>
-                    PayPal
-                  </small>
-                  <small>
-                    <i className="bi bi-apple"></i>
-                    Apple Pay
-                  </small>
+                  ))}
                 </div>
               </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+                  Receipt Delivery Email *
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="your.email@example.com"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  disabled={loading}
+                  required
+                  className={`w-full bg-neutral-background/60 border rounded-xl py-3 px-4 text-sm text-brand-primary outline-none transition-all ${
+                    errors.email ? 'border-red-500 bg-red-50/50' : 'border-neutral-border focus:border-brand-primary focus:bg-white'
+                  }`}
+                />
+                {errors.email && <p className="text-[11px] text-red-600 mt-1">{errors.email}</p>}
+                <p className="text-[11px] text-text-secondary mt-1">
+                  Tax invoice and payment confirmation will be sent here.
+                </p>
+              </div>
             </div>
-          </div>
+
+            {/* Reassurance Grid */}
+            <div className="p-4 bg-neutral-background rounded-2xl border border-neutral-border/60 text-xs space-y-2">
+              <div className="flex items-center justify-between font-bold text-brand-primary">
+                <span>Summary Amount:</span>
+                <span>₹{formData.amount ? parseFloat(formData.amount).toFixed(2) : '0.00'}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-text-secondary">
+                <i className="bi bi-shield-lock-fill text-emerald-700"></i>
+                <span>Protected by 256-bit SSL encryption</span>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-neutral-border/60">
+              <button
+                type="submit"
+                disabled={loading || !formData.amount}
+                className="w-full bg-brand-primary text-white hover:bg-brand-dark py-4 rounded-full text-xs font-bold shadow-card hover:shadow-card-hover transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Opening Razorpay Gateway...</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-lock-fill text-brand-secondary"></i>
+                    <span>Deposit ₹{formData.amount ? parseFloat(formData.amount).toFixed(2) : '0.00'} via Razorpay</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
-
-      <style>{`
-        .form-control:focus,
-        .form-select:focus {
-          border-color: #0d6efd;
-          box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-        }
-        
-        .card {
-          transition: transform 0.2s ease-in-out;
-        }
-        
-        .btn-primary {
-          background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%);
-          border: none;
-          transition: all 0.3s ease;
-        }
-        
-        .btn-primary:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 15px rgba(13, 110, 253, 0.4);
-        }
-        
-        .input-group-text {
-          font-weight: 600;
-        }
-        
-        .bg-light {
-          background-color: #f8f9fa !important;
-        }
-      `}</style>
     </div>
-  )
+  );
 }
+
 export default Payment;

@@ -1,301 +1,240 @@
-import React, { useState, useEffect } from "react";
+import React, { useContext } from "react";
 import { Link } from "react-router-dom";
+import { AuthContext } from "../Auth/AuthContext";
 
 const Footer = () => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  // Check for user authentication
-  useEffect(() => {
-    const checkAuthStatus = () => {
-      try {
-        const authToken = localStorage.getItem('authToken');
-        const storedUser = localStorage.getItem('user');
-        
-        if (authToken && storedUser) {
-          const userData = JSON.parse(storedUser);
-          setUser(userData);
-          setIsAuthenticated(true);
-        } else {
-          setUser(null);
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    };
-
-    checkAuthStatus();
-
-    // Listen for storage changes
-    const handleStorageChange = () => {
-      checkAuthStatus();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    const interval = setInterval(checkAuthStatus, 1000);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, []);
-
+  const { user, isAuthenticated, isOwner } = useContext(AuthContext);
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-light text-dark py-5 mt-auto">
-      <div className="container">
-        <div className="row">
-          {/* Brand Section */}
-          <div className="col-lg-4 col-md-6 mb-4">
-            <div className="mb-3">
-              <h5 className="fw-bold text-primary">
-                <i className="bi bi-calendar-check me-2"></i>
-                Skedula
-              </h5>
-              <p className="text-secondary">
-                Your all-in-one business scheduling and appointment management solution. 
-                Streamline bookings, manage services, and grow your business with ease.
-              </p>
-            </div>
-            
-            {/* User Status */}
+    <footer className="bg-brand-dark text-neutral-background pt-16 pb-12 px-6 border-t border-white/10 mt-auto">
+      <div className="container mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
+          {/* Brand Column */}
+          <div className="lg:col-span-2 space-y-4">
+            <Link to="/" className="inline-flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-brand-secondary text-brand-primary flex items-center justify-center font-bold text-base">
+                S
+              </div>
+              <span className="font-secondary text-2xl font-bold tracking-tight text-white">
+                Skedula<span className="text-brand-secondary">•</span>
+              </span>
+            </Link>
+
+            <p className="text-sm text-neutral-background/70 leading-relaxed max-w-sm">
+              The modern appointment intelligence and business management ecosystem. Connecting clients with premium service providers through effortless, real-time booking.
+            </p>
+
             {isAuthenticated && user && (
-              <div className="alert alert-info py-2 px-3 mb-3">
-                <small>
-                  <i className="bi bi-person-check me-1"></i>
-                  <strong>Logged in as:</strong> {user.firstName ? `${user.firstName} ${user.lastName}` : user.name} ({user.role})
-                </small>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs text-neutral-background/80">
+                <span className="w-2 h-2 rounded-full bg-brand-secondary"></span>
+                <span>Active Account: <strong className="text-white">{user.name || user.email}</strong> ({user.roles || (isOwner ? 'Owner' : 'Customer')})</span>
               </div>
             )}
 
-            {/* Social Links */}
-            <div className="d-flex gap-3">
-              <a href="#" className="text-secondary hover-text-primary">
-                <i className="bi bi-facebook fs-5"></i>
+            {/* Social Icons */}
+            <div className="flex items-center gap-3 pt-2">
+              <a
+                href="https://www.instagram.com/arpits_15/"
+                target="_blank"
+                rel="noreferrer"
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-brand-secondary hover:text-brand-primary text-white flex items-center justify-center transition-all text-xs font-bold"
+                aria-label="Instagram"
+              >
+                IG
               </a>
-              <a href="#" className="text-secondary hover-text-primary">
-                <i className="bi bi-twitter fs-5"></i>
+              <a
+                href="https://x.com/arpit_jsx"
+                target="_blank"
+                rel="noreferrer"
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-brand-secondary hover:text-brand-primary text-white flex items-center justify-center transition-all text-xs font-bold"
+                aria-label="Twitter / X"
+              >
+                X
               </a>
-              <a href="#" className="text-secondary hover-text-primary">
-                <i className="bi bi-instagram fs-5"></i>
+              <a
+                href="https://www.linkedin.com/in/arpitsatpute/"
+                target="_blank"
+                rel="noreferrer"
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-brand-secondary hover:text-brand-primary text-white flex items-center justify-center transition-all text-xs font-bold"
+                aria-label="LinkedIn"
+              >
+                IN
               </a>
-              <a href="#" className="text-secondary hover-text-primary">
-                <i className="bi bi-linkedin fs-5"></i>
+              <a
+                href="https://github.com/arpitSatpute/Skedula"
+                target="_blank"
+                rel="noreferrer"
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-brand-secondary hover:text-brand-primary text-white flex items-center justify-center transition-all text-xs font-bold"
+                aria-label="GitHub"
+              >
+                GH
               </a>
             </div>
           </div>
 
           {/* Quick Links */}
-          <div className="col-lg-2 col-md-6 mb-4">
-            <h6 className="fw-bold mb-3">Quick Links</h6>
-            <ul className="list-unstyled">
-              <li className="mb-2">
-                <Link to="/" className="text-secondary text-decoration-none hover-text-primary">
-                  <i className="bi bi-house me-1"></i> Home
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-brand-secondary mb-4">
+              Explore
+            </h4>
+            <ul className="space-y-2.5 text-sm text-neutral-background/70">
+              <li>
+                <Link to="/" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                  Home
                 </Link>
               </li>
-              <li className="mb-2">
-                <Link to="/about" className="text-secondary text-decoration-none hover-text-primary">
-                  <i className="bi bi-info-circle me-1"></i> About Us
+              <li>
+                <Link to="/about" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                  About Platform
                 </Link>
               </li>
-              <li className="mb-2">
-                <Link to="/contact" className="text-secondary text-decoration-none hover-text-primary">
-                  <i className="bi bi-envelope me-1"></i> Contact
+              <li>
+                <Link to="/businesses/explore" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                  Discover Businesses
                 </Link>
               </li>
-              <li className="mb-2">
-                <Link to="/pricing" className="text-secondary text-decoration-none hover-text-primary">
-                  <i className="bi bi-tag me-1"></i> Pricing
+              <li>
+                <Link to="/services/explore" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                  Browse Services
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                  Contact & Support
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Services */}
-          <div className="col-lg-2 col-md-6 mb-4">
-            <h6 className="fw-bold mb-3">Services</h6>
-            <ul className="list-unstyled">
+          {/* Services / Platform */}
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-brand-secondary mb-4">
+              Platform
+            </h4>
+            <ul className="space-y-2.5 text-sm text-neutral-background/70">
               {isAuthenticated ? (
                 <>
-                  <li className="mb-2">
-                    <Link to="/businesses" className="text-secondary text-decoration-none hover-text-primary">
-                      <i className="bi bi-building me-1"></i> Businesses
+                  <li>
+                    <Link to="/businesses" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                      {isOwner ? 'Manage Business' : 'Browse Businesses'}
                     </Link>
                   </li>
-                  <li className="mb-2">
-                    <Link to="/appointments" className="text-secondary text-decoration-none hover-text-primary">
-                      <i className="bi bi-calendar-event me-1"></i> Appointments
+                  <li>
+                    <Link to="/services" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                      {isOwner ? 'Offered Services' : 'Explore Services'}
                     </Link>
                   </li>
-                  <li className="mb-2">
-                    <Link to="/services" className="text-secondary text-decoration-none hover-text-primary">
-                      <i className="bi bi-gear me-1"></i> Manage Services
+                  <li>
+                    <Link to="/appointments" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                      {isOwner ? 'All Appointments' : 'My Bookings'}
                     </Link>
                   </li>
-                  {user?.role === 'OWNER' && (
-                    <li className="mb-2">
-                      <Link to="/business/add" className="text-secondary text-decoration-none hover-text-primary">
-                        <i className="bi bi-plus-circle me-1"></i> Add Business
+                  {isOwner && (
+                    <li>
+                      <Link to="/business/add" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                        Register New Business
                       </Link>
                     </li>
                   )}
+                  <li>
+                    <Link to="/wallet" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                      Wallet & Transactions
+                    </Link>
+                  </li>
                 </>
               ) : (
                 <>
-                  <li className="mb-2">
-                    <span className="text-secondary">
-                      <i className="bi bi-calendar-check me-1"></i> Appointment Booking
-                    </span>
-                  </li>
-                  <li className="mb-2">
-                    <span className="text-secondary">
-                      <i className="bi bi-building me-1"></i> Business Management
-                    </span>
-                  </li>
-                  <li className="mb-2">
-                    <span className="text-secondary">
-                      <i className="bi bi-people me-1"></i> Customer Management
-                    </span>
-                  </li>
-                  <li className="mb-2">
-                    <span className="text-secondary">
-                      <i className="bi bi-graph-up me-1"></i> Analytics & Reports
-                    </span>
+                  <li className="hover:text-white transition-colors">Instant 24/7 Booking</li>
+                  <li className="hover:text-white transition-colors">Business Directory</li>
+                  <li className="hover:text-white transition-colors">Automated Reminders</li>
+                  <li className="hover:text-white transition-colors">Real-time Analytics</li>
+                  <li>
+                    <Link to="/signup?role=owner" className="text-brand-secondary hover:underline underline-offset-4 font-semibold">
+                      For Business Owners →
+                    </Link>
                   </li>
                 </>
               )}
             </ul>
           </div>
 
-          {/* Account */}
-          <div className="col-lg-2 col-md-6 mb-4">
-            <h6 className="fw-bold mb-3">Account</h6>
-            <ul className="list-unstyled">
+          {/* Account & Help */}
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-brand-secondary mb-4">
+              Account
+            </h4>
+            <ul className="space-y-2.5 text-sm text-neutral-background/70">
               {isAuthenticated ? (
                 <>
-                  <li className="mb-2">
-                    <Link to="/profile" className="text-secondary text-decoration-none hover-text-primary">
-                      <i className="bi bi-person me-1"></i> My Profile
+                  <li>
+                    <Link to="/profile" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                      Profile Settings
                     </Link>
                   </li>
-                  <li className="mb-2">
-                    <Link to="/settings" className="text-secondary text-decoration-none hover-text-primary">
-                      <i className="bi bi-gear me-1"></i> Settings
+                  <li>
+                    <Link to="/wallet" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                      Wallet Balance
                     </Link>
                   </li>
-                  <li className="mb-2">
-                    <Link to="/wallet" className="text-secondary text-decoration-none hover-text-primary">
-                      <i className="bi bi-wallet me-1"></i> Wallet
+                  <li>
+                    <Link to="/payment" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                      Deposit Funds
                     </Link>
-                  </li>
-                  <li className="mb-2">
-                    <span className="text-success small">
-                      <i className="bi bi-check-circle me-1"></i> Authenticated
-                    </span>
                   </li>
                 </>
               ) : (
                 <>
-                  <li className="mb-2">
-                    <Link to="/login" className="text-secondary text-decoration-none hover-text-primary">
-                      <i className="bi bi-box-arrow-in-right me-1"></i> Login
+                  <li>
+                    <Link to="/login" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                      Customer Sign In
                     </Link>
                   </li>
-                  <li className="mb-2">
-                    <Link to="/signup" className="text-secondary text-decoration-none hover-text-primary">
-                      <i className="bi bi-person-plus me-1"></i> Sign Up
+                  <li>
+                    <Link to="/login?role=owner" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                      Owner Portal
                     </Link>
                   </li>
-                  <li className="mb-2">
-                    <Link to="/features" className="text-secondary text-decoration-none hover-text-primary">
-                      <i className="bi bi-star me-1"></i> Features
-                    </Link>
-                  </li>
-                  <li className="mb-2">
-                    <Link to="/help" className="text-secondary text-decoration-none hover-text-primary">
-                      <i className="bi bi-question-circle me-1"></i> Get Help
+                  <li>
+                    <Link to="/signup" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                      Create Free Account
                     </Link>
                   </li>
                 </>
               )}
-            </ul>
-          </div>
-
-          {/* Support */}
-          <div className="col-lg-2 col-md-6 mb-4">
-            <h6 className="fw-bold mb-3">Support</h6>
-            <ul className="list-unstyled">
-              <li className="mb-2">
-                <Link to="/help" className="text-secondary text-decoration-none hover-text-primary">
-                  <i className="bi bi-question-circle me-1"></i> Help Center
-                </Link>
-              </li>
-              <li className="mb-2">
-                <Link to="/faq" className="text-secondary text-decoration-none hover-text-primary">
-                  <i className="bi bi-chat-square-text me-1"></i> FAQ
-                </Link>
-              </li>
-              <li className="mb-2">
-                <Link to="/docs" className="text-secondary text-decoration-none hover-text-primary">
-                  <i className="bi bi-book me-1"></i> Documentation
-                </Link>
-              </li>
-              <li className="mb-2">
-                <a href="mailto:arpitrameshsatpute6986@gmail.com" className="text-secondary text-decoration-none hover-text-primary">
-                  <i className="bi bi-envelope me-1"></i> Email Support
+              <li>
+                <a href="mailto:arpitrameshsatpute6986@gmail.com" className="hover:text-white hover:underline underline-offset-4 transition-colors">
+                  Direct Support
                 </a>
               </li>
             </ul>
           </div>
         </div>
 
-        <hr className="my-4 border-secondary" />
+        {/* Divider */}
+        <hr className="border-white/10 my-8" />
 
-        {/* Bottom Footer */}
-        <div className="row align-items-center">
-          <div className="col-md-6 mb-3 mb-md-0">
-            <p className="mb-0 text-secondary">
-              © {currentYear} Skedula. All rights reserved.
-            </p>
-          </div>
-          <div className="col-md-6">
-            <div className="d-flex justify-content-md-end gap-4">
-              <Link to="/privacy" className="text-secondary text-decoration-none hover-text-primary small">
-                Privacy Policy
-              </Link>
-              <Link to="/terms" className="text-secondary text-decoration-none hover-text-primary small">
-                Terms of Service
-              </Link>
-              <Link to="/cookies" className="text-secondary text-decoration-none hover-text-primary small">
-                Cookie Policy
-              </Link>
-            </div>
+        {/* Bottom Bar */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-neutral-background/60">
+          <p>© {currentYear} Skedula. All rights reserved. Crafted with botanical precision & high performance.</p>
+
+          <div className="flex items-center gap-6">
+            <Link to="/about" className="hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <Link to="/about" className="hover:text-white transition-colors">
+              Terms of Service
+            </Link>
+            <a href="mailto:arpitrameshsatpute6986@gmail.com" className="hover:text-white transition-colors">
+              arpitrameshsatpute6986@gmail.com
+            </a>
           </div>
         </div>
-      </div>
 
-      {/* Custom Styles */}
-      {/* <style jsx>{`
-        .hover-text-primary:hover {
-          color: var(--bs-primary) !important;
-          transition: color 0.3s ease;
-        }
-        
-        .alert {
-          border: none;
-          border-radius: 8px;
-        }
-        
-        @media (max-width: 768px) {
-          .col-lg-2 {
-            margin-bottom: 2rem;
-          }
-        }
-      `}</style> */}
+        <div className="text-center text-[10px] text-neutral-background/40 mt-8">
+          *Skedula appointment management and payment escrow systems are encrypted with industry-standard TLS protocols.
+        </div>
+      </div>
     </footer>
   );
 };

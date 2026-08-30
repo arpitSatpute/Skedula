@@ -1,384 +1,202 @@
-import React, { useContext, useState } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import { useNavigate } from 'react-router-dom';
+import React, { useContext, useState, useEffect } from 'react';
+import { useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
-import apiClient from './ApiClient';
 
 const Login = () => {
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
+
+  // Default role from query param or location state or CUSTOMER
+  const initialRole = searchParams.get('role')?.toUpperCase() === 'OWNER' ? 'OWNER' : 'CUSTOMER';
+  const [role, setRole] = useState(initialRole);
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState("CUSTOMER");
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
 
-  const { login } = useContext(AuthContext)  
+  useEffect(() => {
+    const roleParam = searchParams.get('role');
+    if (roleParam) {
+      setRole(roleParam.toUpperCase() === 'OWNER' ? 'OWNER' : 'CUSTOMER');
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    
-    try {
-      
-      await login(email, password, role);
 
-      const response = await apiClient.get(`customer/get/currentCustomer`);
-      localStorage.setItem('customerData', JSON.stringify(await response.data.data));
-      navigate('/profile');
+    try {
+      const result = await login(email, password, role);
+      if (result.success) {
+        const fromPath = location.state?.from?.pathname;
+        if (fromPath && fromPath !== '/login' && fromPath !== '/signup') {
+          navigate(fromPath, { replace: true });
+        } else if (role === 'OWNER') {
+          navigate('/profile');
+        } else {
+          navigate('/profile');
+        }
+      } else {
+        setError(result.message || 'Login failed. Please check your credentials.');
+      }
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <>
-      <style>{`
-        .login-container {
-          background: #f8fafc;
-          min-height: 100vh;
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
+    <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6">
+      <div className="w-full max-w-md">
+        {/* Card */}
+        <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-card border border-neutral-border relative overflow-hidden" data-animation-on-scroll="">
+          {/* Top Decorative Sparkle */}
+          <div className="text-center mb-6">
+            <Link to="/" className="inline-flex items-center gap-2 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-brand-primary text-brand-secondary flex items-center justify-center font-bold text-lg">
+                S
+              </div>
+              <span className="font-secondary text-2xl font-bold tracking-tight text-brand-primary">
+                Skedula<span className="text-brand-secondary">•</span>
+              </span>
+            </Link>
+            <h1 className="text-2xl sm:text-3xl font-bold font-primary text-brand-primary">
+              Welcome Back
+            </h1>
+            <p className="text-xs sm:text-sm text-text-secondary mt-1">
+              {role === 'OWNER'
+                ? 'Sign in to access your business operations & live calendar'
+                : 'Sign in to book and manage your verified appointments'}
+            </p>
+          </div>
 
-        .login-card {
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
-          border-radius: 16px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-          transition: all 0.3s ease;
-        }
+          {/* Role Switcher Pills */}
+          <div className="bg-neutral-background p-1.5 rounded-2xl flex gap-1.5 mb-6 border border-neutral-border">
+            <button
+              type="button"
+              className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 ${
+                role === 'CUSTOMER'
+                  ? 'bg-brand-primary text-white shadow-sm'
+                  : 'text-text-secondary hover:text-brand-primary'
+              }`}
+              onClick={() => setRole('CUSTOMER')}
+            >
+              <i className="bi bi-person-fill"></i>
+              <span>Customer</span>
+            </button>
+            <button
+              type="button"
+              className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 ${
+                role === 'OWNER'
+                  ? 'bg-brand-primary text-brand-secondary shadow-sm'
+                  : 'text-text-secondary hover:text-brand-primary'
+              }`}
+              onClick={() => setRole('OWNER')}
+            >
+              <i className="bi bi-briefcase-fill"></i>
+              <span>Business Owner</span>
+            </button>
+          </div>
 
-        .login-card:hover {
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
+          {/* Error Notice */}
+          {error && (
+            <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm flex items-start gap-2.5">
+              <i className="bi bi-exclamation-triangle-fill text-red-500 mt-0.5"></i>
+              <span>{error}</span>
+            </div>
+          )}
 
-        .login-form-control {
-          background: #ffffff;
-          border: 2px solid #e2e8f0;
-          border-radius: 8px;
-          padding: 12px 16px;
-          font-size: 14px;
-          transition: all 0.2s ease;
-          color: #1a202c;
-        }
-
-        .login-form-control:focus {
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-          outline: none;
-        }
-
-        .login-form-control::placeholder {
-          color: #9ca3af;
-        }
-
-        .login-btn {
-          background: #1f2937;
-          border: none;
-          border-radius: 8px;
-          padding: 12px 24px;
-          font-weight: 500;
-          font-size: 14px;
-          transition: all 0.2s ease;
-          color: white;
-        }
-
-        .login-btn:hover {
-          background: #111827;
-          transform: translateY(-1px);
-        }
-
-        .login-btn:active {
-          transform: translateY(0);
-        }
-
-        .login-btn:disabled {
-          background: #9ca3af;
-          transform: none;
-          cursor: not-allowed;
-        }
-
-        .brand-logo {
-          color: #1f2937;
-          font-weight: 700;
-          font-size: 28px;
-          letter-spacing: -0.025em;
-        }
-
-        .form-label {
-          font-weight: 500;
-          color: #374151;
-          margin-bottom: 6px;
-          font-size: 14px;
-        }
-
-        .password-toggle {
-          position: absolute;
-          right: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          color: #6b7280;
-          cursor: pointer;
-          font-size: 16px;
-          padding: 4px;
-          border-radius: 4px;
-          transition: color 0.2s ease;
-        }
-
-        .password-toggle:hover {
-          color: #374151;
-        }
-
-        .input-group-custom {
-          position: relative;
-        }
-
-        .alert-modern {
-          border: none;
-          border-radius: 8px;
-          padding: 12px 16px;
-          font-weight: 500;
-          font-size: 14px;
-          background: #fef2f2;
-          color: #dc2626;
-          border: 1px solid #fecaca;
-        }
-
-        .divider {
-          position: relative;
-          text-align: center;
-          margin: 24px 0;
-        }
-
-        .divider::before {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 0;
-          right: 0;
-          height: 1px;
-          background: #e5e7eb;
-        }
-
-        .divider-text {
-          background: #ffffff;
-          color: #6b7280;
-          padding: 0 16px;
-          font-size: 12px;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          font-weight: 500;
-        }
-
-        .google-btn {
-          background: #ffffff;
-          border: 2px solid #e5e7eb;
-          border-radius: 8px;
-          padding: 12px 24px;
-          font-weight: 500;
-          font-size: 14px;
-          color: #374151;
-          transition: all 0.2s ease;
-        }
-
-        .google-btn:hover {
-          border-color: #d1d5db;
-          background: #f9fafb;
-          color: #374151;
-        }
-
-        .link-primary {
-          color: #3b82f6;
-          text-decoration: none;
-          font-weight: 500;
-        }
-
-        .link-primary:hover {
-          color: #2563eb;
-          text-decoration: underline;
-        }
-
-        .form-check-input:checked {
-          background-color: #3b82f6;
-          border-color: #3b82f6;
-        }
-
-        .floating-element {
-          position: absolute;
-          width: 200px;
-          height: 200px;
-          border-radius: 50%;
-          opacity: 0.02;
-          pointer-events: none;
-        }
-
-        .floating-1 {
-          background: #3b82f6;
-          top: 10%;
-          left: -5%;
-          animation: float-slow 8s ease-in-out infinite;
-        }
-
-        .floating-2 {
-          background: #1f2937;
-          bottom: 10%;
-          right: -5%;
-          animation: float-slow 8s ease-in-out infinite reverse;
-        }
-
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-
-        .text-muted-custom {
-          color: #6b7280;
-        }
-
-        .text-dark-custom {
-          color: #1f2937;
-        }
-      `}</style>
-
-      <div className="login-container d-flex align-items-center justify-content-center position-relative">
-        {/* Subtle floating elements */}
-        <div className="floating-element floating-1"></div>
-        <div className="floating-element floating-2"></div>
-
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-sm-10 col-md-8 col-lg-6 col-xl-4">
-              <div className="login-card p-4 p-md-5">
-                {/* Brand Logo */}
-                <div className="text-center mb-4">
-                  <h1 className="brand-logo mb-2">Skedula</h1>
-                  <p className="text-muted-custom mb-0 small">Business Dashboard</p>
-                </div>
-
-                {/* Welcome Message */}
-                <div className="text-center mb-4">
-                  <h2 className="h5 text-dark-custom mb-2 fw-semibold">Welcome back</h2>
-                  <p className="text-muted-custom small mb-0">Sign in to your account</p>
-                </div>
-                
-                <form onSubmit={handleLogin}>
-                  {error && (
-                    <div className="alert-modern d-flex align-items-center mb-4" role="alert">
-                      <i className="bi bi-exclamation-circle me-2"></i>
-                      <span>{error}</span>
-                    </div>
-                  )}
-                  
-                  {/* Email Field */}
-                  <div className="mb-3">
-                    <label htmlFor="email" className="form-label">
-                      Email address
-                    </label>
-                    <input 
-                      type="email" 
-                      className="form-control login-form-control w-100" 
-                      id="email" 
-                      value={email}
-                      placeholder="you@company.com"
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={loading}
-                      required
-                    />
-                  </div>
-
-                  {/* Password Field */}
-                  <div className="mb-4">
-                    <label htmlFor="password" className="form-label">
-                      Password
-                    </label>
-                    <div className="input-group-custom">
-                      <input 
-                        type={showPassword ? "text" : "password"}
-                        className="form-control login-form-control w-100" 
-                        id="password" 
-                        value={password}
-                        placeholder="Enter your password"
-                        onChange={(e) => setPassword(e.target.value)}
-                        disabled={loading}
-                        required
-                        style={{ paddingRight: '45px' }}
-                      />
-                      <button
-                        type="button"
-                        className="password-toggle"
-                        onClick={() => setShowPassword(!showPassword)}
-                        disabled={loading}
-                      >
-                        <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Remember Me & Forgot Password */}
-                  <div className="d-flex justify-content-between align-items-center mb-4">
-                    <div className="form-check">
-                      <input className="form-check-input" type="checkbox" id="rememberMe" />
-                      <label className="form-check-label text-muted-custom small" htmlFor="rememberMe">
-                        Remember me
-                      </label>
-                    </div>
-                    <a href="/forgot-password" className="link-primary small">
-                      Forgot password?
-                    </a>
-                  </div>
-
-                  {/* Login Button */}
-                  <div className="d-grid mb-4">
-                    <button 
-                      type="submit" 
-                      className="btn login-btn"
-                      disabled={loading || !email || !password}
-                    >
-                      {loading ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          Signing in...
-                        </>
-                      ) : (
-                        'Login'
-                      )}
-                    </button>
-                  </div>
-                </form>
-
-                {/* Divider */}
-                <div className="divider">
-                  <span className="divider-text">or</span>
-                </div>
-
-                {/* Google Login */}
-                <div className="d-grid mb-4">
-                  <button className="btn google-btn">
-                    <i className="bi bi-google me-2"></i>
-                    Continue with Google
-                  </button>
-                </div>
-
-                {/* Sign Up Link */}
-                <div className="text-center">
-                  <p className="text-muted-custom small mb-0">
-                    Don't have an account? 
-                    <a href="/signup" className="link-primary ms-1">
-                      Sign up
-                    </a>
-                  </p>
-                </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+                Email Address
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  placeholder={role === 'OWNER' ? 'owner@business.com' : 'you@example.com'}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
+                  required
+                  className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-primary/10 rounded-xl py-3 px-4 text-sm text-brand-primary transition-all outline-none"
+                />
               </div>
             </div>
+
+            {/* Password Field */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-text-secondary">
+                  Password
+                </label>
+              </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  value={password}
+                  placeholder="••••••••"
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  required
+                  className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-primary/10 rounded-xl py-3 px-4 pr-11 text-sm text-brand-primary transition-all outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-secondary hover:text-brand-primary transition-colors text-base"
+                >
+                  <i className={`bi bi-${showPassword ? 'eye-slash' : 'eye'}`}></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={loading || !email || !password}
+                className="w-full bg-brand-primary text-white hover:bg-brand-dark disabled:opacity-50 py-3.5 rounded-full font-bold text-sm shadow-card hover:shadow-card-hover transition-all flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Signing In...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Sign In as {role === 'OWNER' ? 'Business Owner' : 'Customer'}</span>
+                    <i className="bi bi-arrow-right text-brand-secondary"></i>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+
+          {/* Switch to Signup */}
+          <div className="text-center pt-6 mt-6 border-t border-neutral-border/60">
+            <p className="text-xs text-text-secondary">
+              Don't have an account yet?{" "}
+              <Link
+                to={`/signup?role=${role.toLowerCase()}`}
+                className="text-brand-primary font-bold hover:underline underline-offset-4"
+              >
+                Create {role === 'OWNER' ? 'Business' : 'Customer'} Account →
+              </Link>
+            </p>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

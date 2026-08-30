@@ -1,232 +1,510 @@
-import React, { useState, useEffect, useContext } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useContext, useState, useEffect, useRef } from "react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { AuthContext } from "../Auth/AuthContext";
 
-function Header({ isDarkMode, toggleDarkMode }) {
+function Header() {
   const navigate = useNavigate();
-  const { user, logout, isAuthenticated } = useContext(AuthContext); // Use AuthContext directly
-  
+  const location = useLocation();
+  const { user, isOwner, logout, isAuthenticated } = useContext(AuthContext);
 
-  // Get current user data - prioritize AuthContext user over localStorage
-  const getCurrentUser = () => {
-    try {
-      // First check AuthContext user
-      if (user) {
-        return user;
-      }
-      
-      // Fallback to localStorage
-      const storedCustomer = localStorage.getItem('customer');
-      const storedUser = localStorage.getItem('user');
-      const userRole = localStorage.getItem('userRole');
-      
-      if (storedCustomer) {
-        return JSON.parse(storedCustomer);
-      } else if (storedUser) {
-        return JSON.parse(storedUser);
-      } else if (userRole) {
-        return {
-          email: 'user@example.com',
-          role: userRole,
-          name: 'User'
-        };
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error getting current user:', error);
-      return null;
-    }
-  };
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
-  const currentUser = getCurrentUser();
-  
+  // Handle scroll event for sticky navbar styling
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setUserDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setUserDropdownOpen(false);
+  }, [location.pathname]);
+
   const handleLogout = async () => {
     try {
-      console.log('🚪 Header: Initiating logout...');
-      
-      // Call AuthContext logout (this should clear tokens and state)
       await logout();
-      
-      // Clear any remaining localStorage items
-      localStorage.removeItem('user');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('customer');
-      localStorage.removeItem('accessToken');
-      
-      console.log('🚪 Header: Logout completed');
       navigate('/login');
-    } catch (error) {
-      console.error('Header: Logout error:', error);
+    } catch {
       navigate('/login');
     }
   };
 
-  const handleLogin = () => {
-    navigate('/login');
+  const handleLogin = (selectedRole = null) => {
+    if (selectedRole) {
+      navigate(`/login?role=${selectedRole}`);
+    } else {
+      navigate('/login');
+    }
   };
 
   const handleSignUp = () => {
     navigate('/signup');
   };
 
+  const isActive = (path) => {
+    if (path === '/' && location.pathname === '/') return true;
+    if (path !== '/' && location.pathname.startsWith(path)) return true;
+    return false;
+  };
+
   return (
-    <nav className={`navbar navbar-expand-lg ${isDarkMode ? 'navbar-dark bg-dark' : 'navbar-light bg-light'} shadow-sm`}>
-      <div className="container">
+    <header
+      className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+        isScrolled
+          ? "bg-neutral-background/90 backdrop-blur-md shadow-sm border-b border-neutral-border/60 py-3"
+          : "bg-neutral-background/95 backdrop-blur-sm border-b border-neutral-border/40 py-4"
+      }`}
+    >
+      <div className="container mx-auto px-4 sm:px-6 flex items-center justify-between">
         {/* Brand Logo */}
-        <Link className="navbar-brand fw-bold fs-3" to="/">
-          <span className="text-primary">Skedula</span>
+        <Link to="/" className="flex items-center gap-2 group">
+          <div className="w-9 h-9 rounded-xl bg-brand-primary flex items-center justify-center text-brand-secondary font-bold text-lg shadow-sm group-hover:scale-105 transition-transform">
+            S
+          </div>
+          <span className="font-secondary text-2xl font-bold tracking-tight text-brand-primary flex items-center">
+            Skedula<span className="text-brand-secondary text-2xl ml-0.5">•</span>
+          </span>
+          {isOwner && (
+            <span className="ml-2 bg-brand-secondary text-brand-primary text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-brand-primary/10">
+              Business
+            </span>
+          )}
         </Link>
 
-        {/* Mobile toggle button */}
-        <button 
-          className="navbar-toggler" 
-          type="button" 
-          data-bs-toggle="collapse" 
-          data-bs-target="#navbarNav"
-          aria-controls="navbarNav"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span className="navbar-toggler-icon"></span>
-        </button>
+        {/* Desktop Navigation Links */}
+        <nav className="hidden md:flex items-center gap-1 lg:gap-2">
+          <Link
+            to="/"
+            className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all ${
+              isActive('/')
+                ? "bg-brand-primary text-white shadow-sm"
+                : "text-text-secondary hover:text-brand-primary hover:bg-black/5"
+            }`}
+          >
+            Home
+          </Link>
 
-        {/* Collapsible content */}
-        <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav ms-auto">
-            {/* Navigation Links */}
-            {isAuthenticated ? (
-              // Authenticated User Navigation
+          {isAuthenticated ? (
+            isOwner ? (
+              // Owner Navigation Links
               <>
-                <li className="nav-item">
-                  <Link className="nav-link fw-semibold" to="/">
-                    <i className="bi bi-house me-1"></i>
-                    Home
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link fw-semibold" to="/businesses">
-                    <i className="bi bi-building me-1"></i>
-                    Business
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link fw-semibold" to="/services">
-                    <i className="bi bi-gear me-1"></i>
-                    Services
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link fw-semibold" to="/contact">
-                    <i className="bi bi-calendar me-1"></i>
-                    Contact
-                  </Link>
-                </li>
-                
-                {/* User Dropdown */}
-                <li className="nav-item dropdown ms-3">
-                  <button
-                    className="btn btn-outline-primary dropdown-toggle d-flex align-items-center"
-                    type="button"
-                    id="userDropdown"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    style={{ border: 'none', background: 'transparent' }}
-                  >
-                    {/* Hamburger Menu Icon */}
-                    <div className="hamburger-menu">
-                      <i className="bi bi-list fs-5 text-dark"></i>
-                    </div>
-                  </button>
-                  <ul className="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userDropdown">
-                    
-                    <li>
-                      <Link className="dropdown-item" to="/profile">
-                        <i className="bi bi-person me-2 text-dark"></i>
-                        Profile
-                      </Link>
-                    </li>
-                    
-                    <li>
-                      <Link className="dropdown-item" to="/appointments">
-                        <i className="bi bi-calendar-check me-2 text-dark"></i>
-                        Appointments
-                      </Link>
-                    </li>
-                    
-                    <li>
-                      <Link className="dropdown-item" to="/wallet">
-                        <i className="bi bi-wallet me-2 text-dark"></i>
-                        Wallet
-                      </Link>
-                    </li>
-
-                    <li><hr className="dropdown-divider" /></li>
-                    <li>
-                      <button 
-                        className="dropdown-item text-danger"
-                        onClick={handleLogout}
-                      >
-                        <i className="bi bi-box-arrow-right me-2"></i>
-                        Logout
-                      </button>
-                    </li>
-                  </ul>
-                </li>
+                <Link
+                  to="/businesses"
+                  className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all ${
+                    isActive('/businesses')
+                      ? "bg-brand-primary text-white shadow-sm"
+                      : "text-text-secondary hover:text-brand-primary hover:bg-black/5"
+                  }`}
+                >
+                  My Business
+                </Link>
+                <Link
+                  to="/services"
+                  className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all ${
+                    isActive('/services')
+                      ? "bg-brand-primary text-white shadow-sm"
+                      : "text-text-secondary hover:text-brand-primary hover:bg-black/5"
+                  }`}
+                >
+                  Services
+                </Link>
+                <Link
+                  to="/appointments"
+                  className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all ${
+                    isActive('/appointments')
+                      ? "bg-brand-primary text-white shadow-sm"
+                      : "text-text-secondary hover:text-brand-primary hover:bg-black/5"
+                  }`}
+                >
+                  Appointments
+                </Link>
               </>
             ) : (
-              // Public Navigation
+              // Customer Navigation Links
               <>
-                <li className="nav-item">
-                  <Link className="nav-link fw-semibold" to="/">Home</Link>
-                </li>
-                <li className="nav-item">
-                  <a className="nav-link fw-semibold" href="#features">Features</a>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link fw-semibold" to="/services">
-                    <i className="bi bi-gear me-1"></i>
-                    Services
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link fw-semibold" to="/businesses">
-                    <i className="bi bi-building me-1"></i>
-                    Businesses
-                  </Link>
-                </li>
-               
-                <li className="nav-item">
-                  <Link className="nav-link fw-semibold" to="/contact">Contact</Link>
-                </li>
-                
-                {/* Auth Buttons */}
-                <li className="nav-item me-2 ms-3">
-                  <button 
-                    className="btn btn-outline-primary px-4"
-                    onClick={handleLogin}
-                  >
-                    <i className="bi bi-box-arrow-in-right me-1"></i>
-                    Sign In
-                  </button>
-                </li>
-                <li className="nav-item">
-                  <button 
-                    className="btn btn-primary px-4"
-                    onClick={handleSignUp}
-                  >
-                    <i className="bi bi-rocket me-1"></i>
-                    Get Started
-                  </button>
-                </li>
+                <Link
+                  to="/businesses"
+                  className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all ${
+                    isActive('/businesses')
+                      ? "bg-brand-primary text-white shadow-sm"
+                      : "text-text-secondary hover:text-brand-primary hover:bg-black/5"
+                  }`}
+                >
+                  Businesses
+                </Link>
+                <Link
+                  to="/services"
+                  className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all ${
+                    isActive('/services')
+                      ? "bg-brand-primary text-white shadow-sm"
+                      : "text-text-secondary hover:text-brand-primary hover:bg-black/5"
+                  }`}
+                >
+                  Services
+                </Link>
+                <Link
+                  to="/appointments"
+                  className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all ${
+                    isActive('/appointments')
+                      ? "bg-brand-primary text-white shadow-sm"
+                      : "text-text-secondary hover:text-brand-primary hover:bg-black/5"
+                  }`}
+                >
+                  My Bookings
+                </Link>
               </>
-            )}
-          </ul>
+            )
+          ) : (
+            // Public Navigation Links
+            <>
+              <Link
+                to="/businesses/explore"
+                className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all ${
+                  isActive('/businesses')
+                    ? "bg-brand-primary text-white shadow-sm"
+                    : "text-text-secondary hover:text-brand-primary hover:bg-black/5"
+                }`}
+              >
+                Businesses
+              </Link>
+              <Link
+                to="/services/explore"
+                className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all ${
+                  isActive('/services')
+                    ? "bg-brand-primary text-white shadow-sm"
+                    : "text-text-secondary hover:text-brand-primary hover:bg-black/5"
+                }`}
+              >
+                Services
+              </Link>
+              <Link
+                to="/about"
+                className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all ${
+                  isActive('/about')
+                    ? "bg-brand-primary text-white shadow-sm"
+                    : "text-text-secondary hover:text-brand-primary hover:bg-black/5"
+                }`}
+              >
+                About
+              </Link>
+            </>
+          )}
+
+          <Link
+            to="/contact"
+            className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all ${
+              isActive('/contact')
+                ? "bg-brand-primary text-white shadow-sm"
+                : "text-text-secondary hover:text-brand-primary hover:bg-black/5"
+            }`}
+          >
+            Contact
+          </Link>
+        </nav>
+
+        {/* Right Action Area */}
+        <div className="flex items-center gap-3">
+          {isAuthenticated ? (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                className="flex items-center gap-2.5 bg-white border border-neutral-border hover:border-brand-primary/40 px-3.5 py-1.5 rounded-full shadow-sm hover:shadow transition-all text-sm font-medium text-brand-primary"
+              >
+                <div className="w-7 h-7 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold text-xs uppercase overflow-hidden">
+                  {user?.imageUrl ? (
+                    <img src={user.imageUrl} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{user?.name?.charAt(0) || user?.email?.charAt(0) || "U"}</span>
+                  )}
+                </div>
+                <span className="max-w-[110px] truncate hidden sm:inline-block">
+                  {user?.name || user?.email?.split('@')[0] || (isOwner ? "Owner" : "Customer")}
+                </span>
+                <i className={`bi bi-chevron-${userDropdownOpen ? 'up' : 'down'} text-xs text-text-secondary`}></i>
+              </button>
+
+              {/* Dropdown Card */}
+              {userDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-card border border-neutral-border py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-4 py-3 border-b border-neutral-border/60">
+                    <p className="text-xs text-text-secondary uppercase tracking-wider font-semibold">Signed in as</p>
+                    <p className="text-sm font-bold text-brand-primary truncate">{user?.name || 'My Account'}</p>
+                    <p className="text-xs text-text-secondary truncate">{user?.email}</p>
+                    <div className="mt-2">
+                      <span className="bg-brand-secondary/40 text-brand-primary font-bold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        {isOwner ? 'Business Owner' : 'Customer'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="py-1">
+                    <Link
+                      to="/profile"
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:text-brand-primary hover:bg-neutral-background transition-colors"
+                    >
+                      <i className="bi bi-person text-base text-brand-primary"></i>
+                      <span>{isOwner ? 'Business Profile & Stats' : 'My Profile'}</span>
+                    </Link>
+
+                    {isOwner ? (
+                      <>
+                        <Link
+                          to="/businesses"
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:text-brand-primary hover:bg-neutral-background transition-colors"
+                        >
+                          <i className="bi bi-building text-base text-brand-primary"></i>
+                          <span>My Business</span>
+                        </Link>
+                        <Link
+                          to="/business/add"
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:text-brand-primary hover:bg-neutral-background transition-colors"
+                        >
+                          <i className="bi bi-plus-circle text-base text-green-600"></i>
+                          <span>Register New Business</span>
+                        </Link>
+                        <Link
+                          to="/appointments"
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:text-brand-primary hover:bg-neutral-background transition-colors"
+                        >
+                          <i className="bi bi-calendar-week text-base text-teal-600"></i>
+                          <span>All Appointments</span>
+                        </Link>
+                      </>
+                    ) : (
+                      <Link
+                        to="/appointments"
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:text-brand-primary hover:bg-neutral-background transition-colors"
+                      >
+                        <i className="bi bi-calendar-check text-base text-brand-primary"></i>
+                        <span>My Appointments</span>
+                      </Link>
+                    )}
+
+                    <Link
+                      to="/wallet"
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:text-brand-primary hover:bg-neutral-background transition-colors"
+                    >
+                      <i className="bi bi-wallet2 text-base text-amber-600"></i>
+                      <span>Wallet & Payments</span>
+                    </Link>
+                  </div>
+
+                  <div className="border-t border-neutral-border/60 pt-1">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
+                    >
+                      <i className="bi bi-box-arrow-right text-base"></i>
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="hidden sm:flex items-center gap-2.5">
+              <button
+                onClick={() => handleLogin()}
+                className="text-sm font-semibold text-text-secondary hover:text-brand-primary px-4 py-2 rounded-full hover:bg-black/5 transition-colors"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={handleSignUp}
+                className="bg-brand-primary text-white hover:bg-brand-dark px-5 py-2 rounded-full text-sm font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-1.5"
+              >
+                <span>Get Started</span>
+                <i className="bi bi-arrow-right text-brand-secondary"></i>
+              </button>
+            </div>
+          )}
+
+          {/* Mobile Menu Toggle Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-full text-brand-primary hover:bg-black/5 transition-colors"
+            aria-label="Toggle Menu"
+          >
+            <i className={`bi bi-${mobileMenuOpen ? 'x-lg' : 'list'} text-2xl`}></i>
+          </button>
         </div>
       </div>
-    </nav>
+
+      {/* Mobile Drawer Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-neutral-background border-t border-neutral-border shadow-xl px-6 py-6 space-y-4 animate-in slide-in-from-top-4 duration-200">
+          <div className="space-y-1">
+            <Link
+              to="/"
+              className={`block px-4 py-2.5 rounded-xl font-semibold text-base ${
+                isActive('/') ? "bg-brand-primary text-white" : "text-brand-primary hover:bg-black/5"
+              }`}
+            >
+              Home
+            </Link>
+
+            {isAuthenticated ? (
+              isOwner ? (
+                <>
+                  <Link
+                    to="/businesses"
+                    className={`block px-4 py-2.5 rounded-xl font-semibold text-base ${
+                      isActive('/businesses') ? "bg-brand-primary text-white" : "text-brand-primary hover:bg-black/5"
+                    }`}
+                  >
+                    My Business
+                  </Link>
+                  <Link
+                    to="/services"
+                    className={`block px-4 py-2.5 rounded-xl font-semibold text-base ${
+                      isActive('/services') ? "bg-brand-primary text-white" : "text-brand-primary hover:bg-black/5"
+                    }`}
+                  >
+                    Services
+                  </Link>
+                  <Link
+                    to="/appointments"
+                    className={`block px-4 py-2.5 rounded-xl font-semibold text-base ${
+                      isActive('/appointments') ? "bg-brand-primary text-white" : "text-brand-primary hover:bg-black/5"
+                    }`}
+                  >
+                    Appointments
+                  </Link>
+                  <Link
+                    to="/wallet"
+                    className="block px-4 py-2.5 rounded-xl font-semibold text-base text-brand-primary hover:bg-black/5"
+                  >
+                    Wallet & Payments
+                  </Link>
+                  <Link
+                    to="/profile"
+                    className="block px-4 py-2.5 rounded-xl font-semibold text-base text-brand-primary hover:bg-black/5"
+                  >
+                    Business Profile & Stats
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/businesses"
+                    className={`block px-4 py-2.5 rounded-xl font-semibold text-base ${
+                      isActive('/businesses') ? "bg-brand-primary text-white" : "text-brand-primary hover:bg-black/5"
+                    }`}
+                  >
+                    Businesses
+                  </Link>
+                  <Link
+                    to="/services"
+                    className={`block px-4 py-2.5 rounded-xl font-semibold text-base ${
+                      isActive('/services') ? "bg-brand-primary text-white" : "text-brand-primary hover:bg-black/5"
+                    }`}
+                  >
+                    Services
+                  </Link>
+                  <Link
+                    to="/appointments"
+                    className={`block px-4 py-2.5 rounded-xl font-semibold text-base ${
+                      isActive('/appointments') ? "bg-brand-primary text-white" : "text-brand-primary hover:bg-black/5"
+                    }`}
+                  >
+                    My Bookings
+                  </Link>
+                  <Link
+                    to="/wallet"
+                    className="block px-4 py-2.5 rounded-xl font-semibold text-base text-brand-primary hover:bg-black/5"
+                  >
+                    Wallet
+                  </Link>
+                  <Link
+                    to="/profile"
+                    className="block px-4 py-2.5 rounded-xl font-semibold text-base text-brand-primary hover:bg-black/5"
+                  >
+                    My Profile
+                  </Link>
+                </>
+              )
+            ) : (
+              <>
+                <Link
+                  to="/businesses/explore"
+                  className="block px-4 py-2.5 rounded-xl font-semibold text-base text-brand-primary hover:bg-black/5"
+                >
+                  Businesses
+                </Link>
+                <Link
+                  to="/services/explore"
+                  className="block px-4 py-2.5 rounded-xl font-semibold text-base text-brand-primary hover:bg-black/5"
+                >
+                  Services
+                </Link>
+                <Link
+                  to="/about"
+                  className="block px-4 py-2.5 rounded-xl font-semibold text-base text-brand-primary hover:bg-black/5"
+                >
+                  About
+                </Link>
+              </>
+            )}
+
+            <Link
+              to="/contact"
+              className="block px-4 py-2.5 rounded-xl font-semibold text-base text-brand-primary hover:bg-black/5"
+            >
+              Contact
+            </Link>
+          </div>
+
+          <hr className="border-neutral-border" />
+
+          {isAuthenticated ? (
+            <button
+              onClick={handleLogout}
+              className="w-full bg-red-50 text-red-600 font-bold py-3 rounded-full text-center hover:bg-red-100 transition-colors"
+            >
+              Sign Out
+            </button>
+          ) : (
+            <div className="space-y-2 pt-2">
+              <button
+                onClick={() => handleLogin()}
+                className="w-full bg-white border border-neutral-border text-brand-primary font-bold py-3 rounded-full text-center hover:bg-neutral-50 shadow-sm transition-colors"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={handleSignUp}
+                className="w-full bg-brand-primary text-white font-bold py-3 rounded-full text-center hover:bg-brand-dark shadow-md transition-colors"
+              >
+                Get Started Free
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </header>
   );
-};
+}
 
 export default Header;
