@@ -10,7 +10,7 @@ const Login = () => {
 
   // Default role from query param or location state or CUSTOMER
   const roleFromParam = searchParams.get('role')?.toUpperCase();
-  const initialRole = roleFromParam === 'ADMIN' ? 'ADMIN' : roleFromParam === 'OWNER' ? 'OWNER' : 'CUSTOMER';
+  const initialRole = roleFromParam === 'OWNER' ? 'OWNER' : 'CUSTOMER';
   const [role, setRole] = useState(initialRole);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,7 +20,7 @@ const Login = () => {
 
   useEffect(() => {
     const roleParam = searchParams.get('role')?.toUpperCase();
-    if (roleParam === 'ADMIN' || roleParam === 'OWNER' || roleParam === 'CUSTOMER') {
+    if (roleParam === 'OWNER' || roleParam === 'CUSTOMER') {
       setRole(roleParam);
     }
   }, [searchParams]);
@@ -36,8 +36,6 @@ const Login = () => {
         const fromPath = location.state?.from?.pathname;
         if (fromPath && fromPath !== '/login' && fromPath !== '/signup') {
           navigate(fromPath, { replace: true });
-        } else if (role === 'ADMIN') {
-          navigate('/admin');
         } else if (role === 'OWNER') {
           navigate('/profile');
         } else {
@@ -72,19 +70,17 @@ const Login = () => {
               Welcome Back
             </h1>
             <p className="text-xs sm:text-sm text-text-secondary mt-1">
-              {role === 'ADMIN'
-                ? 'Sign in to access platform controls and business approvals'
-                : role === 'OWNER'
-                  ? 'Sign in to access your business operations & live calendar'
-                  : 'Sign in to book and manage your verified appointments'}
+              {role === 'OWNER'
+                ? 'Sign in to access your business operations & live calendar'
+                : 'Sign in to book and manage your verified appointments'}
             </p>
           </div>
 
-          {/* Role Switcher Pills */}
+          {/* Role Switcher Pills (Customer & Owner Only) */}
           <div className="bg-neutral-background p-1.5 rounded-2xl flex gap-1 mb-6 border border-neutral-border">
             <button
               type="button"
-              className={`flex-1 py-2 px-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 role === 'CUSTOMER'
                   ? 'bg-brand-primary text-white shadow-sm'
                   : 'text-text-secondary hover:text-brand-primary'
@@ -96,7 +92,7 @@ const Login = () => {
             </button>
             <button
               type="button"
-              className={`flex-1 py-2 px-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 role === 'OWNER'
                   ? 'bg-brand-primary text-white shadow-sm'
                   : 'text-text-secondary hover:text-brand-primary'
@@ -104,19 +100,7 @@ const Login = () => {
               onClick={() => setRole('OWNER')}
             >
               <i className="bi bi-briefcase-fill"></i>
-              <span>Owner</span>
-            </button>
-            <button
-              type="button"
-              className={`flex-1 py-2 px-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                role === 'ADMIN'
-                  ? 'bg-brand-primary text-brand-secondary shadow-sm'
-                  : 'text-text-secondary hover:text-brand-primary'
-              }`}
-              onClick={() => setRole('ADMIN')}
-            >
-              <i className="bi bi-shield-lock-fill"></i>
-              <span>Admin</span>
+              <span>Business Owner</span>
             </button>
           </div>
 

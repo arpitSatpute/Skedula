@@ -87,4 +87,10 @@ public class AdminController {
             @RequestParam(defaultValue = "true") boolean addRole) {
         return ResponseEntity.ok(adminService.updateUserRole(userId, role, addRole));
     }
+
+    // Platform Escrow Vault & Transparent Ledger (Admin Only)
+    @GetMapping("/escrow")
+    public ResponseEntity<com.arpit.Skedula.Skedula.dto.AdminEscrowResponseDTO> getAdminEscrowSummary() {
+        return ResponseEntity.ok(adminService.getAdminEscrowSummary());
+    }
 }

@@ -1,18 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams, useLocation } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient.js';
 import ConfirmationModal from '../Common/ConfirmationModal.jsx';
 import BusinessQrModal from './BusinessQrModal.jsx';
+import BusinessAnalytics from './BusinessAnalytics.jsx';
 import { toast } from 'react-toastify';
 import { showErrorToast } from '../../utils/errorHandler';
 
 const OwnerBusiness = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const isAnalyticsPath = location.pathname.includes('analytics') || location.pathname.includes('insights');
+  const initialTab = searchParams.get('tab') || (isAnalyticsPath ? 'analytics' : 'services');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [business, setBusiness] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const navigate = useNavigate();
+
+  const handleTabSwitch = (tab) => {
+    setActiveTab(tab);
+    setSearchParams(tab === 'services' ? {} : { tab });
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -154,22 +165,33 @@ const OwnerBusiness = () => {
             {/* Quick Actions for Owner */}
             <div className="flex flex-wrap lg:flex-col gap-2.5 shrink-0">
               <button
-                onClick={handleViewAppointments}
-                className="bg-brand-primary text-white hover:bg-brand-dark px-6 py-2.5 rounded-full text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2"
+                onClick={() => handleTabSwitch(activeTab === 'analytics' ? 'services' : 'analytics')}
+                className={`px-6 py-2.5 rounded-full text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  activeTab === 'analytics'
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    : 'bg-brand-primary hover:bg-brand-dark text-white'
+                }`}
               >
-                <i className="bi bi-calendar2-check text-brand-secondary"></i>
+                <i className="bi bi-graph-up-arrow text-brand-secondary"></i>
+                <span>{activeTab === 'analytics' ? 'View Services' : 'Business Insights'}</span>
+              </button>
+              <button
+                onClick={handleViewAppointments}
+                className="bg-white border border-neutral-border hover:border-brand-primary/40 text-brand-primary px-6 py-2.5 rounded-full text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <i className="bi bi-calendar2-check text-brand-primary"></i>
                 <span>All Appointments</span>
               </button>
               <button
                 onClick={handleEditBusiness}
-                className="bg-white border border-neutral-border hover:border-brand-primary/40 text-brand-primary px-6 py-2.5 rounded-full text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-2"
+                className="bg-white border border-neutral-border hover:border-brand-primary/40 text-brand-primary px-6 py-2.5 rounded-full text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <i className="bi bi-pencil"></i>
                 <span>Edit Business Info</span>
               </button>
               <button
                 onClick={handleDeleteBusiness}
-                className="bg-red-50 hover:bg-red-100 text-red-600 px-6 py-2.5 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2"
+                className="bg-red-50 hover:bg-red-100 text-red-600 px-6 py-2.5 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <i className="bi bi-trash"></i>
                 <span>Delete Business</span>
@@ -308,90 +330,126 @@ const OwnerBusiness = () => {
           </div>
         </div>
 
-        {/* Services Section */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-bold font-primary text-brand-primary">
-                Offered Services
-              </h2>
-              <p className="text-xs sm:text-sm text-text-secondary">
-                Configure prices, duration, and maximum capacity for each appointment slot
-              </p>
-            </div>
-            <button
-              onClick={handleAddService}
-              className="bg-brand-primary text-white hover:bg-brand-dark px-6 py-2.5 rounded-full text-xs font-bold shadow-sm transition-all flex items-center gap-2"
-            >
-              <i className="bi bi-plus-lg text-brand-secondary"></i>
-              <span>Add New Service</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {business.serviceOffered && business.serviceOffered.length > 0 ? (
-              business.serviceOffered.map((service) => (
-                <div
-                  key={service.id}
-                  className="bg-white rounded-3xl border border-neutral-border shadow-sm p-6 flex flex-col justify-between hover:shadow-card hover:-translate-y-1 transition-all space-y-4"
-                  data-animation-on-scroll=""
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-lg font-bold font-primary text-brand-primary leading-tight">
-                        {service.name}
-                      </h3>
-                      <span className="bg-brand-secondary text-brand-primary text-xs font-bold px-3 py-1 rounded-full shrink-0">
-                        ₹{service.price}
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-text-secondary line-clamp-3 leading-relaxed">
-                      {service.description}
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-2 pt-2 text-xs">
-                      <div className="bg-neutral-background p-2 rounded-xl text-center">
-                        <span className="text-[10px] text-text-secondary uppercase">Duration</span>
-                        <p className="font-bold text-brand-primary">{service.duration} mins</p>
-                      </div>
-                      <div className="bg-neutral-background p-2 rounded-xl text-center">
-                        <span className="text-[10px] text-text-secondary uppercase">Capacity</span>
-                        <p className="font-bold text-brand-primary">{service.totalSlots} slots</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-neutral-border/60">
-                    <button
-                      onClick={() => handleViewService(service.id)}
-                      className="w-full bg-white border border-neutral-border hover:border-brand-primary/40 text-brand-primary py-2.5 rounded-full text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-1.5"
-                    >
-                      <i className="bi bi-sliders"></i>
-                      <span>Manage Service</span>
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full bg-white rounded-3xl p-12 text-center border border-neutral-border space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-brand-primary/10 text-brand-primary flex items-center justify-center text-3xl mx-auto">
-                  <i className="bi bi-gear-wide-connected"></i>
-                </div>
-                <h4 className="text-base font-bold text-brand-primary">No Services Added Yet</h4>
-                <p className="text-xs text-text-secondary max-w-sm mx-auto">
-                  Add services so clients can view slot schedules and book appointments with your business.
-                </p>
-                <button
-                  onClick={handleAddService}
-                  className="bg-brand-primary text-white hover:bg-brand-dark px-7 py-3 rounded-full text-xs font-bold shadow-sm transition-all"
-                >
-                  + Add Your First Service
-                </button>
-              </div>
-            )}
-          </div>
+        {/* Navigation Tabs Bar for Owner: Services vs Analytics */}
+        <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-neutral-border shadow-xs w-fit">
+          <button
+            onClick={() => handleTabSwitch('services')}
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'services'
+                ? 'bg-brand-primary text-white shadow-xs'
+                : 'text-text-secondary hover:text-brand-primary hover:bg-neutral-background'
+            }`}
+          >
+            <i className="bi bi-grid-fill"></i>
+            <span>Services & Offerings ({business.serviceOffered?.length || 0})</span>
+          </button>
+          <button
+            onClick={() => handleTabSwitch('analytics')}
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'analytics'
+                ? 'bg-brand-primary text-white shadow-xs'
+                : 'text-text-secondary hover:text-brand-primary hover:bg-neutral-background'
+            }`}
+          >
+            <i className="bi bi-graph-up-arrow text-emerald-500"></i>
+            <span>Performance & Real Insights</span>
+            <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
+              Live
+            </span>
+          </button>
         </div>
+
+        {/* Tab 1: Analytics View */}
+        {activeTab === 'analytics' && (
+          <BusinessAnalytics businessId={business.id} />
+        )}
+
+        {/* Tab 2: Services Section */}
+        {activeTab === 'services' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold font-primary text-brand-primary">
+                  Offered Services
+                </h2>
+                <p className="text-xs sm:text-sm text-text-secondary">
+                  Configure prices, duration, and maximum capacity for each appointment slot
+                </p>
+              </div>
+              <button
+                onClick={handleAddService}
+                className="bg-brand-primary text-white hover:bg-brand-dark px-6 py-2.5 rounded-full text-xs font-bold shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <i className="bi bi-plus-lg text-brand-secondary"></i>
+                <span>Add New Service</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {business.serviceOffered && business.serviceOffered.length > 0 ? (
+                business.serviceOffered.map((service) => (
+                  <div
+                    key={service.id}
+                    className="bg-white rounded-3xl border border-neutral-border shadow-sm p-6 flex flex-col justify-between hover:shadow-card hover:-translate-y-1 transition-all space-y-4"
+                    data-animation-on-scroll=""
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-lg font-bold font-primary text-brand-primary leading-tight">
+                          {service.name}
+                        </h3>
+                        <span className="bg-brand-secondary text-brand-primary text-xs font-bold px-3 py-1 rounded-full shrink-0">
+                          ₹{service.price}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-text-secondary line-clamp-3 leading-relaxed">
+                        {service.description}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2 pt-2 text-xs">
+                        <div className="bg-neutral-background p-2 rounded-xl text-center">
+                          <span className="text-[10px] text-text-secondary uppercase">Duration</span>
+                          <p className="font-bold text-brand-primary">{service.duration} mins</p>
+                        </div>
+                        <div className="bg-neutral-background p-2 rounded-xl text-center">
+                          <span className="text-[10px] text-text-secondary uppercase">Capacity</span>
+                          <p className="font-bold text-brand-primary">{service.totalSlots} slots</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-neutral-border/60">
+                      <button
+                        onClick={() => handleViewService(service.id)}
+                        className="w-full bg-white border border-neutral-border hover:border-brand-primary/40 text-brand-primary py-2.5 rounded-full text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <i className="bi bi-sliders"></i>
+                        <span>Manage Service</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full bg-white rounded-3xl p-12 text-center border border-neutral-border space-y-4">
+                  <div className="w-16 h-16 rounded-2xl bg-brand-primary/10 text-brand-primary flex items-center justify-center text-3xl mx-auto">
+                    <i className="bi bi-gear-wide-connected"></i>
+                  </div>
+                  <h4 className="text-base font-bold text-brand-primary">No Services Added Yet</h4>
+                  <p className="text-xs text-text-secondary max-w-sm mx-auto">
+                    Add services so clients can view slot schedules and book appointments with your business.
+                  </p>
+                  <button
+                    onClick={handleAddService}
+                    className="bg-brand-primary text-white hover:bg-brand-dark px-7 py-3 rounded-full text-xs font-bold shadow-sm transition-all cursor-pointer"
+                  >
+                    + Add Your First Service
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* QR Code Stand Modal */}

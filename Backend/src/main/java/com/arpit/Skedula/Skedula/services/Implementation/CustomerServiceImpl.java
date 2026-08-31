@@ -23,7 +23,7 @@ import java.util.UUID;
 
 import static org.modelmapper.Converters.Collection.map;
 
-@Service
+@Service("customerService")
 @RequiredArgsConstructor
 public class CustomerServiceImpl implements CustomerService {
 
@@ -37,9 +37,8 @@ public class CustomerServiceImpl implements CustomerService {
         Customer customer = new Customer();
         customer.setUser(user);
         customer.setCustomerId(generateCustomerId());
-        customer.setAppointments(null);
-        customerRepository.save(customer);
-        return entityToDTO(customer, user.getId());
+        Customer savedCustomer = customerRepository.save(customer);
+        return entityToDTO(savedCustomer, user.getId());
     }
 
 
@@ -54,45 +53,63 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public CustomerDTO getCustomerById(Long id) {
-        return modelMapper.map(customerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Customer not found")), CustomerDTO.class);
+        Customer customer = customerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+        return entityToDTO(customer, customer.getUser().getId());
     }
 
     @Override
     public Page<CustomerDTO> getCustomer(Integer pageOffset, Integer pageSize) {
-        Pageable pageable = PageRequest.of(pageOffset, pageSize);
-        Page<Customer> customerPage = customerRepository.findAll(pageable);
-        return customerPage.map(customer -> modelMapper.map(customer, CustomerDTO.class));
+        PageRequest pageRequest = PageRequest.of(pageOffset, pageSize);
+        return customerRepository.findAll(pageRequest)
+                .map(customer -> entityToDTO(customer, customer.getUser().getId()));
     }
 
     @Override
     public boolean isOwnerOfProfile(Long id) {
-
-        User user = (User)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (user == null) {
-            throw new ResourceNotFoundException("User not found in security context");
+        if (id == null) {
+            return false;
         }
-        if(!user.getRoles().contains(Role.CUSTOMER)) {
-            throw new ResourceNotFoundException("User is not a customer");
+        if (SecurityContextHolder.getContext().getAuthentication() == null ||
+            !(SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof User)) {
+            return false;
         }
-        Customer customer = customerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
-        return customer.getUser().getEmail().equals(user.getEmail());
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (user.getRoles() != null && user.getRoles().contains(Role.ADMIN)) {
+            return true;
+        }
+        if (user.getRoles() == null || !user.getRoles().contains(Role.CUSTOMER)) {
+            return false;
+        }
+        return customerRepository.findById(id)
+                .map(cust -> cust.getUser() != null && cust.getUser().getEmail() != null && cust.getUser().getEmail().equals(user.getEmail()))
+                .orElse(false);
     }
 
     @Override
     public boolean isOwnerOfAppointment(Long appointmentId) {
+        if (appointmentId == null) {
+            return false;
+        }
+        if (SecurityContextHolder.getContext().getAuthentication() == null ||
+            !(SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof User)) {
+            return false;
+        }
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (user == null) {
-            throw new ResourceNotFoundException("User not found in security context");
+        if (user.getRoles() != null && user.getRoles().contains(Role.ADMIN)) {
+            return true;
         }
-        if (!user.getRoles().contains(Role.CUSTOMER)) {
-            throw new ResourceNotFoundException("User is not a customer");
-        }
-        Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found"));
-
-        Customer customer = customerRepository.findById(appointment.getBookedBy().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointment.getBookedBy().getId()));
-        return customer.getUser().getEmail().equals(user.getEmail());
+        return appointmentRepository.findById(appointmentId)
+                .map(appt -> {
+                    if (appt.getBookedBy() == null || appt.getBookedBy().getUser() == null) {
+                        return false;
+                    }
+                    User bookedUser = appt.getBookedBy().getUser();
+                    if (bookedUser.getId() == user.getId()) {
+                        return true;
+                    }
+                    return bookedUser.getEmail() != null && bookedUser.getEmail().equalsIgnoreCase(user.getEmail());
+                })
+                .orElse(false);
     }
 
     private String generateCustomerId() {

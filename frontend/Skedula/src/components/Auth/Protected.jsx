@@ -15,7 +15,9 @@ const Protected = ({ allowedRoles = null }) => {
     user,
     role,
     setRole,
-    clearAuthData
+    clearAuthData,
+    isAdmin,
+    userRoles
   } = useContext(AuthContext);
 
   const [localLoading, setLocalLoading] = useState(true);
@@ -159,7 +161,27 @@ const Protected = ({ allowedRoles = null }) => {
   // Check role authorization
   if (allowedRoles && allowedRoles.length > 0) {
     const currentRole = role || normalizeRole(null, null, user) || localStorage.getItem('userRole');
-    if (!allowedRoles.includes(currentRole)) {
+
+    // Aggregate all user roles from context, user object, and current role
+    const allRoles = new Set();
+    if (currentRole) allRoles.add(String(currentRole).toUpperCase().replace('ROLE_', ''));
+    if (user?.roles) {
+      const rawRoles = Array.isArray(user.roles) ? user.roles : [user.roles];
+      rawRoles.forEach(r => allRoles.add(String(r).toUpperCase().replace('ROLE_', '')));
+    }
+    if (userRoles && Array.isArray(userRoles)) {
+      userRoles.forEach(r => allRoles.add(String(r).toUpperCase().replace('ROLE_', '')));
+    }
+    if (isAdmin) {
+      allRoles.add('ADMIN');
+    }
+
+    // Check if any allowedRole matches
+    const hasPermission = allowedRoles.some(allowed =>
+      allRoles.has(String(allowed).toUpperCase().replace('ROLE_', ''))
+    );
+
+    if (!hasPermission) {
       return <RoleMismatch allowedRoles={allowedRoles} />;
     }
   }

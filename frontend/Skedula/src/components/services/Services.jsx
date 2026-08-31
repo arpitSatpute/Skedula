@@ -18,11 +18,39 @@ function Services() {
   const navigate = useNavigate();
   const { isOwner, isAuthenticated } = useContext(AuthContext);
 
+  // The numeric ID of the currently logged-in owner's own business.
+  // Only populated when the user is an OWNER. Used to decide whether
+  // to show owner-management controls on this service page.
+  const [myBusinessId, setMyBusinessId] = useState(null);
+
+  // Fetch the owner's own business ID once, so we can verify ownership
+  // of the service being viewed.
+  useEffect(() => {
+    if (!isOwner) return;
+    let ignore = false;
+    const fetchMyBusiness = async () => {
+      try {
+        const res = await apiClient.get('/business/get/user');
+        if (!ignore && res.data?.data?.id) {
+          setMyBusinessId(res.data.data.id);
+        }
+      } catch (_) {
+        // Owner may not have a business yet — silently ignore
+      }
+    };
+    fetchMyBusiness();
+    return () => { ignore = true; };
+  }, [isOwner]);
+
   useEffect(() => {
     let ignore = false;
     const fetchData = async () => {
       setLoading(true);
       try {
+        // Always load from the public endpoint for universal access.
+        // The private endpoint is attempted first for owners to get richer
+        // data, but we gracefully fall back to public on 403/404 so the
+        // service detail page still loads even if it belongs to another owner.
         let response;
         if (isOwner) {
           try {
@@ -32,6 +60,7 @@ function Services() {
               setNotFound(true);
               return;
             }
+            // 403 (not the owner of this service) or other error — fall back to public view
             response = await axios.get(`${baseUrl}/public/getService/${id}`);
           }
         } else {
@@ -208,7 +237,8 @@ function Services() {
 
             {/* Role-Adaptive Action Section */}
             <div className="pt-4 border-t border-neutral-border/60">
-              {isOwner ? (
+              {isOwner && myBusinessId && service.business === myBusinessId ? (
+                // ── Owner of THIS service: show management controls ──
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
@@ -238,6 +268,7 @@ function Services() {
                   </button>
                 </div>
               ) : (
+                // ── Customer view OR an owner viewing another business's service ──
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={handleBookAppointments}

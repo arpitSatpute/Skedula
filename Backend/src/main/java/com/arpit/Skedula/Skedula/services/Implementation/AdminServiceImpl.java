@@ -15,6 +15,8 @@ import com.arpit.Skedula.Skedula.repository.*;
 import com.arpit.Skedula.Skedula.services.AdminService;
 import com.arpit.Skedula.Skedula.services.AppointmentService;
 import com.arpit.Skedula.Skedula.services.BusinessServiceOfferedService;
+import com.arpit.Skedula.Skedula.services.EscrowService;
+import com.arpit.Skedula.Skedula.dto.AdminEscrowResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,7 @@ public class AdminServiceImpl implements AdminService {
     private final ReviewRepository reviewRepository;
     private final BusinessServiceOfferedService businessServiceOfferedService;
     private final AppointmentService appointmentService;
+    private final EscrowService escrowService;
 
     @Override
     public AdminAnalyticsDTO getPlatformAnalytics() {
@@ -57,11 +60,10 @@ public class AdminServiceImpl implements AdminService {
         long customers = allUsers.stream().filter(u -> u.getRoles() != null && u.getRoles().contains(Role.CUSTOMER)).count();
         long admins = allUsers.stream().filter(u -> u.getRoles() != null && u.getRoles().contains(Role.ADMIN)).count();
 
-        // Calculate Escrow Balance across all wallets
-        List<Wallet> allWallets = walletRepository.findAll();
-        BigDecimal totalEscrow = allWallets.stream()
-                .map(w -> w.getBalance() != null ? w.getBalance() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Calculate live Escrow Balance from escrowService
+        AdminEscrowResponseDTO escrowSummary = escrowService.getAdminEscrowSummary();
+        BigDecimal totalEscrow = escrowSummary != null && escrowSummary.getTotalEscrowBalance() != null
+                ? escrowSummary.getTotalEscrowBalance() : BigDecimal.ZERO;
 
         // Platform fee 5% of completed appointments or payments
         List<Payment> allPayments = paymentRepository.findAll();
@@ -277,5 +279,10 @@ public class AdminServiceImpl implements AdminService {
             }
         }
         return card;
+    }
+
+    @Override
+    public AdminEscrowResponseDTO getAdminEscrowSummary() {
+        return escrowService.getAdminEscrowSummary();
     }
 }

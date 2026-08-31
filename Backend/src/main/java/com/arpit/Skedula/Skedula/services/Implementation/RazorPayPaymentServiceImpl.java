@@ -62,17 +62,32 @@ public class RazorPayPaymentServiceImpl implements RazorPayPaymentService {
     public ResponseRazorPayAmountDTO createRazorpayPaymentOrder(RequestRazorPayAmountDTO requestRazorpayAmount) {
 
         try {
-            // Validate user
-            User user = userRepository.findByEmail(requestRazorpayAmount.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + requestRazorpayAmount.getEmail()));
-            // Validate amount
-            if (requestRazorpayAmount.getAmount() == null || requestRazorpayAmount.getAmount().compareTo(BigDecimal.valueOf(50)) < 0) {
-                throw new IllegalArgumentException("Amount must be greater than or equal to 50");
+            // Resolve authenticated user from security context, with fallback to email if provided
+            User user = null;
+            if (SecurityContextHolder.getContext().getAuthentication() != null &&
+                SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof User) {
+                user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             }
+            if (user == null && requestRazorpayAmount.getEmail() != null && !requestRazorpayAmount.getEmail().isBlank()) {
+                user = userRepository.findByEmail(requestRazorpayAmount.getEmail()).orElse(null);
+            }
+            if (user == null) {
+                throw new ResourceNotFoundException("Authenticated customer not found. Please log in.");
+            }
+
+            // Validate amount (minimum 1 INR = 100 paise)
+            if (requestRazorpayAmount.getAmount() == null || requestRazorpayAmount.getAmount().compareTo(BigDecimal.ONE) < 0) {
+                throw new IllegalArgumentException("Amount must be at least ₹1.00");
+            }
+
+            String currency = (requestRazorpayAmount.getCurrency() != null && !requestRazorpayAmount.getCurrency().isBlank())
+                    ? requestRazorpayAmount.getCurrency() : "INR";
+
             // Create RazorpayAmount entity
             RazorpayAmount razorpayAmount = RazorpayAmount.builder()
                     .amount(requestRazorpayAmount.getAmount())
                     .receiptOrderId(generateReceiptOrderId())
-                    .currency(requestRazorpayAmount.getCurrency())
+                    .currency(currency)
                     .razorpayOrderId(null)
                     .build();
             // Initialize Razorpay client
@@ -147,7 +162,17 @@ public class RazorPayPaymentServiceImpl implements RazorPayPaymentService {
     @Override
     public Void verifyRazorpayPayment(RequestRazorpayPaymentVerifyDTO verifyDTO) {
 
-        User user = userRepository.findByEmail(verifyDTO.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + verifyDTO.getEmail()));
+        User user = null;
+        if (SecurityContextHolder.getContext().getAuthentication() != null &&
+            SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof User) {
+            user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        }
+        if (user == null && verifyDTO.getEmail() != null && !verifyDTO.getEmail().isBlank()) {
+            user = userRepository.findByEmail(verifyDTO.getEmail()).orElse(null);
+        }
+        if (user == null) {
+            throw new ResourceNotFoundException("Authenticated customer not found. Please log in.");
+        }
 
         try {
             RazorpayClient razorpayClient = new RazorpayClient(razorPayKey, razorPaySecret);

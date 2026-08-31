@@ -154,6 +154,14 @@ const router = createBrowserRouter([
             element: <OwnerBusiness />
           },
           {
+            path: "/business/analytics",
+            element: <OwnerBusiness />
+          },
+          {
+            path: "/business/insights",
+            element: <OwnerBusiness />
+          },
+          {
             path: "/business/add",
             element: <AddBusiness />
           },
@@ -201,9 +209,7 @@ const router = createBrowserRouter([
 ]);
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
     <AuthProvider>
       <RouterProvider router={router} />
     </AuthProvider>
-  </StrictMode>
 );

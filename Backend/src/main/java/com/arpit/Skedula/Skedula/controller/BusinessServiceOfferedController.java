@@ -28,6 +28,7 @@ public class BusinessServiceOfferedController {
         return ResponseEntity.ok(businessServiceOfferedService.createService(businessServiceOfferedDTO));
     }
 
+    @PreAuthorize("@businessService.isOwnerOfService(#id)")
     @PutMapping("uploadFile/{id}")
     public ResponseEntity<Void> uploadFile(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
         Void fileUrl = businessServiceOfferedService.setFile(file, id);
@@ -35,6 +36,7 @@ public class BusinessServiceOfferedController {
     }
 
     // Update Details By ID
+    @PreAuthorize("@businessService.isOwnerOfService(#id)")
     @PutMapping("/update/{id}")
     public ResponseEntity<BusinessServiceOfferedDTO> updateService(@PathVariable Long id, @RequestBody OnBoardBusinessServiceOfferedDTO serviceOfferedDTO) {
         return ResponseEntity.ok(businessServiceOfferedService.updateService(id, serviceOfferedDTO));

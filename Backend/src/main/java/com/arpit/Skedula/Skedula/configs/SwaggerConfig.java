@@ -1,4 +1,4 @@
-package com.teamarc.demo.configs;
+package com.arpit.Skedula.Skedula.configs;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -17,7 +17,6 @@ public class SwaggerConfig {
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components().addSecuritySchemes("bearerAuth",
                         new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")))
-                .info(new Info().title("Careerly API").version("1.0").description("API documentation for Careerly"));
-
+                .info(new Info().title("Skedula API").version("1.0").description("API documentation for Skedula"));
     }
 }

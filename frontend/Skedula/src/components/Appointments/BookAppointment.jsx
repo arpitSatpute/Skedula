@@ -83,6 +83,16 @@ function BookAppointment() {
     };
   }, [serviceId, businessId, baseUrl]);
 
+  const extractTimeStr = (rawTime) => {
+    if (!rawTime) return '';
+    if (typeof rawTime === 'string') return rawTime.slice(0, 5);
+    if (Array.isArray(rawTime)) {
+      const [h, m] = rawTime;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+    return String(rawTime).slice(0, 5);
+  };
+
   // Fetch Dynamic Available Slots whenever selectedDate or serviceId changes
   useEffect(() => {
     let ignore = false;
@@ -92,16 +102,22 @@ function BookAppointment() {
       try {
         const res = await axios.get(`${baseUrl}/public/services/${serviceId}/slots?date=${selectedDate}`);
         if (ignore) return;
-        const availableSlots = res.data || [];
+        const raw = res.data;
+        const availableSlots = Array.isArray(raw?.data)
+          ? raw.data
+          : (Array.isArray(raw) ? raw : []);
         setSlots(availableSlots);
 
         // Automatically select the first available slot if current selectedTime is invalid
         const firstAvailable = availableSlots.find(s => s.available);
-        if (firstAvailable && (!selectedTime || !availableSlots.some(s => s.time?.slice(0, 5) === selectedTime && s.available))) {
-          setSelectedTime(firstAvailable.time?.slice(0, 5));
+        if (firstAvailable) {
+          const firstTime = extractTimeStr(firstAvailable.time);
+          if (!selectedTime || !availableSlots.some(s => extractTimeStr(s.time) === selectedTime && s.available)) {
+            setSelectedTime(firstTime);
+          }
         }
       } catch (e) {
-        // Fallback slots if network fails
+        console.error('Failed to fetch available slots:', e);
         setSlots([]);
       } finally {
         if (!ignore) setFetchingSlots(false);
@@ -182,21 +198,33 @@ function BookAppointment() {
       }
 
       // Case 2: Insufficient Wallet Balance -> Inline Top-Up & Book via Razorpay
-      const userEmail = cust.user?.email || localStorage.getItem('userEmail');
+      const userEmail = cust.user?.email || localStorage.getItem('userEmail') || '';
       const orderRes = await apiClient.post('/razorpay/pay', {
         amount: remainingRequired,
-        currency: 'INR',
-        email: userEmail
+        currency: 'INR'
       });
 
-      const orderData = orderRes.data;
+      // Safely unwrap GlobalResponseHandler payload
+      const orderData = orderRes.data?.data || orderRes.data;
+
+      if (!orderData || !orderData.razorpayOrderId) {
+        toast.error('Failed to initialize Razorpay checkout. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      if (!window.Razorpay) {
+        toast.error('Razorpay SDK is loading. Please try again in a moment.');
+        setLoading(false);
+        return;
+      }
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_1osnPBeF2xSAFe',
         amount: orderData.amount, // in paise
-        currency: orderData.currency,
+        currency: orderData.currency || 'INR',
         name: business?.name || 'Skedula',
-        description: `Top-up ₹${remainingRequired} & Book ${service?.name || 'Appointment'}`,
+        description: `Top-up ₹${remainingRequired.toFixed(2)} & Book ${service?.name || 'Appointment'}`,
         order_id: orderData.razorpayOrderId,
         handler: async (response) => {
           try {
@@ -204,8 +232,7 @@ function BookAppointment() {
             await apiClient.post('/razorpay/verify', {
               razorpayPaymentId: response.razorpay_payment_id,
               razorpayOrderId: response.razorpay_order_id,
-              razorpaySignature: response.razorpay_signature,
-              email: userEmail
+              razorpaySignature: response.razorpay_signature
             });
 
             // Immediately execute the booking with the newly topped-up balance
@@ -217,7 +244,7 @@ function BookAppointment() {
         },
         prefill: {
           name: cust.user?.name || '',
-          email: userEmail || ''
+          email: userEmail
         },
         theme: {
           color: '#1A3C26'
@@ -231,6 +258,10 @@ function BookAppointment() {
       };
 
       const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', (response) => {
+        toast.error(response.error?.description || 'Payment was unsuccessful');
+        setLoading(false);
+      });
       rzp.open();
 
     } catch (err) {
@@ -355,14 +386,14 @@ function BookAppointment() {
 
               {slots.length > 0 ? (
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
-                  {slots.map(slot => {
-                    const timeStr = slot.time?.slice(0, 5);
+                  {slots.map((slot, idx) => {
+                    const timeStr = extractTimeStr(slot.time);
                     const isSelected = selectedTime === timeStr;
                     const isAvailable = slot.available;
 
                     return (
                       <button
-                        key={timeStr}
+                        key={timeStr || idx}
                         type="button"
                         disabled={!isAvailable || loading}
                         onClick={() => setSelectedTime(timeStr)}

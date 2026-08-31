@@ -14,13 +14,14 @@ function CancellationModal({ appointment, onClose, onSuccess }) {
       try {
         const res = await apiClient.get(`/appointments/cancellation-preview/${appointment.id}`);
         if (ignore) return;
-        setPreview(res.data);
+        setPreview(res.data?.data || res.data);
       } catch (err) {
         // Fallback default
+        const price = appointment?.serviceOffered?.price || appointment?.price || 0;
         setPreview({
           isLateCancellation: false,
           cancellationFee: 0,
-          refundAmount: 0,
+          refundAmount: price,
           cutoffMinutes: 120,
           feePercentage: 20
         });
@@ -38,7 +39,7 @@ function CancellationModal({ appointment, onClose, onSuccess }) {
   const handleConfirmCancellation = async () => {
     setSubmitting(true);
     try {
-      await apiClient.patch(`/appointments/cancelBooking/${appointment.id}`);
+      await apiClient.patch(`/appointments/cancel/customer/${appointment.id}`);
       toast.success(
         preview?.cancellationFee > 0
           ? `Appointment cancelled. ₹${preview.refundAmount} has been refunded to your wallet (₹${preview.cancellationFee} late cancellation fee applied).`

@@ -21,8 +21,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public void processPayment(Appointment appointment) {
-        Payment payment = paymentRepository.findByAppointment(appointment).orElseThrow(()-> new ResourceNotFoundException("Payment not found"));
-        walletPaymentStrategies.processPayment(payment);
+        paymentRepository.findByAppointment(appointment).ifPresent(walletPaymentStrategies::processPayment);
     }
 
     @Override
@@ -37,19 +36,18 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public void refundPayment(Appointment appointment) {
-        Payment payment = paymentRepository.findByAppointment(appointment).orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
-        walletPaymentStrategies.refundPayment(payment);
+        paymentRepository.findByAppointment(appointment).ifPresent(walletPaymentStrategies::refundPayment);
     }
 
     @Override
     public void refundBookedAppointmentPayment(Appointment appointment) {
-        Payment payment = paymentRepository.findByAppointment(appointment).orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
-        walletPaymentStrategies.refundBookedAppointmentPayment(payment);
+        paymentRepository.findByAppointment(appointment).ifPresent(walletPaymentStrategies::refundBookedAppointmentPayment);
     }
 
     @Override
     public void refundBookedAppointmentPayment(Appointment appointment, BigDecimal refundAmount) {
-        Payment payment = paymentRepository.findByAppointment(appointment).orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
-        walletPaymentStrategies.refundBookedAppointmentPayment(payment, refundAmount);
+        paymentRepository.findByAppointment(appointment).ifPresent(payment ->
+            walletPaymentStrategies.refundBookedAppointmentPayment(payment, refundAmount)
+        );
     }
 }

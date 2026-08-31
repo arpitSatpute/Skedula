@@ -27,21 +27,32 @@ public class SlotServiceImpl implements SlotService {
 
     @Override
     public List<SlotDTO> getAvailableSlots(Long serviceId, LocalDate date) {
+        if (date == null) {
+            date = LocalDate.now();
+        }
+
         BusinessServiceOffered service = serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + serviceId));
 
         Business business = service.getBusiness();
-        LocalTime openTime = business.getOpenTime() != null ? business.getOpenTime() : LocalTime.of(9, 0);
-        LocalTime closeTime = business.getCloseTime() != null ? business.getCloseTime() : LocalTime.of(18, 0);
+        LocalTime openTime = (business != null && business.getOpenTime() != null) ? business.getOpenTime() : LocalTime.of(9, 0);
+        LocalTime closeTime = (business != null && business.getCloseTime() != null) ? business.getCloseTime() : LocalTime.of(18, 0);
+
+        // If operating hours are inverted or equal, fall back to standard 9:00 - 18:00
+        if (!closeTime.isAfter(openTime)) {
+            openTime = LocalTime.of(9, 0);
+            closeTime = LocalTime.of(18, 0);
+        }
+
         long durationMinutes = (service.getDuration() != null && service.getDuration() > 0) ? service.getDuration() : 60L;
 
-        // Fetch appointments on this date for the service
+        // Fetch appointments on this date for the service/business
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(23, 59, 59);
 
-        List<Appointment> existingAppts = appointmentRepository.findByBusiness_IdAndAppointmentDateTimeBetween(
-                business.getId(), startOfDay, endOfDay
-        );
+        List<Appointment> existingAppts = (business != null && business.getId() != null)
+                ? appointmentRepository.findByBusiness_IdAndAppointmentDateTimeBetween(business.getId(), startOfDay, endOfDay)
+                : List.of();
 
         List<SlotDTO> slots = new ArrayList<>();
         LocalTime current = openTime;
@@ -58,6 +69,7 @@ public class SlotServiceImpl implements SlotService {
             boolean hasOverlap = false;
 
             for (Appointment appt : existingAppts) {
+                if (appt.getAppointmentDateTime() == null) continue;
                 if (appt.getAppointmentStatus() == AppointmentStatus.BOOKED || appt.getAppointmentStatus() == AppointmentStatus.PENDING) {
                     LocalTime apptStart = appt.getAppointmentDateTime().toLocalTime();
                     long apptDuration = (appt.getServiceOffered() != null && appt.getServiceOffered().getDuration() != null)
@@ -80,7 +92,11 @@ public class SlotServiceImpl implements SlotService {
                 slots.add(new SlotDTO(slotStart, true, "Available"));
             }
 
-            current = current.plusMinutes(stepMinutes);
+            LocalTime next = current.plusMinutes(stepMinutes);
+            if (next.isBefore(current) || next.equals(current)) {
+                break; // prevent infinite loop / midnight wrap-around
+            }
+            current = next;
         }
 
         return slots;

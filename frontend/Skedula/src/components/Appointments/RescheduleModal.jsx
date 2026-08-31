@@ -13,6 +13,16 @@ function RescheduleModal({ appointment, onClose, onSuccess }) {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const extractTimeStr = (rawTime) => {
+    if (!rawTime) return '';
+    if (typeof rawTime === 'string') return rawTime.slice(0, 5);
+    if (Array.isArray(rawTime)) {
+      const [h, m] = rawTime;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+    return String(rawTime).slice(0, 5);
+  };
+
   useEffect(() => {
     let ignore = false;
     const fetchSlots = async () => {
@@ -21,8 +31,13 @@ function RescheduleModal({ appointment, onClose, onSuccess }) {
       try {
         const res = await axios.get(`${baseUrl}/public/services/${appointment.serviceOffered}/slots?date=${selectedDate}`);
         if (ignore) return;
-        setSlots(res.data || []);
+        const raw = res.data;
+        const availableSlots = Array.isArray(raw?.data)
+          ? raw.data
+          : (Array.isArray(raw) ? raw : []);
+        setSlots(availableSlots);
       } catch (err) {
+        console.error('Failed to fetch slots for reschedule:', err);
         setSlots([]);
       } finally {
         if (!ignore) setLoadingSlots(false);
@@ -110,14 +125,14 @@ function RescheduleModal({ appointment, onClose, onSuccess }) {
 
           {slots.length > 0 ? (
             <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
-              {slots.map(s => {
-                const timeStr = s.time?.slice(0, 5);
+              {slots.map((s, idx) => {
+                const timeStr = extractTimeStr(s.time);
                 const isSelected = selectedTime === timeStr;
                 const isAvailable = s.available;
 
                 return (
                   <button
-                    key={timeStr}
+                    key={timeStr || idx}
                     type="button"
                     disabled={!isAvailable}
                     onClick={() => setSelectedTime(timeStr)}

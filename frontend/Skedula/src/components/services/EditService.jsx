@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams, Link, Navigate } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient';
 import { toast } from 'react-toastify';
 import { showErrorToast } from '../../utils/errorHandler';
@@ -17,7 +17,46 @@ function EditService() {
     business: id || ''
   });
   const [loading, setLoading] = useState(false);
+  // null = still checking, true = owner confirmed, false = unauthorized
+  const [ownershipVerified, setOwnershipVerified] = useState(null);
   const navigate = useNavigate();
+
+  // Verify that the id in the URL matches the owner's own business before
+  // allowing access. This prevents URL-manipulation attacks such as
+  // /services/edit/999/123 where 999 is another owner's business.
+  useEffect(() => {
+    let ignore = false;
+    const verifyOwnership = async () => {
+      try {
+        const res = await apiClient.get('/business/get/user');
+        const myBusinessId = res.data?.data?.id;
+        if (!ignore) {
+          // Convert both to strings for a safe comparison (URL param is a string)
+          setOwnershipVerified(myBusinessId != null && String(myBusinessId) === String(id));
+        }
+      } catch (_) {
+        if (!ignore) setOwnershipVerified(false);
+      }
+    };
+    verifyOwnership();
+    return () => { ignore = true; };
+  }, [id]);
+
+  // Still verifying — show a spinner
+  if (ownershipVerified === null) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Not the owner of this business — redirect to 404
+  if (ownershipVerified === false) {
+    return <Navigate to="/404" replace />;
+  }
+
+
 
   const durationPresets = ['15', '30', '45', '60', '90', '120'];
 

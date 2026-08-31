@@ -35,4 +35,6 @@ public interface AdminService {
     List<UserDTO> getAllUsers();
 
     UserDTO updateUserRole(Long userId, Role role, boolean addRole);
+
+    com.arpit.Skedula.Skedula.dto.AdminEscrowResponseDTO getAdminEscrowSummary();
 }

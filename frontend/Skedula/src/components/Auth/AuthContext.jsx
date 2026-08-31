@@ -244,14 +244,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const userRoles = Array.isArray(user?.roles)
+    ? user.roles.map(r => String(r).toUpperCase().replace('ROLE_', ''))
+    : (user?.roles ? [String(user.roles).toUpperCase().replace('ROLE_', '')] : []);
+
+  const isUserAdmin = Boolean(
+    role === 'ADMIN' ||
+    userRoles.includes('ADMIN') ||
+    localStorage.getItem('userRole') === 'ADMIN'
+  );
+
   const value = {
     isAuthenticated,
     loading,
     user,
     role,
-    isOwner: role === 'OWNER',
-    isCustomer: role === 'CUSTOMER',
-    isAdmin: role === 'ADMIN',
+    userRoles,
+    isOwner: role === 'OWNER' || userRoles.includes('OWNER'),
+    isCustomer: role === 'CUSTOMER' || userRoles.includes('CUSTOMER'),
+    isAdmin: isUserAdmin,
     login,
     logout,
     signup,

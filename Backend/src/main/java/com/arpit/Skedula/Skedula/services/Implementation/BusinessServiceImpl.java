@@ -282,10 +282,32 @@ public class BusinessServiceImpl implements BusinessService {
     }
 
     private BusinessDTO convertToDTO(Business business) {
-        BusinessDTO businessDTO = modelMapper.map(business, BusinessDTO.class);
-        businessDTO.setOwner(business.getOwner() != null ? business.getOwner().getId() : null);
-        businessDTO.setCategory(business.getCategory() != null ? business.getCategory() : "Spa & Wellness");
-        return businessDTO;
+        BusinessDTO dto = new BusinessDTO();
+        dto.setId(business.getId());
+        dto.setBusinessId(business.getBusinessId());
+        dto.setOwner(business.getOwner() != null ? business.getOwner().getId() : null);
+        dto.setName(business.getName());
+        dto.setCategory(business.getCategory() != null ? business.getCategory() : "Spa & Wellness");
+        dto.setDescription(business.getDescription());
+        dto.setEmail(business.getEmail());
+        dto.setPhone(business.getPhone());
+        dto.setAddress(business.getAddress());
+        dto.setCity(business.getCity());
+        dto.setState(business.getState());
+        dto.setCountry(business.getCountry());
+        dto.setZipCode(business.getZipCode());
+        dto.setMapLink(business.getMapLink());
+        dto.setLatitude(business.getLatitude());
+        dto.setLongitude(business.getLongitude());
+        dto.setCancellationCutoffMinutes(business.getCancellationCutoffMinutes());
+        dto.setCancellationFeePercentage(business.getCancellationFeePercentage());
+        dto.setIdentity(business.getIdentity());
+        dto.setCRNNumber(business.getCRNNumber());
+        dto.setGSTNumber(business.getGSTNumber());
+        dto.setOpenTime(business.getOpenTime());
+        dto.setCloseTime(business.getCloseTime());
+        dto.setStatus(business.getStatus());
+        return dto;
     }
 
     private BusinessCard convertToCard(Business business) {

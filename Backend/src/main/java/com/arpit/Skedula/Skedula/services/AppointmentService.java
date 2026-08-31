@@ -51,4 +51,12 @@ public interface AppointmentService {
     void cancelAllAppointmentsByBusinessId(Long id);
 
     void cancelAllAppointmentsByServiceOfferedId(Long id);
+
+    /**
+     * Returns true if the currently authenticated user is either:
+     * (a) the customer who booked this appointment, or
+     * (b) the owner of the business that this appointment belongs to.
+     * Used as a SpEL expression in @PreAuthorize.
+     */
+    boolean isOwnerOrBusinessOwner(Long appointmentId);
 }
