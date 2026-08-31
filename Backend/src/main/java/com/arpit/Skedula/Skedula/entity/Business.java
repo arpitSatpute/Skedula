@@ -27,6 +27,10 @@ public class Business {
     private String name;
     private String description;
 
+    // Service category (e.g. Salons & Hair Styling, Dental Clinics, etc.)
+    @Builder.Default
+    private String category = "Spa & Wellness";
+
     private String email;
     private String phone;
 
@@ -39,6 +43,17 @@ public class Business {
     // Share Link of Google Map
     private String mapLink;
 
+    // Geographic coordinates for distance / near-me filtering
+    private Double latitude;
+    private Double longitude;
+
+    // Cancellation policy configuration
+    @Builder.Default
+    private Integer cancellationCutoffMinutes = 120; // Default: 2 hours
+
+    @Builder.Default
+    private Double cancellationFeePercentage = 20.0; // Default: 20%
+
     private String identity;
     private String CRNNumber;
 
@@ -49,15 +64,10 @@ public class Business {
 
     private BusinessStatus status;
 
-
-
     @OneToMany(mappedBy = "business", cascade = CascadeType.ALL)
     private List<BusinessServiceOffered> serviceOffered;
 
     @OneToMany(cascade = CascadeType.ALL)
     private List<Appointment> appointments;
-
-
-    // Add any other business-related fields here
 
 }

@@ -28,6 +28,4 @@ public class RazorpayAmount {
 
     @OneToMany(mappedBy = "razorpay_amount", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RazorPayTransaction> transaction;
-
-
 }

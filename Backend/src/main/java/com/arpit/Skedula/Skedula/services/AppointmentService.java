@@ -2,10 +2,10 @@ package com.arpit.Skedula.Skedula.services;
 
 import com.arpit.Skedula.Skedula.card.AppointmentCard;
 import com.arpit.Skedula.Skedula.dto.AppointmentDTO;
+import com.arpit.Skedula.Skedula.dto.CancellationPreviewDTO;
 import com.arpit.Skedula.Skedula.entity.Appointment;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -16,6 +16,10 @@ public interface AppointmentService {
 
     AppointmentDTO approveAppointment(Long id);
 
+    AppointmentDTO rescheduleAppointment(Long id, LocalDateTime newDateTime);
+
+    CancellationPreviewDTO getCancellationPreview(Long id);
+
     List<AppointmentCard> getPendingAppointmentRequest(Long businessId);
 
     AppointmentCard getAppointmentById(Long id);
@@ -23,12 +27,6 @@ public interface AppointmentService {
     AppointmentDTO cancelAppointmentByCustomer(Long id);
 
     AppointmentDTO cancelAppointmentByOwner(Long id);
-//
-//    List<AppointmentDTO> getAllAppointmentByStatusRoleUserId(AppointmentStatus status, Role role, Long userId);
-//
-//    List<AppointmentDTO> getAllAppointmentByStatusRoleUserIdDate(AppointmentStatus status, Role role, Long userId, LocalDate date);
-//
-//    List<AppointmentDTO> getAllAppointmentByStatusRoleUserIdServiceId(AppointmentStatus status, Role role, Long userId, Long serviceId);
 
     List<AppointmentCard> getAppointmentByCustomerId(Long customerId);
 
@@ -53,5 +51,4 @@ public interface AppointmentService {
     void cancelAllAppointmentsByBusinessId(Long id);
 
     void cancelAllAppointmentsByServiceOfferedId(Long id);
-
 }

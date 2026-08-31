@@ -10,10 +10,11 @@ import com.arpit.Skedula.Skedula.strategies.WalletPaymentStrategies;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
-
 
     private final PaymentRepository paymentRepository;
     private final WalletPaymentStrategies walletPaymentStrategies;
@@ -44,5 +45,11 @@ public class PaymentServiceImpl implements PaymentService {
     public void refundBookedAppointmentPayment(Appointment appointment) {
         Payment payment = paymentRepository.findByAppointment(appointment).orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
         walletPaymentStrategies.refundBookedAppointmentPayment(payment);
+    }
+
+    @Override
+    public void refundBookedAppointmentPayment(Appointment appointment, BigDecimal refundAmount) {
+        Payment payment = paymentRepository.findByAppointment(appointment).orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
+        walletPaymentStrategies.refundBookedAppointmentPayment(payment, refundAmount);
     }
 }

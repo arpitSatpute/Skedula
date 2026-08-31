@@ -4,6 +4,8 @@ import com.arpit.Skedula.Skedula.entity.Appointment;
 import com.arpit.Skedula.Skedula.entity.Payment;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+
 @Service
 public interface PaymentService {
 
@@ -14,5 +16,6 @@ public interface PaymentService {
     void refundPayment(Appointment appointment);
 
     void refundBookedAppointmentPayment(Appointment appointment);
-}
 
+    void refundBookedAppointmentPayment(Appointment appointment, BigDecimal refundAmount);
+}

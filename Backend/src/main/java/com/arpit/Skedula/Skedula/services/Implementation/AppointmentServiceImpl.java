@@ -1,21 +1,23 @@
-// File: `src/main/java/com/arpit/Skedula/Skedula/services/Implementation/AppointmentServiceImpl.java`
 package com.arpit.Skedula.Skedula.services.Implementation;
 
 import com.arpit.Skedula.Skedula.card.AppointmentCard;
 import com.arpit.Skedula.Skedula.dto.AppointmentDTO;
+import com.arpit.Skedula.Skedula.dto.CancellationPreviewDTO;
 import com.arpit.Skedula.Skedula.entity.*;
 import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
 import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.*;
 import com.arpit.Skedula.Skedula.services.AppointmentService;
-
 import com.arpit.Skedula.Skedula.services.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,41 +32,52 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final PaymentService paymentService;
     private final WalletRepository walletRepository;
 
-
     @Override
     @Transactional
     public AppointmentDTO bookAppointment(AppointmentDTO appointmentDTO) {
-
         LocalDateTime apptDateTime = appointmentDTO.getDateTime().withSecond(0).withNano(0);
         appointmentDTO.setDateTime(apptDateTime);
         if(apptDateTime.isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Appointment date cannot be in the past.");
         }
 
-        if(appointmentRepository.existsByServiceOffered_IdAndAppointmentDateTimeAndAppointmentStatus(
-                appointmentDTO.getServiceOffered(),
-                appointmentDTO.getDateTime(),
-                AppointmentStatus.BOOKED)) {
-            throw new RuntimeException("Requested Slot is not available. Please choose another time or date.");
+        Business business = businessRepository.findById(appointmentDTO.getBusinessId())
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + appointmentDTO.getBusinessId()));
+
+        BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(appointmentDTO.getServiceOffered())
+                .orElseThrow(() -> new ResourceNotFoundException("Service not found"));
+
+        if(apptDateTime.toLocalTime().isBefore(business.getOpenTime()) ||
+           apptDateTime.toLocalTime().isAfter(business.getCloseTime().minusMinutes(serviceOffered.getDuration()))) {
+            throw new RuntimeException("Appointment time must be within business operating hours: " +
+                    business.getOpenTime() + " - " + business.getCloseTime().minusMinutes(serviceOffered.getDuration()));
         }
 
-        // Getting Total Slots Count in ServiceOffered
-        Business business = businessRepository.findById(appointmentDTO.getBusinessId()).orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + appointmentDTO.getBusinessId()));
-
-
-        BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(appointmentDTO.getServiceOffered()).orElseThrow(() -> new ResourceNotFoundException("Service not found"));
-
-        if(apptDateTime.toLocalTime().isBefore(business.getOpenTime()) || apptDateTime.toLocalTime().isAfter(business.getCloseTime().minusMinutes(serviceOffered.getDuration()))) {
-            throw new RuntimeException("Appointment time must be within business operating hours: " + business.getOpenTime() + " - " + business.getCloseTime().minusMinutes(serviceOffered.getDuration()));
-        }
-
-        Long total = serviceOffered.getTotalSlots();
-
-        // Getting count of already available services, date and status
-
+        // Concurrency / Overlap check on this date
         LocalDateTime startOfDay = apptDateTime.toLocalDate().atStartOfDay();
         LocalDateTime endOfDay = apptDateTime.toLocalDate().atTime(23, 59, 59);
 
+        List<Appointment> dayAppts = appointmentRepository.findByBusiness_IdAndAppointmentDateTimeBetween(
+                business.getId(), startOfDay, endOfDay
+        );
+
+        LocalTime reqStart = apptDateTime.toLocalTime();
+        LocalTime reqEnd = reqStart.plusMinutes(serviceOffered.getDuration());
+
+        for (Appointment existing : dayAppts) {
+            if (existing.getAppointmentStatus() == AppointmentStatus.BOOKED || existing.getAppointmentStatus() == AppointmentStatus.PENDING) {
+                LocalTime exStart = existing.getAppointmentDateTime().toLocalTime();
+                long exDur = existing.getServiceOffered() != null && existing.getServiceOffered().getDuration() != null
+                        ? existing.getServiceOffered().getDuration() : 60L;
+                LocalTime exEnd = exStart.plusMinutes(exDur);
+
+                if (reqStart.isBefore(exEnd) && exStart.isBefore(reqEnd)) {
+                    throw new RuntimeException("Requested slot conflicts with an existing booking. Please choose another time or date.");
+                }
+            }
+        }
+
+        Long total = serviceOffered.getTotalSlots();
         Long booked = appointmentRepository.countByServiceOffered_IdAndAppointmentDateTimeBetweenAndAppointmentStatus(
                 appointmentDTO.getServiceOffered(),
                 startOfDay,
@@ -72,23 +85,111 @@ public class AppointmentServiceImpl implements AppointmentService {
                 AppointmentStatus.BOOKED
         );
 
-//        Long booked = appointmentRepository.countByServiceOffered_IdAndAppointmentDateTimeAndAppointmentStatus(appointmentDTO.getServiceOffered(), appointmentDTO.getDateTime().toLocalDate(), AppointmentStatus.BOOKED);
         Customer customer = customerRepository.findById(appointmentDTO.getBookedBy())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointmentDTO.getBookedBy()));
-        Wallet customerWallet = walletRepository.findByUser_Id(customer.getUser().getId()).orElseThrow(() -> new ResourceNotFoundException("Customer wallet not found with id: " + customer.getUser().getId()));
+        Wallet customerWallet = walletRepository.findByUser_Id(customer.getUser().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Customer wallet not found with id: " + customer.getUser().getId()));
+
         if(customerWallet.getBalance().compareTo(serviceOffered.getPrice()) < 0) {
             throw new RuntimeException("Insufficient balance in wallet to book the appointment.");
         }
         if(booked >= total) {
             throw new RuntimeException("No slots available for the selected service on the given date.");
         }
+
         appointmentDTO.setAppointmentId(generateAppointmentId());
         Appointment newAppointment = convertToEntity(appointmentDTO, serviceOffered, customer);
         newAppointment.setAppointmentStatus(AppointmentStatus.PENDING);
 
         appointmentRepository.save(newAppointment);
-        AppointmentDTO result = convertToDTO(newAppointment);
-        return result;
+        return convertToDTO(newAppointment);
+    }
+
+    @Override
+    @Transactional
+    public AppointmentDTO rescheduleAppointment(Long id, LocalDateTime newDateTime) {
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
+
+        if (appointment.getAppointmentStatus() != AppointmentStatus.BOOKED && appointment.getAppointmentStatus() != AppointmentStatus.PENDING) {
+            throw new RuntimeException("Only Booked or Pending appointments can be rescheduled.");
+        }
+
+        LocalDateTime apptDateTime = newDateTime.withSecond(0).withNano(0);
+        if (apptDateTime.isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Rescheduled date & time cannot be in the past.");
+        }
+
+        Business business = appointment.getBusiness();
+        BusinessServiceOffered serviceOffered = appointment.getServiceOffered();
+
+        if (apptDateTime.toLocalTime().isBefore(business.getOpenTime()) ||
+            apptDateTime.toLocalTime().isAfter(business.getCloseTime().minusMinutes(serviceOffered.getDuration()))) {
+            throw new RuntimeException("Rescheduled time must be within business operating hours: " +
+                    business.getOpenTime() + " - " + business.getCloseTime().minusMinutes(serviceOffered.getDuration()));
+        }
+
+        // Conflict check for new slot
+        LocalDateTime startOfDay = apptDateTime.toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = apptDateTime.toLocalDate().atTime(23, 59, 59);
+
+        List<Appointment> dayAppts = appointmentRepository.findByBusiness_IdAndAppointmentDateTimeBetween(
+                business.getId(), startOfDay, endOfDay
+        );
+
+        LocalTime reqStart = apptDateTime.toLocalTime();
+        LocalTime reqEnd = reqStart.plusMinutes(serviceOffered.getDuration());
+
+        for (Appointment existing : dayAppts) {
+            if (!existing.getId().equals(appointment.getId()) &&
+                (existing.getAppointmentStatus() == AppointmentStatus.BOOKED || existing.getAppointmentStatus() == AppointmentStatus.PENDING)) {
+                LocalTime exStart = existing.getAppointmentDateTime().toLocalTime();
+                long exDur = existing.getServiceOffered() != null && existing.getServiceOffered().getDuration() != null
+                        ? existing.getServiceOffered().getDuration() : 60L;
+                LocalTime exEnd = exStart.plusMinutes(exDur);
+
+                if (reqStart.isBefore(exEnd) && exStart.isBefore(reqEnd)) {
+                    throw new RuntimeException("The selected slot conflicts with another booking. Please select another slot.");
+                }
+            }
+        }
+
+        appointment.setAppointmentDateTime(apptDateTime);
+        appointment.setRescheduledAt(LocalDateTime.now());
+        Appointment saved = appointmentRepository.save(appointment);
+        return convertToDTO(saved);
+    }
+
+    @Override
+    public CancellationPreviewDTO getCancellationPreview(Long id) {
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
+
+        BigDecimal total = appointment.getServiceOffered() != null ? appointment.getServiceOffered().getPrice() : BigDecimal.ZERO;
+        Business business = appointment.getBusiness();
+        int cutoff = business.getCancellationCutoffMinutes() != null ? business.getCancellationCutoffMinutes() : 120;
+        double feePct = business.getCancellationFeePercentage() != null ? business.getCancellationFeePercentage() : 20.0;
+
+        long minutesRemaining = Duration.between(LocalDateTime.now(), appointment.getAppointmentDateTime()).toMinutes();
+        boolean isLate = minutesRemaining < cutoff;
+
+        BigDecimal fee = BigDecimal.ZERO;
+        BigDecimal refund = total;
+
+        if (isLate) {
+            fee = total.multiply(BigDecimal.valueOf(feePct / 100.0)).setScale(2, RoundingMode.HALF_UP);
+            refund = total.subtract(fee).max(BigDecimal.ZERO);
+        }
+
+        return CancellationPreviewDTO.builder()
+                .isLateCancellation(isLate)
+                .totalAmount(total)
+                .cancellationFee(fee)
+                .refundAmount(refund)
+                .cutoffMinutes(cutoff)
+                .feePercentage(feePct)
+                .minutesRemaining(minutesRemaining)
+                .build();
     }
 
     @Override
@@ -97,54 +198,35 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
 
         LocalDateTime apptDateTime = appointment.getAppointmentDateTime().withSecond(0).withNano(0);
-
         if(apptDateTime.isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Cannot approve appointment for past date.");
         }
 
         BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(appointment.getServiceOffered().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + appointment.getServiceOffered().getId()));
-        Customer customer = customerRepository.findById(appointment.getBookedBy().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointment.getBookedBy().getId()));
-
 
         LocalDateTime startOfDay = apptDateTime.toLocalDate().atStartOfDay();
         LocalDateTime endOfDay = apptDateTime.toLocalDate().atTime(23, 59, 59);
 
         Long booked = appointmentRepository.countByServiceOffered_IdAndAppointmentDateTimeBetweenAndAppointmentStatus(
-                serviceOffered.getId(),
+                appointment.getServiceOffered().getId(),
                 startOfDay,
                 endOfDay,
                 AppointmentStatus.BOOKED
         );
 
-        Long total = serviceOffered.getTotalSlots();
-
-        Wallet customerWallet = walletRepository.findByUser_Id(customer.getUser().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Customer wallet not found with id: " + customer.getUser().getId()));
-        if(customerWallet.getBalance().compareTo(serviceOffered.getPrice()) < 0) {
-            appointment.setAppointmentStatus(AppointmentStatus.CANCELLED);
-            appointmentRepository.save(appointment);
-            throw new RuntimeException("Insufficient balance in customer wallet to book the appointment.");
-        }
-
-        if(booked >= total) {
+        if(booked >= serviceOffered.getTotalSlots()) {
             throw new RuntimeException("No slots available for the selected service on the given date.");
         }
 
         appointment.setAppointmentStatus(AppointmentStatus.BOOKED);
-
-        // Save the appointment first
         Appointment savedAppointment = appointmentRepository.save(appointment);
 
-        // Wallet Transaction
         paymentService.createNewPayment(savedAppointment);
         paymentService.processPayment(savedAppointment);
 
-        // Return the saved appointment as DTO
         return convertToDTO(savedAppointment);
     }
-
 
     @Override
     @Transactional
@@ -152,16 +234,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
 
-        BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(appointment.getServiceOffered().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + appointment.getServiceOffered()));
-        Customer customer = customerRepository.findById(appointment.getBookedBy().getId()).orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointment.getBookedBy()));
-
         appointment.setAppointmentStatus(AppointmentStatus.REJECTED);
-
         appointmentRepository.save(appointment);
-
         return convertToDTO(appointment);
-
     }
 
     @Override
@@ -169,20 +244,23 @@ public class AppointmentServiceImpl implements AppointmentService {
     public AppointmentDTO doneAppointment(Long id) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
-
-        BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(appointment.getServiceOffered().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + appointment.getServiceOffered()));
-        Customer customer = customerRepository.findById(appointment.getBookedBy().getId()).orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + appointment.getBookedBy()));
-
+        if(appointment.getAppointmentStatus() != AppointmentStatus.BOOKED) {
+            throw new RuntimeException("Only booked appointments can be marked as done.");
+        }
         appointment.setAppointmentStatus(AppointmentStatus.DONE);
-
-
         appointmentRepository.save(appointment);
-
-        // Rating if possible
-
         return convertToDTO(appointment);
+    }
 
+    @Override
+    public List<AppointmentCard> getPendingAppointmentRequest(Long businessId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
+
+        List<Appointment> appointmentList = appointmentRepository.findByBusiness_IdAndAppointmentStatus(businessId, AppointmentStatus.PENDING);
+        return appointmentList.stream()
+                .map(this::convertToCard)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -190,92 +268,60 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
         return convertToCard(appointment);
-
     }
-
-    @Override
-    public List<AppointmentCard> getPendingAppointmentRequest(Long businessId) {
-        Business business = businessRepository.findById(businessId).orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
-        List<Appointment> appointmentList = appointmentRepository.findByBusinessAndAppointmentStatus(business, AppointmentStatus.PENDING);
-        if (appointmentList.isEmpty()) {
-            throw new ResourceNotFoundException("No pending appointments found for the given business.");
-        }
-        return appointmentList.stream()
-                .map(this::convertToCard)
-                .toList();
-    }
-
-    @Override
-    public List<AppointmentCard> getAppointmentByCustomerId(Long customerId) {
-        Customer customer = customerRepository.findById(customerId).orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
-        List<Appointment> appointmentList = appointmentRepository.findByBookedBy(customer);
-        if (appointmentList.isEmpty()) {
-            throw new ResourceNotFoundException("No appointments found for the given customer.");
-
-        }
-        return appointmentList.stream()
-                .map(this::convertToCard)
-                .toList();
-    }
-
 
     @Override
     @Transactional
     public AppointmentDTO cancelAppointmentByCustomer(Long id){
-        Appointment appointment = appointmentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
-        appointment.setAppointmentStatus(AppointmentStatus.CANCELLED);
-        appointmentRepository.save(appointment);
-
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
+        cancelBooking(id);
         return convertToDTO(appointment);
     }
 
     @Override
     @Transactional
     public AppointmentDTO cancelAppointmentByOwner(Long id){
-        Appointment appointment = appointmentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
         appointment.setAppointmentStatus(AppointmentStatus.CANCELLED);
-
-        // TODO Wallet Transaction from Business to Customer
+        appointmentRepository.save(appointment);
         paymentService.refundPayment(appointment);
-        // TODO Notify Customer about cancellation
-
-
-        return (convertToDTO(appointmentRepository.save(appointment)));
+        return convertToDTO(appointment);
     }
 
+    @Override
+    public List<AppointmentCard> getAppointmentByCustomerId(Long customerId) {
+        List<Appointment> appointmentList = appointmentRepository.findByBookedBy_Id(customerId);
+        return appointmentList.stream()
+                .map(this::convertToCard)
+                .toList();
+    }
 
     @Override
     public List<AppointmentCard> getAllAppointmentsByBusinessIdAndServiceId(Long businessId, Long serviceId) {
-        Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
-        BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(serviceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + serviceId));
         List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndServiceOffered_Id(businessId, serviceId);
-
         return appointments.stream()
                 .map(this::convertToCard)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public  List<AppointmentCard> getAllAppointmentsByBusinessId(Long businessId) {
-        Business business = businessRepository.findById(businessId)
+    public List<AppointmentCard> getAllAppointmentsByBusinessId(Long businessId) {
+        businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
 
         List<Appointment> appointments = appointmentRepository.findByBusiness_Id(businessId);
-
         return appointments.stream()
                 .map(this::convertToCard)
                 .collect(Collectors.toList());
-
     }
 
     @Override
-     public List<AppointmentCard> getAppointmentsOnAndAfterDate(Long businessId) {
-        Business business = businessRepository.findById(businessId)
+    public List<AppointmentCard> getAppointmentsOnAndAfterDate(Long businessId) {
+        businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
         List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateTimeIsGreaterThanEqual(businessId, LocalDateTime.now());
-
         return appointments.stream()
                 .map(this::convertToCard)
                 .collect(Collectors.toList());
@@ -283,7 +329,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public List<AppointmentCard> getAppointmentsBeforeDate(Long businessId) {
-        Business business = businessRepository.findById(businessId)
+        businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
         List<Appointment> appointments = appointmentRepository.findByBusiness_IdAndAppointmentDateTimeBefore(businessId, LocalDateTime.now());
         return appointments.stream()
@@ -293,7 +339,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public List<AppointmentCard> getAppointmentBydate(LocalDateTime dateTime, Long businessId) {
-        Business business = businessRepository.findById(businessId)
+        businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
         LocalDateTime startOfDay = dateTime.toLocalDate().atStartOfDay();
         LocalDateTime endOfDay = dateTime.toLocalDate().atTime(23, 59, 59);
@@ -309,14 +355,17 @@ public class AppointmentServiceImpl implements AppointmentService {
     public Void cancelBooking(Long id) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
-        if(appointment.getAppointmentStatus() != AppointmentStatus.BOOKED) {
-            throw new RuntimeException("Only booked appointments can be cancelled.");
+        if(appointment.getAppointmentStatus() != AppointmentStatus.BOOKED && appointment.getAppointmentStatus() != AppointmentStatus.PENDING) {
+            throw new RuntimeException("Only active booked or pending appointments can be cancelled.");
         }
+
+        CancellationPreviewDTO preview = getCancellationPreview(id);
+
         appointment.setAppointmentStatus(AppointmentStatus.CANCELLED);
         appointmentRepository.save(appointment);
 
-
-        paymentService.refundBookedAppointmentPayment(appointment);
+        // If it was already BOOKED, payment was processed, so refund according to server-calculated policy
+        paymentService.refundBookedAppointmentPayment(appointment, preview.getRefundAmount());
 
         return null;
     }
@@ -324,7 +373,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional
     public void cancelAllAppointmentsByBusinessId(Long id) {
-        Business business = businessRepository.findById(id)
+        businessRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + id));
         List<Appointment> appointments = appointmentRepository.findByBusiness_Id(id);
         List<Appointment> bookedAppointments = appointments.stream()
@@ -346,7 +395,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional
     public void cancelAllAppointmentsByServiceOfferedId(Long id) {
-        BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(id)
+        businessServiceOfferedRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
 
         List<Appointment> appointments = appointmentRepository.findByServiceOffered_Id(id);
@@ -364,12 +413,10 @@ public class AppointmentServiceImpl implements AppointmentService {
         for(Appointment appointment : pendingAppointments) {
             rejectAppointment(appointment.getId());
         }
-
     }
 
     private AppointmentCard convertToCard(Appointment newAppointment) {
         AppointmentCard result = new AppointmentCard();
-
         result.setId(newAppointment.getId());
         result.setAppointmentId(newAppointment.getAppointmentId());
         result.setBookedBy(newAppointment.getBookedBy().getId());
@@ -381,12 +428,12 @@ public class AppointmentServiceImpl implements AppointmentService {
         result.setNotes(newAppointment.getNotes());
         result.setBusinessId(newAppointment.getServiceOffered().getBusiness().getId());
         result.setBid(newAppointment.getServiceOffered().getBusiness().getBusinessId());
+        result.setRescheduledAt(newAppointment.getRescheduledAt());
         return result;
     }
 
     public AppointmentDTO convertToDTO(Appointment newAppointment) {
         AppointmentDTO result = new AppointmentDTO();
-
         result.setId(newAppointment.getId());
         result.setAppointmentId(newAppointment.getAppointmentId());
         result.setBookedBy(newAppointment.getBookedBy().getId());
@@ -400,7 +447,6 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private Appointment convertToEntity(AppointmentDTO appointmentDTO, BusinessServiceOffered serviceOffered, Customer customer) {
         Appointment appointment = new Appointment();
-
         appointment.setId(appointmentDTO.getId());
         appointment.setAppointmentId(appointmentDTO.getAppointmentId());
         appointment.setAppointmentDateTime(appointmentDTO.getDateTime());
@@ -414,14 +460,12 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private boolean isAppointmentIdAvailable(String appointmentId) {
         return appointmentRepository.existsByAppointmentId(appointmentId);
-
     }
 
     private String generateAppointmentId() {
-        // Generate a unique appointment ID (e.g., using UUID or a custom logic)
         String apptId =  "APPT-" + System.currentTimeMillis();
         if (isAppointmentIdAvailable(apptId)) {
-             generateAppointmentId();
+             return generateAppointmentId();
         }
         return apptId;
     }

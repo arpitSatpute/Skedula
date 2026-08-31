@@ -5,14 +5,18 @@ import com.arpit.Skedula.Skedula.dto.BusinessDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 
 @Service
-public interface BusinessService{
-
+public interface BusinessService {
 
     Page<BusinessCard> getAllBusiness(Integer pageOffset, Integer pageSize);
 
     BusinessCard getBusinessById(Long id);
+
+    BusinessCard getBusinessBySlug(String slug);
+
+    List<BusinessCard> getNearbyBusinesses(Double lat, Double lng, Double radiusKm, String city, String state, String category);
 
     BusinessDTO register(BusinessDTO businessDTO);
 

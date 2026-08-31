@@ -262,7 +262,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         dto.setTotalSlots(services.getTotalSlots());
         dto.setDuration(services.getDuration());
         dto.setImageUrl(services.getImageUrl());
-        dto.setBusiness(services.getBusiness().getId());
+        if (services.getBusiness() != null) { dto.setBusiness(services.getBusiness().getId()); dto.setBusinessName(services.getBusiness().getName()); dto.setCategory(services.getBusiness().getCategory() != null ? services.getBusiness().getCategory() : "Spa & Wellness"); }
         dto.setStatus(services.getStatus());
 
         return dto;
@@ -278,7 +278,7 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         card.setTotalSlots(services.getTotalSlots());
         card.setDuration(services.getDuration());
         card.setImageUrl(services.getImageUrl());
-        card.setStatus(services.getStatus());
+        card.setStatus(services.getStatus()); if (services.getBusiness() != null) { card.setBusinessId(services.getBusiness().getId()); card.setBusinessName(services.getBusiness().getName()); card.setCategory(services.getBusiness().getCategory() != null ? services.getBusiness().getCategory() : "Spa & Wellness"); }
 
         return card;
     }

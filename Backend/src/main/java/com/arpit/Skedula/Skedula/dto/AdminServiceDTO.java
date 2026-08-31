@@ -1,16 +1,18 @@
-package com.arpit.Skedula.Skedula.card;
+package com.arpit.Skedula.Skedula.dto;
 
 import com.arpit.Skedula.Skedula.entity.enums.ServiceStatus;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
-@Setter
-public class BusinessServiceOfferedCard {
+public class AdminServiceDTO {
     private Long id;
     private String serviceOfferedId;
     private String name;
@@ -23,5 +25,4 @@ public class BusinessServiceOfferedCard {
 
     private Long businessId;
     private String businessName;
-    private String category;
 }

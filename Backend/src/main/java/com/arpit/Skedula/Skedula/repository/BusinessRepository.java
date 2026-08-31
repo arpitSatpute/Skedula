@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -34,4 +35,10 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
     Optional<Business> findByOwner_Id(Long id);
 
     Page<Business> findAllByStatus(PageRequest of, BusinessStatus businessStatus);
+
+    List<Business> findByStatus(BusinessStatus status);
+
+    Optional<Business> findByBusinessId(String businessId);
+
+    Optional<Business> findByNameIgnoreCase(String name);
 }

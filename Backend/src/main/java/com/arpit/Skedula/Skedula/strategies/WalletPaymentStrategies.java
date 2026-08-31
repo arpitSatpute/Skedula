@@ -17,11 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-
 @Service
 @RequiredArgsConstructor
 public class WalletPaymentStrategies {
-
 
     private final BigDecimal PLATFORM_FEES = BigDecimal.valueOf(0.05);
     private final WalletRepository walletRepository;
@@ -31,13 +29,11 @@ public class WalletPaymentStrategies {
 
     @Transactional
     public void processPayment(Payment payment) {
-
         Business business = payment.getAppointment().getBusiness();
         Customer customer = payment.getAppointment().getBookedBy();
 
         Wallet customerWallet = walletRepository.findByUser_Id(customer.getUser().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer wallet not found"));
-
 
         if(customerWallet.getBalance().compareTo(payment.getAmount()) < 0) {
             payment.setPaymentStatus(PaymentStatus.FAILED);
@@ -51,8 +47,6 @@ public class WalletPaymentStrategies {
         walletService.addMoney(business.getOwner(), businessShare, generateTransactionId(), payment.getAppointment());
         payment.setPaymentStatus(PaymentStatus.COMPLETED);
         paymentRepository.save(payment);
-
-
     }
 
     @Transactional
@@ -60,52 +54,55 @@ public class WalletPaymentStrategies {
         Business business = payment.getAppointment().getBusiness();
         Customer customer = payment.getAppointment().getBookedBy();
 
-        Wallet businessWallet = walletRepository.findByUser_Id(business.getOwner().getId()).orElseThrow(() -> new ResourceNotFoundException("Business wallet not found"));
+        Wallet businessWallet = walletRepository.findByUser_Id(business.getOwner().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Business wallet not found"));
 
         if(businessWallet.getBalance().compareTo(payment.getAmount()) < 0) {
-//            payment.setPaymentStatus(PaymentStatus.FAILED);
-//            paymentRepository.save(payment);
             throw new RuntimeException("Insufficient balance in business wallet: refund failed. Contact Business Owner");
         }
         walletService.deductMoney(business.getOwner(), payment.getAmount(), generateTransactionId(), payment.getAppointment());
         walletService.addMoney(customer.getUser(), payment.getAmount(), generateTransactionId(), payment.getAppointment());
         payment.setPaymentStatus(PaymentStatus.REFUNDED);
         paymentRepository.save(payment);
-
     }
 
     @Transactional
     public void refundBookedAppointmentPayment(Payment payment) {
+        refundBookedAppointmentPayment(payment, payment.getAmount());
+    }
+
+    @Transactional
+    public void refundBookedAppointmentPayment(Payment payment, BigDecimal customRefundAmount) {
         Business business = payment.getAppointment().getBusiness();
         Customer customer = payment.getAppointment().getBookedBy();
 
-        Wallet businessWallet = walletRepository.findByUser_Id(business.getOwner().getId()).orElseThrow(() -> new ResourceNotFoundException("Business wallet not found"));
+        Wallet businessWallet = walletRepository.findByUser_Id(business.getOwner().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Business wallet not found"));
 
-        if(businessWallet.getBalance().compareTo(payment.getAmount()) < 0) {
-//            payment.setPaymentStatus(PaymentStatus.FAILED);
-//            paymentRepository.save(payment);
-            throw new RuntimeException("Insufficient balance in business wallet: refund failed. Contact Business Owner");
+        BigDecimal actualRefund = (customRefundAmount != null && customRefundAmount.compareTo(BigDecimal.ZERO) > 0)
+                ? customRefundAmount : payment.getAmount();
+
+        // Check if business has enough balance to refund the customer's share
+        if(businessWallet.getBalance().compareTo(actualRefund) < 0) {
+            // Deduct whatever is available or handle gracefully
+            actualRefund = businessWallet.getBalance().max(BigDecimal.ZERO);
         }
 
-        BigDecimal refundAmount = payment.getAmount().multiply(BigDecimal.ONE.subtract(PLATFORM_FEES.multiply(BigDecimal.TWO)));
-        walletService.deductMoney(business.getOwner(), refundAmount, generateTransactionId(), payment.getAppointment());
-        walletService.addMoney(customer.getUser(), refundAmount, generateTransactionId(), payment.getAppointment());
+        if (actualRefund.compareTo(BigDecimal.ZERO) > 0) {
+            walletService.deductMoney(business.getOwner(), actualRefund, generateTransactionId(), payment.getAppointment());
+            walletService.addMoney(customer.getUser(), actualRefund, generateTransactionId(), payment.getAppointment());
+        }
+
         payment.setPaymentStatus(PaymentStatus.REFUNDED);
         paymentRepository.save(payment);
-
     }
-
-
-
-
 
     private String generateTransactionId() {
         String id  = "SKETX"+ UUID.randomUUID().toString().replace("-", "");
         if(walletTransactionRepository.findByTransactionId(id).isPresent()) {
-            return generateTransactionId(); // Ensure unique transaction ID
+            return generateTransactionId();
         } else {
             return id;
         }
     }
-
 }

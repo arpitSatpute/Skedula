@@ -14,6 +14,7 @@ import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.AppointmentRepository;
 import com.arpit.Skedula.Skedula.repository.BusinessRepository;
 import com.arpit.Skedula.Skedula.repository.BusinessServiceOfferedRepository;
+import com.arpit.Skedula.Skedula.repository.ReviewRepository;
 import com.arpit.Skedula.Skedula.repository.UserRepository;
 import com.arpit.Skedula.Skedula.services.AppointmentService;
 import com.arpit.Skedula.Skedula.services.BusinessService;
@@ -33,8 +34,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-
-
 @Service("businessService")
 @RequiredArgsConstructor
 public class BusinessServiceImpl implements BusinessService {
@@ -46,7 +45,7 @@ public class BusinessServiceImpl implements BusinessService {
     private final BusinessServiceOfferedRepository businessServiceOfferedRepository;
     private final AppointmentService appointmentService;
     private final BusinessServiceOfferedService businessServiceOfferedService;
-
+    private final ReviewRepository reviewRepository;
 
     @Override
     public Page<BusinessCard> getAllBusiness(Integer pageOffset, Integer pageSize) {
@@ -67,6 +66,101 @@ public class BusinessServiceImpl implements BusinessService {
         return convertToCard(business);
     }
 
+    @Override
+    public BusinessCard getBusinessBySlug(String slug) {
+        if (slug == null || slug.trim().isEmpty()) {
+            throw new ResourceNotFoundException("Invalid business slug");
+        }
+
+        Business business = null;
+
+        // 1. Try numeric ID
+        try {
+            Long id = Long.parseLong(slug.trim());
+            business = businessRepository.findById(id).orElse(null);
+        } catch (NumberFormatException ignored) {
+        }
+
+        // 2. Try by custom businessId (e.g. SBE1234567)
+        if (business == null) {
+            business = businessRepository.findByBusinessId(slug.trim()).orElse(null);
+        }
+
+        // 3. Try by Name (replacing dashes with spaces)
+        if (business == null) {
+            String nameWithSpaces = slug.trim().replace("-", " ");
+            business = businessRepository.findByNameIgnoreCase(nameWithSpaces).orElse(null);
+        }
+
+        // 4. Try exact name
+        if (business == null) {
+            business = businessRepository.findByNameIgnoreCase(slug.trim()).orElse(null);
+        }
+
+        if (business == null || business.getStatus() == BusinessStatus.UNAVAILABLE) {
+            throw new ResourceNotFoundException("Business not found or unavailable with slug: " + slug);
+        }
+
+        return convertToCard(business);
+    }
+
+    @Override
+    public List<BusinessCard> getNearbyBusinesses(Double lat, Double lng, Double radiusKm, String city, String state, String category) {
+        List<Business> allBusinesses = businessRepository.findByStatus(BusinessStatus.AVAILABLE);
+        double maxRadius = (radiusKm != null && radiusKm > 0) ? radiusKm : 10.0;
+
+        return allBusinesses.stream()
+                .filter(b -> {
+                    if (city != null && !city.trim().isEmpty() && !city.equalsIgnoreCase("all")) {
+                        if (b.getCity() == null || !b.getCity().trim().equalsIgnoreCase(city.trim())) {
+                            return false;
+                        }
+                    }
+                    if (state != null && !state.trim().isEmpty() && !state.equalsIgnoreCase("all")) {
+                        if (b.getState() == null || !b.getState().trim().equalsIgnoreCase(state.trim())) {
+                            return false;
+                        }
+                    }
+                    if (category != null && !category.trim().isEmpty() && !category.equalsIgnoreCase("all")) {
+                        if (b.getCategory() == null || !b.getCategory().trim().equalsIgnoreCase(category.trim())) {
+                            return false;
+                        }
+                    }
+                    return true;
+                })
+                .map(b -> {
+                    BusinessCard card = convertToCard(b);
+                    if (lat != null && lng != null && b.getLatitude() != null && b.getLongitude() != null) {
+                        double dist = haversineDistance(lat, lng, b.getLatitude(), b.getLongitude());
+                        card.setDistanceKm(Math.round(dist * 10.0) / 10.0);
+                    }
+                    return card;
+                })
+                .filter(card -> {
+                    if (lat != null && lng != null) {
+                        return card.getDistanceKm() != null && card.getDistanceKm() <= maxRadius;
+                    }
+                    return true;
+                })
+                .sorted((a, b) -> {
+                    if (a.getDistanceKm() != null && b.getDistanceKm() != null) {
+                        return Double.compare(a.getDistanceKm(), b.getDistanceKm());
+                    }
+                    return 0;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private double haversineDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371; // Earth radius in KM
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
 
     @Override
     @Transactional
@@ -80,210 +174,118 @@ public class BusinessServiceImpl implements BusinessService {
         if(isExist){
             throw new RuntimeException("Business with name: " + businessDTO.getName() + " already exists");
         }
-        businessDTO.setBusinessId(generateBusinessId());
-        businessDTO.setStatus(BusinessStatus.AVAILABLE);
-        Business business = convertToEntity(businessDTO, user);
-        businessRepository.save(business);
-        BusinessDTO result = convertToDTO(business);
-        return result;
+
+        Business business = modelMapper.map(businessDTO, Business.class);
+        business.setOwner(user);
+        business.setBusinessId(generateBusinessId());
+        business.setStatus(BusinessStatus.AVAILABLE);
+
+        if (businessDTO.getCategory() != null && !businessDTO.getCategory().trim().isEmpty()) {
+            business.setCategory(businessDTO.getCategory().trim());
+        } else {
+            business.setCategory("Spa & Wellness");
+        }
+
+        if (businessDTO.getLatitude() != null) business.setLatitude(businessDTO.getLatitude());
+        if (businessDTO.getLongitude() != null) business.setLongitude(businessDTO.getLongitude());
+        if (businessDTO.getCancellationCutoffMinutes() != null) business.setCancellationCutoffMinutes(businessDTO.getCancellationCutoffMinutes());
+        if (businessDTO.getCancellationFeePercentage() != null) business.setCancellationFeePercentage(businessDTO.getCancellationFeePercentage());
+
+        Business saved = businessRepository.save(business);
+        return convertToDTO(saved);
     }
 
     @Override
-    @Transactional
     public BusinessDTO updateBusiness(Long id, BusinessDTO businessDTO) {
         Business business = businessRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Business not found with id: " + id));
-        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_Id(id);
-        List<Appointment> appoointments = appointmentRepository.findByBusiness_Id(id);
 
-        // Do not allow changing the owner
-        business.setName(businessDTO.getName());
-        business.setBusinessId(businessDTO.getBusinessId());
-        business.setDescription(businessDTO.getDescription());
-        business.setAddress(businessDTO.getAddress());
-        business.setCity(businessDTO.getCity());
-        business.setState(businessDTO.getState());
-        business.setCountry(businessDTO.getCountry());
-        business.setPhone(businessDTO.getPhone());
-        business.setEmail(businessDTO.getEmail());
-        business.setZipCode(businessDTO.getZipCode());
-        business.setMapLink(businessDTO.getMapLink());
-//        business.setCRNNumber(businessDTO.getCRNNumber());
-//        business.setGSTNumber(businessDTO.getGSTNumber());
-        business.setOpenTime(businessDTO.getOpenTime());
-        business.setCloseTime(businessDTO.getCloseTime());
-//        business.setIdentity(businessDTO.getIdentity());
-        business.setAppointments(appoointments);
-        business.setServiceOffered(services);
+        if(businessDTO.getName() != null) business.setName(businessDTO.getName());
+        if(businessDTO.getCategory() != null) business.setCategory(businessDTO.getCategory());
+        if(businessDTO.getDescription() != null) business.setDescription(businessDTO.getDescription());
+        if(businessDTO.getAddress() != null) business.setAddress(businessDTO.getAddress());
+        if(businessDTO.getCity() != null) business.setCity(businessDTO.getCity());
+        if(businessDTO.getState() != null) business.setState(businessDTO.getState());
+        if(businessDTO.getCountry() != null) business.setCountry(businessDTO.getCountry());
+        if(businessDTO.getPhone() != null) business.setPhone(businessDTO.getPhone());
+        if(businessDTO.getEmail() != null) business.setEmail(businessDTO.getEmail());
+        if(businessDTO.getZipCode() != null) business.setZipCode(businessDTO.getZipCode());
+        if(businessDTO.getMapLink() != null) business.setMapLink(businessDTO.getMapLink());
+        if(businessDTO.getOpenTime() != null) business.setOpenTime(businessDTO.getOpenTime());
+        if(businessDTO.getCloseTime() != null) business.setCloseTime(businessDTO.getCloseTime());
+        if(businessDTO.getLatitude() != null) business.setLatitude(businessDTO.getLatitude());
+        if(businessDTO.getLongitude() != null) business.setLongitude(businessDTO.getLongitude());
+        if(businessDTO.getCancellationCutoffMinutes() != null) business.setCancellationCutoffMinutes(businessDTO.getCancellationCutoffMinutes());
+        if(businessDTO.getCancellationFeePercentage() != null) business.setCancellationFeePercentage(businessDTO.getCancellationFeePercentage());
 
-        // Save updated business
-        businessRepository.save(business);
-        return convertToDTO(business);
+        Business saved = businessRepository.save(business);
+        return convertToDTO(saved);
     }
 
     @Override
     public Page<BusinessDTO> getBusinessByKeyword(Integer pageOffset, Integer pageSize, String keyword) {
         Pageable pageable = PageRequest.of(pageOffset, pageSize);
-        Page<Business> bussinessPage = businessRepository.findByKeyword(keyword, pageable);
-        return bussinessPage.map(business -> modelMapper.map(business, BusinessDTO.class));
-    }
-
-
-    @Override
-    public BusinessDTO getBusinessByUser() {
-        String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(currentUser)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + currentUser));
-        if(!currentUser.equals(user.getEmail())){
-            throw new RuntimeException("User is not authorized to access this business");
-        }
-        if(!(user.getRoles().contains(Role.OWNER))){
-            throw new RuntimeException("User is not enrolled for OWNER Role ");
-        }
-
-        Business business = businessRepository.findByOwner_Id(user.getId()).orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + user.getId()));
-        if(business.getStatus() == BusinessStatus.UNAVAILABLE) {
-            throw new RuntimeException("Business status is not AVAILABLE");
-        }
-        return convertToDTO(business);
+        Page<Business> businessPage = businessRepository.findByKeyword(keyword, pageable);
+        List<BusinessDTO> dtos = businessPage.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        return new PageImpl<>(dtos, businessPage.getPageable(), businessPage.getTotalElements());
     }
 
     @Override
-    public boolean isOwnerOfProfile(Long businessId) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new RuntimeException("Business not found with id: " + businessId));
-        String owner = business.getOwner().getEmail();
-        if (!business.getOwner().getRoles().contains(Role.OWNER)) {
-            throw new RuntimeException("User is not enrolled for OWNER Role ");
-        }
-        return owner.equals(email);
+    public boolean isOwnerOfProfile(Long id) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+        Business business = businessRepository.findById(id).orElse(null);
+        return business != null && business.getOwner() != null && business.getOwner().getId() == user.getId();
     }
-
-    @Override
-    public boolean isCurrentUser(Long userId) {
-        String useremail = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found with userId: " + userId));
-        if(!user.getRoles().contains(Role.OWNER)){
-            throw new RuntimeException("User is not enrolled for OWNER Role ");
-        }
-        return user.getEmail().equals(useremail);
-    }
-
 
     @Override
     public boolean isOwnerOfAppointment(Long appointmentId) {
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new RuntimeException("User not found with username: " + username));
         Appointment appointment = appointmentRepository.findById(appointmentId).orElseThrow(() -> new RuntimeException("Appointment not found with id: " + appointmentId));
-        Business business = businessRepository.findByAppointments(appointment).orElseThrow(() -> new RuntimeException("Business not found for appointment with id: " + appointmentId));
-
-        if(!user.getRoles().contains(Role.OWNER)){
-            throw new RuntimeException("User is not enrolled for OWNER Role ");
-        }
-
-        return business.getOwner().getEmail().equals(user.getEmail());
-
+        return appointment.getBusiness() != null && appointment.getBusiness().getOwner() != null && appointment.getBusiness().getOwner().getId() == user.getId();
     }
 
     @Override
     public boolean isOwnerOfService(Long serviceId) {
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        BusinessServiceOffered serviceOffered = businessServiceOfferedRepository.findById(serviceId).orElseThrow(() -> new RuntimeException("Service not found with id: " + serviceId));
-        Business business = businessRepository.findById(serviceOffered.getBusiness().getId()).orElseThrow(() -> new RuntimeException("Business not found for service with id: " + serviceOffered.getBusiness()));
-
-        if(!user.getRoles().contains(Role.OWNER)){
-            throw new RuntimeException("User is not enrolled for OWNER Role ");
-        }
-        return business.getOwner().getEmail().equals(user.getEmail());
-
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+        BusinessServiceOffered service = businessServiceOfferedRepository.findById(serviceId).orElseThrow(() -> new RuntimeException("Service not found with id: " + serviceId));
+        return service.getBusiness() != null && service.getBusiness().getOwner() != null && service.getBusiness().getOwner().getId() == user.getId();
     }
 
     @Override
-    @Transactional
+    public boolean isCurrentUser(Long userId) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+        return userId != null && user.getId() == userId;
+    }
+
+    @Override
     public void removeBusinessById(Long id) {
-        Business business = businessRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + id));
-         // find and remove all appointments associated with the business
-        appointmentService.cancelAllAppointmentsByBusinessId(id);
-        businessServiceOfferedService.unavailableAllServicesByBusinessId(id);
+        Business business = businessRepository.findById(id).orElseThrow(() -> new RuntimeException("Business not found with id: " + id));
         business.setStatus(BusinessStatus.UNAVAILABLE);
-        business.setOwner(null);
         businessRepository.save(business);
     }
 
-
-    private Business convertToEntity(BusinessDTO businessDTO, User user) {
-
-        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_Id(businessDTO.getId());
-        List<Appointment> appointments = appointmentRepository.findByBusiness_Id(businessDTO.getId());
-
-        Business business = new Business();
-        business.setOwner(user);
-        business.setBusinessId(businessDTO.getBusinessId());
-        business.setName(businessDTO.getName());
-        business.setStatus(businessDTO.getStatus());
-        business.setDescription(businessDTO.getDescription());
-        business.setAddress(businessDTO.getAddress());
-        business.setCity(businessDTO.getCity());
-        business.setState(businessDTO.getState());
-        business.setCountry(businessDTO.getCountry());
-        business.setPhone(businessDTO.getPhone());
-        business.setEmail(businessDTO.getEmail());
-        business.setZipCode(businessDTO.getZipCode());
-        business.setMapLink(businessDTO.getMapLink());
-        business.setCRNNumber(businessDTO.getCRNNumber());
-        business.setGSTNumber(businessDTO.getGSTNumber());
-        business.setOpenTime(businessDTO.getOpenTime());
-        business.setIdentity(businessDTO.getIdentity());
-        business.setCloseTime(businessDTO.getCloseTime());
-        business.setServiceOffered(services);
-        business.setAppointments(appointments);
-
-
-        return business;
-
+    @Override
+    public BusinessDTO getBusinessByUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+        Business business = businessRepository.findByOwner_Id(user.getId()).orElse(null);
+        if(business == null) {
+            return null;
+        }
+        return convertToDTO(business);
     }
 
     private BusinessDTO convertToDTO(Business business) {
-
-        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_Id(business.getId());
-        List<BusinessServiceOfferedDTO> serviceDTO = services.stream()
-                .filter(s -> s.getBusiness() != null)
-                .map(businessServiceOfferedService::convertToDTO)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
-        List<Appointment> appointments = appointmentRepository.findByBusiness_Id(business.getId());
-        List<AppointmentDTO> appointmentDTO = appointments.stream()
-                .map(appointmentService::convertToDTO)
-                .collect(Collectors.toList());
-
-        BusinessDTO businessDTO = new BusinessDTO();
-        businessDTO.setId(business.getId());
-        businessDTO.setStatus(business.getStatus());
-        businessDTO.setOwner(business.getOwner().getId());
-        businessDTO.setName(business.getName());
-        businessDTO.setDescription(business.getDescription());
-        businessDTO.setAddress(business.getAddress());
-        businessDTO.setCity(business.getCity());
-        businessDTO.setState(business.getState());
-        businessDTO.setCountry(business.getCountry());
-        businessDTO.setPhone(business.getPhone());
-        businessDTO.setEmail(business.getEmail());
-        businessDTO.setZipCode(business.getZipCode());
-        businessDTO.setMapLink(business.getMapLink());
-        businessDTO.setCRNNumber(business.getCRNNumber());
-        businessDTO.setGSTNumber(business.getGSTNumber());
-        businessDTO.setIdentity(business.getIdentity());
-        businessDTO.setOpenTime(business.getOpenTime());
-        businessDTO.setCloseTime(business.getCloseTime());
-        businessDTO.setServiceOffered(serviceDTO);
-        businessDTO.setAppointments(appointmentDTO);
-        businessDTO.setBusinessId(business.getBusinessId());
-
+        BusinessDTO businessDTO = modelMapper.map(business, BusinessDTO.class);
+        businessDTO.setOwner(business.getOwner() != null ? business.getOwner().getId() : null);
+        businessDTO.setCategory(business.getCategory() != null ? business.getCategory() : "Spa & Wellness");
         return businessDTO;
-
     }
 
     private BusinessCard convertToCard(Business business) {
@@ -292,6 +294,7 @@ public class BusinessServiceImpl implements BusinessService {
         businessCard.setStatus(business.getStatus());
         businessCard.setBusinessId(business.getBusinessId());
         businessCard.setName(business.getName());
+        businessCard.setCategory(business.getCategory() != null ? business.getCategory() : "Spa & Wellness");
         businessCard.setDescription(business.getDescription());
         businessCard.setAddress(business.getAddress());
         businessCard.setCity(business.getCity());
@@ -303,6 +306,22 @@ public class BusinessServiceImpl implements BusinessService {
         businessCard.setMapLink(business.getMapLink());
         businessCard.setOpenTime(business.getOpenTime());
         businessCard.setCloseTime(business.getCloseTime());
+        businessCard.setLatitude(business.getLatitude());
+        businessCard.setLongitude(business.getLongitude());
+        businessCard.setCancellationCutoffMinutes(business.getCancellationCutoffMinutes() != null ? business.getCancellationCutoffMinutes() : 120);
+        businessCard.setCancellationFeePercentage(business.getCancellationFeePercentage() != null ? business.getCancellationFeePercentage() : 20.0);
+
+        if (reviewRepository != null) {
+            try {
+                Double avg = reviewRepository.getAverageRatingByBusinessId(business.getId());
+                Long total = reviewRepository.countByBusiness_Id(business.getId());
+                businessCard.setAverageRating(avg != null ? Math.round(avg * 10.0) / 10.0 : 5.0);
+                businessCard.setTotalReviews(total != null ? total : 0L);
+            } catch (Exception ignored) {
+                businessCard.setAverageRating(5.0);
+                businessCard.setTotalReviews(0L);
+            }
+        }
 
         return businessCard;
     }
@@ -312,8 +331,4 @@ public class BusinessServiceImpl implements BusinessService {
         String uniqueId = String.valueOf(System.currentTimeMillis());
         return prefix + uniqueId;
     }
-
-
-
-
 }

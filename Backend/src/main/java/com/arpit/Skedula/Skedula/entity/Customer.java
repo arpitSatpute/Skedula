@@ -25,12 +25,7 @@ public class Customer {
     @JoinColumn(name = "user_id")
     public User user;
 
-
-
     @OneToMany(fetch = FetchType.LAZY)
     List<Appointment> appointments;
-
-
-
 
 }

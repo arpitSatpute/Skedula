@@ -1,15 +1,19 @@
 package com.arpit.Skedula.Skedula.controller;
 
+import com.arpit.Skedula.Skedula.card.BusinessCard;
+import com.arpit.Skedula.Skedula.dto.AdminAnalyticsDTO;
+import com.arpit.Skedula.Skedula.dto.AdminServiceDTO;
+import com.arpit.Skedula.Skedula.dto.UserDTO;
 import com.arpit.Skedula.Skedula.entity.Business;
 import com.arpit.Skedula.Skedula.entity.BusinessServiceOffered;
+import com.arpit.Skedula.Skedula.entity.enums.Role;
 import com.arpit.Skedula.Skedula.services.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,30 +23,68 @@ public class AdminController {
 
     private final AdminService adminService;
 
-    @PutMapping("/lock/business/{businessId}")
+    // Platform Analytics
+    @GetMapping("/analytics")
+    public ResponseEntity<AdminAnalyticsDTO> getPlatformAnalytics() {
+        return ResponseEntity.ok(adminService.getPlatformAnalytics());
+    }
+
+    // Business Management
+    @GetMapping("/businesses")
+    public ResponseEntity<List<BusinessCard>> getAllBusinesses(
+            @RequestParam(required = false, defaultValue = "ALL") String status,
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(adminService.getAllBusinesses(status, search));
+    }
+
+    @PutMapping("/business/{businessId}/approve")
+    public ResponseEntity<Business> makeBusinessAvailable(@PathVariable Long businessId) {
+        return ResponseEntity.ok(adminService.makeBusinessAvailable(businessId));
+    }
+
+    @PutMapping("/business/{businessId}/lock")
     public ResponseEntity<Void> changeBusinessAvailability(@PathVariable Long businessId) {
-        // Logic to change business availability
         return ResponseEntity.ok(adminService.changeBusinessAvailability(businessId));
     }
 
-    @PutMapping("/lock/service/{serviceId}")
+    @DeleteMapping("/business/{businessId}")
+    public ResponseEntity<Void> deleteBusiness(@PathVariable Long businessId) {
+        return ResponseEntity.ok(adminService.deleteBusiness(businessId));
+    }
+
+    // Service Management
+    @GetMapping("/services")
+    public ResponseEntity<List<AdminServiceDTO>> getAllServices(
+            @RequestParam(required = false, defaultValue = "ALL") String status) {
+        return ResponseEntity.ok(adminService.getAllServices(status));
+    }
+
+    @PutMapping("/service/{serviceId}/lock")
     public ResponseEntity<Void> changeServiceAvailability(@PathVariable Long serviceId) {
-        // Logic to change service availability
         return ResponseEntity.ok(adminService.changeServiceAvailability(serviceId));
     }
 
-    @PutMapping("/unlock/business/{serviceId}")
-    public ResponseEntity<Business> makeBusinessAvailable(@PathVariable Long businessId) {
-        Business updatedBusiness = adminService.makeBusinessAvailable(businessId);
-        return ResponseEntity.ok(updatedBusiness);
-    }
-
-    @PutMapping("/unlock/service/{serviceId}")
+    @PutMapping("/service/{serviceId}/unlock")
     public ResponseEntity<BusinessServiceOffered> makeServiceAvailable(@PathVariable Long serviceId) {
-        BusinessServiceOffered updatedService = adminService.makeServiceAvailable(serviceId);
-        return ResponseEntity.ok(updatedService);
+        return ResponseEntity.ok(adminService.makeServiceAvailable(serviceId));
     }
 
+    @DeleteMapping("/service/{serviceId}")
+    public ResponseEntity<Void> deleteService(@PathVariable Long serviceId) {
+        return ResponseEntity.ok(adminService.deleteService(serviceId));
+    }
 
+    // Platform Users
+    @GetMapping("/users")
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
+        return ResponseEntity.ok(adminService.getAllUsers());
+    }
 
+    @PutMapping("/user/{userId}/role")
+    public ResponseEntity<UserDTO> updateUserRole(
+            @PathVariable Long userId,
+            @RequestParam Role role,
+            @RequestParam(defaultValue = "true") boolean addRole) {
+        return ResponseEntity.ok(adminService.updateUserRole(userId, role, addRole));
+    }
 }

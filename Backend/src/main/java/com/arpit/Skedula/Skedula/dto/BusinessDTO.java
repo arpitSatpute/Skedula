@@ -1,21 +1,17 @@
 package com.arpit.Skedula.Skedula.dto;
 
 import com.arpit.Skedula.Skedula.entity.enums.BusinessStatus;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
-import lombok.*;
-import org.hibernate.validator.constraints.Length;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.*;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalTime;
-import java.util.List;
 
 @Data
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
 public class BusinessDTO {
 
     private Long id;
@@ -24,65 +20,64 @@ public class BusinessDTO {
 
     private Long owner;
 
-    @NotNull
+    @NotBlank(message = "Business name cannot be blank")
+    @Size(min = 2, max = 100, message = "Business name must be between 2 and 100 characters")
     private String name;
 
-    @NotNull(message = "Service description cannot be null")
-    @Size(min = 50, max = 5000, message = "Service description must be between 50 and 5000 characters")
+    private String category;
+
+    @NotBlank(message = "Description cannot be blank")
+    @Size(max = 500, message = "Description must not exceed 500 characters")
     private String description;
 
-    @NotNull(message = "Enter Business Email")
+    @NotBlank(message = "Email cannot be blank")
+    @Email(message = "Invalid email format")
     private String email;
 
-    @NotNull(message = "Enter Business Phone Number")
+    @NotBlank(message = "Phone number cannot be blank")
+    @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Phone number must be between 10 and 15 digits and may start with '+'")
     private String phone;
 
-    @NotNull(message = "Required Address")
+    @NotBlank(message = "Address cannot be blank")
     private String address;
-    @NotNull(message = "Required City")
+
+    @NotBlank(message = "City cannot be blank")
     private String city;
-    @NotNull(message = "Required State")
+
+    @NotBlank(message = "State cannot be blank")
     private String state;
-    @NotNull(message = "Required Country")
+
+    @NotBlank(message = "Country cannot be blank")
     private String country;
-    @NotNull(message = "Required Zip Code")
+
+    @NotBlank(message = "Zip code cannot be blank")
+    @Pattern(regexp = "^[0-9]{5,6}$", message = "Zip code must be 5 or 6 digits")
     private String zipCode;
 
-    // Share Link of Google Map
-    @NotNull(message = "Required Google Maps Link")
     private String mapLink;
 
-    @NotNull(message = "Required Aadhaar Card Number")
-    @Size(min = 12, max = 12, message = "Aadhaar Card Number must be 12 digits")
-    @Pattern(regexp = "\\d{12}", message = "Aadhaar Card Number must be numeric")
+    private Double latitude;
+    private Double longitude;
+
+    private Integer cancellationCutoffMinutes;
+    private Double cancellationFeePercentage;
+
+    @NotBlank(message = "Identity cannot be blank")
     private String identity;
 
-    @NotNull(message = "Business CRN Number")
-    @Size(min = 21, max = 21, message = "CRN Number must be 14 characters")
-    @Pattern(
-            regexp = "^[A-Z]{1}\\d{5}[A-Z]{2}\\d{4}[A-Z]{3}\\d{6}$",
-            message = "CRN Number must follow the format: U12345MH2025PTC678901"
-    )
+    @NotBlank(message = "CRN Number cannot be blank")
     private String CRNNumber;
 
-    @NotNull(message = "Registered Business GST number")
-    @Size(min = 15, max = 15, message = "GST number must be 15 characters")
-    @Pattern(
-            regexp = "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$",
-            message = "GST number must follow the format: 22AAAAA0000A1Z5"
-    )
+    @NotBlank(message = "GST Number cannot be blank")
     private String GSTNumber;
 
-    @NotNull(message = "Open Time Required")
+    @NotNull(message = "Opening time cannot be null")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime openTime;
 
-    @NotNull(message = "Open Time Required")
+    @NotNull(message = "Closing time cannot be null")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime closeTime;
 
     private BusinessStatus status;
-
-    private List<BusinessServiceOfferedDTO> serviceOffered;
-    private List<AppointmentDTO> appointments;
-
-
 }

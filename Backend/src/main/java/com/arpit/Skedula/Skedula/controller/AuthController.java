@@ -13,10 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationServiceException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 
@@ -32,7 +29,6 @@ public class AuthController {
         return new ResponseEntity<>(authService.signup(signupDto), HttpStatus.CREATED);
     }
 
-
     @PostMapping(path = "/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO LoginRequestDTO, HttpServletResponse response) {
         String[] tokens = authService.login(LoginRequestDTO.getEmail(), LoginRequestDTO.getPassword(), LoginRequestDTO.getRole());
@@ -41,6 +37,11 @@ public class AuthController {
         response.addCookie(cookie);
         response.setHeader("Authorization", tokens[0]);
         return ResponseEntity.ok(new LoginResponseDTO(tokens[0]));
+    }
+
+    @PostMapping("/bootstrap-admin")
+    public ResponseEntity<UserDTO> bootstrapAdmin(@RequestParam String email) {
+        return ResponseEntity.ok(authService.bootstrapAdmin(email));
     }
 
     @PostMapping("/logout")

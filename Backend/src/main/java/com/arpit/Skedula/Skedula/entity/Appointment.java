@@ -37,8 +37,5 @@ public class Appointment {
     @JoinColumn(name = "business_id")
     private Business business;
 
-
-
-    // Add any other fields related to the appointment here
-
+    private LocalDateTime rescheduledAt;
 }

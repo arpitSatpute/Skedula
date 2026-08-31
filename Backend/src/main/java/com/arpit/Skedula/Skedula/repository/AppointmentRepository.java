@@ -4,35 +4,25 @@ import com.arpit.Skedula.Skedula.entity.Appointment;
 import com.arpit.Skedula.Skedula.entity.Business;
 import com.arpit.Skedula.Skedula.entity.Customer;
 import com.arpit.Skedula.Skedula.entity.enums.AppointmentStatus;
-import com.arpit.Skedula.Skedula.entity.enums.Role;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
 
-//    List<Appointment> getAppointmentByAppointmentStatusAndBookedBy_User_RolesAndBookedBy_Id(AppointmentStatus status, Role role, Long bookedById);
-//
-//    List<Appointment> getAppointmentByAppointmentStatusAndBookedBy_User_RolesAndBusiness_Id(AppointmentStatus status, Role role, Long businessId);
-//
-//    List<Appointment> getAppointmentByAppointmentStatusAndBookedBy_User_RolesAndBookedBy_IdAndAppointmentDateTime(AppointmentStatus status, Role role, Long userId, LocalDateTime date);
-//
-//    List<Appointment> getAppointmentByAppointmentStatusAndBookedBy_User_RolesAndBusiness_IdAndAppointmentDateTime(AppointmentStatus status, Role role, Long userId, LocalDateTime date);
-//
-//    List<Appointment> getAppointmentByAppointmentStatusAndBookedBy_User_RolesAndBookedBy_IdAndServiceOffered_Id(AppointmentStatus status, Role role, Long userId, Long serviceId);
-//
-//    List<Appointment> getAppointmentByAppointmentStatusAndBookedBy_User_RolesAndBusiness_IdAndServiceOffered_Id(AppointmentStatus status, Role role, Long userId, Long serviceId);
-
     Long countByServiceOffered_IdAndAppointmentDateTimeBetweenAndAppointmentStatus(Long serviceOffered, LocalDateTime start, LocalDateTime end, AppointmentStatus appointmentStatus);
 
     List<Appointment> findByBusinessAndAppointmentStatus(Business business, AppointmentStatus appointmentStatus);
 
+    List<Appointment> findByBusiness_IdAndAppointmentStatus(Long businessId, AppointmentStatus appointmentStatus);
+
     List<Appointment> findByBookedBy(Customer customer);
+
+    List<Appointment> findByBookedBy_Id(Long customerId);
 
     List<Appointment> findByBusiness_Id(Long businessId);
 
@@ -51,5 +41,4 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     List<Appointment> findAllByAppointmentDateTimeBeforeAndAppointmentStatus(LocalDateTime appointmentDateTime, AppointmentStatus appointmentStatus);
 
     boolean existsByServiceOffered_IdAndAppointmentDateTimeAndAppointmentStatus(Long serviceOffered, @NotNull(message = "Appointment Date cannot be null") LocalDateTime dateTime, AppointmentStatus appointmentStatus);
-
 }

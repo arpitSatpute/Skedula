@@ -2,18 +2,15 @@ package com.arpit.Skedula.Skedula.services.Implementation;
 
 import com.arpit.Skedula.Skedula.dto.SignupDTO;
 import com.arpit.Skedula.Skedula.dto.UserDTO;
-import com.arpit.Skedula.Skedula.entity.Business;
-import com.arpit.Skedula.Skedula.entity.Customer;
 import com.arpit.Skedula.Skedula.entity.User;
-import com.arpit.Skedula.Skedula.entity.Wallet;
 import com.arpit.Skedula.Skedula.entity.enums.Role;
 import com.arpit.Skedula.Skedula.exceptions.RuntimeConflictException;
 import com.arpit.Skedula.Skedula.repository.BusinessRepository;
 import com.arpit.Skedula.Skedula.repository.UserRepository;
-import com.arpit.Skedula.Skedula.repository.WalletRepository;
 import com.arpit.Skedula.Skedula.security.JWTService;
 import com.arpit.Skedula.Skedula.services.AuthService;
 import com.arpit.Skedula.Skedula.services.CustomerService;
+import com.arpit.Skedula.Skedula.services.UserService;
 import com.arpit.Skedula.Skedula.services.WalletService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,39 +20,33 @@ import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
-
-
 
     private final ModelMapper modelMapper;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JWTService jwtService;
-    private final UserServiceImpl userService;
+    private final UserService userService;
     private final CustomerService customerService;
     private final WalletService walletService;
-    private final WalletRepository walletRepository;
     private final BusinessRepository businessRepository;
-
-
 
     @Override
     public String[] login(String email, String password, Role role) {
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
         User user = (User) authentication.getPrincipal();
-        if(!(user.getRoles().contains(role))) {
+        if(role != null && !(user.getRoles().contains(role))) {
             throw new RuntimeConflictException("User with email: " + email + " does not have the required role: " + role);
         }
         String accessToken = jwtService.generateAccessToken(user);
@@ -72,29 +63,47 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeConflictException("The user already exists with email id: " + signupDto.getEmail());
         }
 
-
-        // Validate allowed roles
-        if (signupDto.getRole() != Role.CUSTOMER && signupDto.getRole() != Role.OWNER) {
-            throw new RuntimeConflictException("Role is required for signup");
+        if (signupDto.getRole() != Role.CUSTOMER && signupDto.getRole() != Role.OWNER && signupDto.getRole() != Role.ADMIN) {
+            throw new RuntimeConflictException("Valid role is required for signup (CUSTOMER, OWNER, ADMIN)");
         }
+
         User mappedUser = new User();
         mappedUser.setName(signupDto.getName());
         mappedUser.setEmail(signupDto.getEmail());
         mappedUser.setImageUrl(null);
         mappedUser.setPassword(signupDto.getPassword());
-        // Set the role and encode the password
         mappedUser.setRoles(Set.of(signupDto.getRole()));
         mappedUser.setPassword(passwordEncoder.encode(mappedUser.getPassword()));
         User savedUser = userRepository.save(mappedUser);
         walletService.createWallet(savedUser);
         UserDTO userDTO = modelMapper.map(savedUser, UserDTO.class);
 
-        // Create associated entity based on role
         if (signupDto.getRole() == Role.CUSTOMER) {
             customerService.createCustomer(savedUser);
         }
 
         return userDTO;
+    }
+
+    @Transactional
+    public UserDTO bootstrapAdmin(String email) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            user = new User();
+            user.setName("System Administrator");
+            user.setEmail(email);
+            user.setPassword(passwordEncoder.encode("admin123"));
+            user.setRoles(new HashSet<>(Set.of(Role.ADMIN, Role.CUSTOMER, Role.OWNER)));
+            user = userRepository.save(user);
+            walletService.createWallet(user);
+            customerService.createCustomer(user);
+        } else {
+            Set<Role> roles = new HashSet<>(user.getRoles());
+            roles.add(Role.ADMIN);
+            user.setRoles(roles);
+            user = userRepository.save(user);
+        }
+        return modelMapper.map(user, UserDTO.class);
     }
 
     @Override
@@ -106,13 +115,10 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public Void logout(HttpServletRequest request, HttpServletResponse response) {
-        SecurityContextHolder.clearContext();
         Cookie cookie = new Cookie("refreshToken", null);
         cookie.setHttpOnly(true);
         cookie.setMaxAge(0);
         response.addCookie(cookie);
         return null;
     }
-
-
 }

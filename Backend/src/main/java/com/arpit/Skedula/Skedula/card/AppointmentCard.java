@@ -5,7 +5,6 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -28,4 +27,5 @@ public class AppointmentCard {
     private Long businessId;
     private String bid;
 
+    private LocalDateTime rescheduledAt;
 }

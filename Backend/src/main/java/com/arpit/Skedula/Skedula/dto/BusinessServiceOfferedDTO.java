@@ -1,6 +1,5 @@
 package com.arpit.Skedula.Skedula.dto;
 
-import com.arpit.Skedula.Skedula.entity.Business;
 import com.arpit.Skedula.Skedula.entity.enums.ServiceStatus;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -8,7 +7,6 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.math.BigDecimal;
-
 
 @Data
 @Getter
@@ -27,6 +25,7 @@ public class BusinessServiceOfferedDTO {
     @NotNull(message = "Enter Service Description")
     @Size(min = 10, max = 100)
     private String description;
+
     @NotNull(message =" Enter Approx Service Duration")
     @Min(value = 1, message = "Duration must be greater than 1 minute")
     private Integer duration;
@@ -42,7 +41,8 @@ public class BusinessServiceOfferedDTO {
 
     private ServiceStatus status;
 
-    //Business ID
+    // Business ID
     private Long business;
-
+    private String businessName;
+    private String category;
 }
