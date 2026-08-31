@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient';
 import { toast } from 'react-toastify';
 import RescheduleModal from './RescheduleModal';
+import { showErrorToast } from '../../utils/errorHandler';
 
 function getStatusBadge(status) {
   switch (status?.toUpperCase()) {
@@ -154,7 +155,7 @@ function OwnerAppointments() {
       );
       toast.warn('Appointment cancelled and refund issued.');
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to cancel appointment');
+      showErrorToast(err, 'Failed to cancel appointment');
     }
   };
 
@@ -168,7 +169,7 @@ function OwnerAppointments() {
       );
       toast.warn('Appointment slot declined.');
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to decline appointment');
+      showErrorToast(err, 'Failed to decline appointment');
     }
   };
 
@@ -182,7 +183,7 @@ function OwnerAppointments() {
       );
       toast.info('Appointment approved & slot confirmed.');
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to approve appointment');
+      showErrorToast(err, 'Failed to approve appointment');
     }
   };
 
@@ -196,7 +197,7 @@ function OwnerAppointments() {
       );
       toast.info('Appointment marked as completed.');
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to mark as done');
+      showErrorToast(err, 'Failed to mark appointment as done');
     }
   };
 

@@ -8,6 +8,7 @@ import Layout from './components/Layout/Layout.jsx';
 import Home from './components/Home.jsx';
 import About from './components/About.jsx';
 import Contact from './components/Contact.jsx';
+import NotFound from './components/NotFound.jsx';
 
 // Auth
 import Login from './components/Auth/Login.jsx';
@@ -80,6 +81,10 @@ const router = createBrowserRouter([
       {
         path: "/businesses/explore",
         element: <ListBusiness />
+      },
+      {
+        path: "/404",
+        element: <NotFound />
       },
       {
         path: "/b/:slug",
@@ -184,6 +189,12 @@ const router = createBrowserRouter([
             element: <AdminDashboard />
           }
         ]
+      },
+
+      // 404 Catch-all Route
+      {
+        path: "*",
+        element: <NotFound />
       }
     ]
   }

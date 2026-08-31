@@ -3,6 +3,7 @@ import apiClient from '../Auth/ApiClient.js';
 import EditImage from './EditImage.jsx';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { showErrorToast } from '../../utils/errorHandler';
 
 const OwnerProfile = () => {
   const [business, setBusiness] = useState(null);
@@ -28,7 +29,7 @@ const OwnerProfile = () => {
         setBusiness(null);
         setBusinessNotFound(true);
       } else {
-        toast.error(err.response?.data?.error?.message || 'Failed to load profile or business data');
+        showErrorToast(err, 'Failed to load profile or business data');
       }
     } finally {
       setLoading(false);
@@ -105,7 +106,7 @@ const OwnerProfile = () => {
       setShowEditImage(false);
       fetchUserProfile();
     } catch (error) {
-      toast.error('Failed to update avatar. Please try again.');
+      toast.error('Failed to update avatar');
     }
   };
 

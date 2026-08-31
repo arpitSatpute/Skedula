@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import logo from '../../assets/skedula.png';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { BUSINESS_CATEGORIES, CATEGORY_META } from '../../constants/categories';
 
 const ListServices = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [durationFilter, setDurationFilter] = useState("all");
   const [priceSort, setPriceSort] = useState("default");
   const navigate = useNavigate();
@@ -54,6 +56,9 @@ const ListServices = () => {
 
   const filteredServices = services
     .filter(service => {
+      if (selectedCategory !== "all" && service.category && service.category.toLowerCase() !== selectedCategory.toLowerCase()) {
+        return false;
+      }
       if (durationFilter === "30" && service.duration > 30) return false;
       if (durationFilter === "60" && (service.duration <= 30 || service.duration > 60)) return false;
       if (durationFilter === "90plus" && service.duration <= 60) return false;
@@ -117,8 +122,36 @@ const ListServices = () => {
             </div>
           </div>
 
-          {/* Duration Chips */}
+          {/* Category Chips */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none">
+            <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider mr-1">Category:</span>
+            {["all", ...BUSINESS_CATEGORIES].map(cat => {
+              const meta = CATEGORY_META[cat];
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+                    selectedCategory === cat
+                      ? 'bg-brand-primary text-white shadow-2xs'
+                      : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60 hover:bg-neutral-border/40'
+                  }`}
+                >
+                  {cat === 'all' ? (
+                    <span>✦ All Categories</span>
+                  ) : (
+                    <>
+                      {meta?.icon && <i className={`bi ${meta.icon} text-xs`}></i>}
+                      <span>{cat}</span>
+                    </>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Duration Chips */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none border-t border-neutral-border/60 pt-3">
             <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider mr-1">Duration:</span>
             {[
               { id: 'all', label: 'All Durations' },
@@ -176,18 +209,27 @@ const ListServices = () => {
                     <div className="absolute top-3 right-3 bg-brand-secondary text-brand-primary text-xs font-bold px-3 py-1 rounded-full shadow-sm">
                       ₹{service.price}
                     </div>
-                    {service.status && (
-                      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs text-brand-primary text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-2xs border border-neutral-border/60">
-                        {service.status}
+                    {service.category && (
+                      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs text-brand-primary text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs border border-neutral-border/60 flex items-center gap-1">
+                        {CATEGORY_META[service.category]?.icon && <i className={`bi ${CATEGORY_META[service.category].icon} text-[9px]`}></i>}
+                        <span>{service.category}</span>
                       </div>
                     )}
                   </div>
 
                   {/* Card Body */}
                   <div className="p-6 space-y-3">
-                    <h3 className="text-lg font-bold font-primary text-brand-primary leading-snug">
-                      {service.name}
-                    </h3>
+                    <div>
+                      <h3 className="text-lg font-bold font-primary text-brand-primary leading-snug">
+                        {service.name}
+                      </h3>
+                      {service.businessName && (
+                        <p className="text-[11px] font-semibold text-text-secondary mt-0.5 flex items-center gap-1">
+                          <i className="bi bi-building text-[10px] text-brand-primary"></i>
+                          <span>{service.businessName}</span>
+                        </p>
+                      )}
+                    </div>
                     <p className="text-xs text-text-secondary line-clamp-2 leading-relaxed">
                       {service.description || 'Verified booking with expert practitioners.'}
                     </p>

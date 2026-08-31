@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import logo from '../logo/logo.png';
+import { showErrorToast } from '../../utils/errorHandler';
 
 const Business = () => {
   const { id } = useParams();
@@ -9,6 +10,7 @@ const Business = () => {
   const [services, setServices] = useState([]);
   const [reviewSummary, setReviewSummary] = useState({ averageRating: 5.0, totalReviews: 0, reviews: [] });
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const baseURl = import.meta.env.VITE_BACKEND_BASE_URL;
   const navigate = useNavigate();
 
@@ -25,11 +27,22 @@ const Business = () => {
         ]);
 
         if (ignore) return;
-        if (bizRes.status === 'fulfilled') setBusiness(bizRes.value.data?.data || bizRes.value.data);
+
+        if (bizRes.status === 'fulfilled') {
+          setBusiness(bizRes.value.data?.data || bizRes.value.data);
+        } else {
+          const status = bizRes.reason?.response?.status;
+          if (status === 404) {
+            setNotFound(true);
+          } else {
+            showErrorToast(bizRes.reason, 'Failed to load business profile');
+          }
+        }
+
         if (srvRes.status === 'fulfilled') setServices(srvRes.value.data?.data || srvRes.value.data || []);
         if (revRes.status === 'fulfilled') setReviewSummary(revRes.value.data || { averageRating: 5.0, totalReviews: 0, reviews: [] });
       } catch (err) {
-        // silent fail
+        if (!ignore) showErrorToast(err, 'Unable to load business profile');
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -80,26 +93,8 @@ const Business = () => {
     );
   }
 
-  if (!business) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center py-20 px-6 bg-mesh-subtle">
-        <div className="bg-white rounded-3xl p-10 max-w-md w-full text-center border border-neutral-border shadow-card space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center text-3xl mx-auto">
-            <i className="bi bi-building-exclamation"></i>
-          </div>
-          <h2 className="text-2xl font-bold font-primary text-brand-primary">Business Not Found</h2>
-          <p className="text-xs text-text-secondary">
-            This business may have been removed or the ID in the link is incorrect.
-          </p>
-          <Link
-            to="/businesses"
-            className="inline-block bg-brand-primary text-white px-6 py-2.5 rounded-full text-xs font-bold shadow-sm hover:bg-brand-dark transition-all cursor-pointer"
-          >
-            ← Return to Directory
-          </Link>
-        </div>
-      </div>
-    );
+  if (notFound || !business) {
+    return <Navigate to="/404" replace />;
   }
 
   const open = isOpenNow(business.openTime, business.closeTime);
@@ -128,6 +123,12 @@ const Business = () => {
                 <span className="bg-brand-secondary text-brand-primary text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
                   Verified Sanctuary
                 </span>
+                {business.category && (
+                  <span className="bg-brand-secondary/30 text-brand-primary border border-brand-primary/15 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
+                    <i className="bi bi-tag-fill text-[10px]"></i>
+                    <span>{business.category}</span>
+                  </span>
+                )}
                 <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
                   open
                     ? 'bg-emerald-50 text-emerald-800 border-emerald-200'

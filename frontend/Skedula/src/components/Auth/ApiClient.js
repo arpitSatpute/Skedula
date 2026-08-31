@@ -1,4 +1,5 @@
 import axios from "axios";
+import { parseApiError } from "../../utils/errorHandler";
 
 const apiClient = axios.create({
     baseURL: import.meta.env.VITE_BACKEND_BASE_URL,
@@ -12,8 +13,6 @@ apiClient.interceptors.request.use(
         
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
-        } else {
-            console.log("No token found for request");
         }
         
         return config;
@@ -23,7 +22,7 @@ apiClient.interceptors.request.use(
     }
 );
 
-// Response interceptor - Handle token refresh on 401
+// Response interceptor - Handle token refresh on 401 & normalize errors
 apiClient.interceptors.response.use(
     (response) => {
         return response;
@@ -31,35 +30,28 @@ apiClient.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-
+        // Handle 401 Token Refresh
         if (error.response && error.response.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {
-
-                // Call refresh API with proper format
                 const refreshResponse = await axios.post(
                     `${import.meta.env.VITE_BACKEND_BASE_URL}/auth/refresh`, 
-                    {}, // Empty body
+                    {},
                     {
-                        withCredentials: true, // Send cookies
+                        withCredentials: true,
                         headers: {
                             'Content-Type': 'application/json'
                         }
                     }
                 );
 
-
-                // Extract new access token
                 let newAccessToken = refreshResponse.data.data?.accessToken || 
                                    refreshResponse.data?.accessToken || 
                                    refreshResponse.data?.token;
 
                 if (newAccessToken) {
-                    // Store new access token
                     localStorage.setItem('accessToken', newAccessToken);
-
-                    // Update the failed request with new token and retry
                     originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
                     return apiClient.request(originalRequest);
                 } else {
@@ -67,17 +59,20 @@ apiClient.interceptors.response.use(
                 }
 
             } catch (refreshError) {
-                
-                // Clear all auth data on refresh failure
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('customer');
                 localStorage.removeItem('token');
                 localStorage.removeItem('userRole');
                 
-                // Redirect to login
                 window.location.href = '/login';
                 return Promise.reject(refreshError);
             }
+        }
+
+        // Attach sanitized, concise cleanMessage to error
+        error.cleanMessage = parseApiError(error);
+        if (error.response?.status === 404) {
+            error.isNotFound = true;
         }
         
         return Promise.reject(error);

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient';
 import EditImage from './EditImage';
 import { toast } from 'react-toastify';
+import { showErrorToast } from '../../utils/errorHandler';
 
 function CustomerProfile() {
   const [userData, setUserData] = useState({
@@ -38,7 +39,7 @@ function CustomerProfile() {
         loading: false,
         error: 'Unable to load profile. Please try again.'
       }));
-      toast.error(error.response?.data?.error?.message || 'Failed to load profile');
+      showErrorToast(error, 'Failed to load profile');
     }
 
     return () => { ignore = true; };
@@ -62,7 +63,7 @@ function CustomerProfile() {
       setShowEditImage(false);
       loadUserProfile();
     } catch (error) {
-      toast.error('Failed to upload image. Please try again.');
+      toast.error('Failed to upload image');
     }
   };
 

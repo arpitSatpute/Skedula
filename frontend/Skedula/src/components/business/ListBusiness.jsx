@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { BUSINESS_CATEGORIES, CATEGORY_META } from '../../constants/categories';
 
 function ListBusiness() {
   const [businesses, setBusinesses] = useState([]);
@@ -26,7 +27,7 @@ function ListBusiness() {
   const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
   const debounceRef = useRef(null);
 
-  const categories = ["all", "Wellness & Spa", "Clinics & Health", "Salons & Aesthetics", "Automotive", "Consulting", "Creative Studio"];
+  const categories = ["all", ...BUSINESS_CATEGORIES];
 
   const fetchBusinesses = useCallback(async (pageOffset = 0, searchTerm = "", ignore = false) => {
     try {
@@ -40,7 +41,8 @@ function ListBusiness() {
             lng: userLocation.lng,
             radius: radiusKm,
             city: selectedCity !== 'all' ? selectedCity : undefined,
-            state: selectedState !== 'all' ? selectedState : undefined
+            state: selectedState !== 'all' ? selectedState : undefined,
+            category: selectedCategory !== 'all' ? selectedCategory : undefined
           }
         });
         if (ignore) return;
@@ -180,6 +182,9 @@ function ListBusiness() {
   const availableStates = Array.from(new Set(businesses.map(b => b.state).filter(Boolean)));
 
   const filteredBusinesses = businesses.filter(b => {
+    if (selectedCategory !== 'all' && b.category && b.category.toLowerCase() !== selectedCategory.toLowerCase()) {
+      return false;
+    }
     if (onlyOpenNow && !isOpenNow(b.openTime, b.closeTime)) {
       return false;
     }
@@ -364,19 +369,29 @@ function ListBusiness() {
 
           {/* Quick Filter Categories */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                  selectedCategory === cat
-                    ? 'bg-brand-primary text-white shadow-2xs'
-                    : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
-                }`}
-              >
-                {cat === 'all' ? '✦ All Categories' : cat}
-              </button>
-            ))}
+            {categories.map(cat => {
+              const meta = CATEGORY_META[cat];
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+                    selectedCategory === cat
+                      ? 'bg-brand-primary text-white shadow-2xs'
+                      : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60 hover:bg-neutral-border/40'
+                  }`}
+                >
+                  {cat === 'all' ? (
+                    <span>✦ All Categories</span>
+                  ) : (
+                    <>
+                      {meta?.icon && <i className={`bi ${meta.icon} text-xs`}></i>}
+                      <span>{cat}</span>
+                    </>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -421,8 +436,14 @@ function ListBusiness() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            {business.category && (
+                              <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${CATEGORY_META[business.category]?.badge || 'bg-brand-secondary/40 text-brand-primary border-brand-primary/10'} flex items-center gap-1`}>
+                                {CATEGORY_META[business.category]?.icon && <i className={`bi ${CATEGORY_META[business.category].icon} text-[9px]`}></i>}
+                                <span>{business.category}</span>
+                              </span>
+                            )}
                             <span className="text-[10px] font-bold uppercase tracking-wider text-brand-primary bg-brand-secondary/40 px-2.5 py-0.5 rounded-full">
-                              Verified Business
+                              Verified
                             </span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                               open

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import logo from '../logo/logo.png';
 import BusinessQrModal from './BusinessQrModal';
+import { showErrorToast } from '../../utils/errorHandler';
 
 const ShareableBookingPage = () => {
   const { slug } = useParams();
@@ -12,6 +13,7 @@ const ShareableBookingPage = () => {
   const [reviewSummary, setReviewSummary] = useState({ averageRating: 5.0, totalReviews: 0, reviews: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
 
@@ -33,14 +35,27 @@ const ShareableBookingPage = () => {
           const res = await axios.get(`${baseURl}/public/getBusinessBySlug/${slug}`);
           bizData = res.data.data || res.data;
         } catch (slugErr) {
-          const fallbackRes = await axios.get(`${baseURl}/public/getBusiness/${slug}`);
-          bizData = fallbackRes.data.data || fallbackRes.data;
+          if (slugErr.response?.status === 404) {
+            // try by ID before giving up
+            try {
+              const fallbackRes = await axios.get(`${baseURl}/public/getBusiness/${slug}`);
+              bizData = fallbackRes.data.data || fallbackRes.data;
+            } catch (idErr) {
+              if (idErr.response?.status === 404) {
+                if (!ignore) setNotFound(true);
+                return;
+              }
+              throw idErr;
+            }
+          } else {
+            const fallbackRes = await axios.get(`${baseURl}/public/getBusiness/${slug}`);
+            bizData = fallbackRes.data.data || fallbackRes.data;
+          }
         }
 
         if (ignore) return;
         if (!bizData) {
-          setError('Business profile not found');
-          setLoading(false);
+          setNotFound(true);
           return;
         }
 
@@ -62,6 +77,7 @@ const ShareableBookingPage = () => {
         }
       } catch (err) {
         if (!ignore) {
+          showErrorToast(err, 'Unable to load this booking page');
           setError('Unable to load business booking page.');
         }
       } finally {
@@ -125,6 +141,8 @@ const ShareableBookingPage = () => {
     );
   }
 
+  if (notFound) return <Navigate to="/404" replace />;
+
   if (error || !business) {
     return (
       <div className="min-h-screen bg-neutral-background flex items-center justify-center p-4">
@@ -179,6 +197,12 @@ const ShareableBookingPage = () => {
                   <span className="bg-white/10 text-brand-secondary border border-white/15 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-xs">
                     Verified Sanctuary
                   </span>
+                  {business.category && (
+                    <span className="bg-white/15 text-brand-secondary border border-white/25 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 backdrop-blur-xs">
+                      <i className="bi bi-tag-fill text-[10px]"></i>
+                      <span>{business.category}</span>
+                    </span>
+                  )}
                   <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${
                     openStatus
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'

@@ -3,6 +3,8 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { AuthContext } from '../Auth/AuthContext';
 import apiClient from '../Auth/ApiClient';
 import { toast } from 'react-toastify';
+import { BUSINESS_CATEGORIES } from '../../constants/categories';
+import { showErrorToast } from '../../utils/errorHandler';
 
 function AddBusiness() {
   const { id } = useParams();
@@ -30,6 +32,7 @@ function AddBusiness() {
 
   const [formData, setFormData] = useState({
     name: '',
+    category: 'Spa & Wellness',
     description: '',
     email: '',
     phone: '',
@@ -62,6 +65,7 @@ function AddBusiness() {
           const businessData = JSON.parse(storedBusiness);
           setFormData({
             name: businessData.name || '',
+            category: businessData.category || 'Spa & Wellness',
             businessId: businessData.businessId || '',
             description: businessData.description || '',
             email: businessData.email || '',
@@ -85,6 +89,7 @@ function AddBusiness() {
             const businessData = response.data.data;
             setFormData({
               name: businessData.name || '',
+              category: businessData.category || 'Spa & Wellness',
               businessId: businessData.businessId || '',
               description: businessData.description || '',
               email: businessData.email || '',
@@ -105,7 +110,7 @@ function AddBusiness() {
         }
       } catch (error) {
         if (!ignore) {
-          toast.error(error.response?.data?.error?.message || 'Failed to load business');
+          showErrorToast(error, 'Failed to load business');
         }
       } finally {
         if (!ignore) setIsLoadingBusiness(false);
@@ -129,6 +134,7 @@ function AddBusiness() {
   const handleAutoFillSample = () => {
     setFormData({
       name: 'Aura Wellness & Aesthetics Sanctuary',
+      category: 'Spa & Wellness',
       description: 'Holistic skin therapies, restorative wellness treatments, and clinical consultations by certified experts.',
       email: currentUser?.email || 'contact@aurawellness.com',
       phone: '+91 98201 54321',
@@ -182,7 +188,7 @@ function AddBusiness() {
       }
     } catch (error) {
       if (!ignore) {
-        toast.error(error.response?.data?.error?.message || 'Failed to save business');
+        showErrorToast(error, 'Failed to save business');
       }
     } finally {
       if (!ignore) setLoading(false);
@@ -310,6 +316,25 @@ function AddBusiness() {
                     disabled={loading}
                     className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-xl py-3 px-4 text-xs font-semibold text-brand-primary outline-none transition-all"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+                    Primary Service Category *
+                  </label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => handleInputChange('category', e.target.value)}
+                    required
+                    disabled={loading}
+                    className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-xl py-3 px-4 text-xs font-semibold text-brand-primary outline-none transition-all cursor-pointer"
+                  >
+                    {BUSINESS_CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="sm:col-span-2">

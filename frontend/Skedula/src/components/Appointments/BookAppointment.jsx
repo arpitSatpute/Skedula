@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { showErrorToast } from '../../utils/errorHandler';
 
 function BookAppointment() {
   const { serviceId, businessId } = useParams();
@@ -210,7 +211,7 @@ function BookAppointment() {
             // Immediately execute the booking with the newly topped-up balance
             await executeBooking(cust.id);
           } catch (verifyErr) {
-            toast.error(verifyErr.response?.data?.error?.message || 'Payment verification failed.');
+            showErrorToast(verifyErr, 'Payment verification failed');
             setLoading(false);
           }
         },
@@ -233,7 +234,7 @@ function BookAppointment() {
       rzp.open();
 
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to book appointment.');
+      showErrorToast(err, 'Failed to book appointment');
       setLoading(false);
     }
   };

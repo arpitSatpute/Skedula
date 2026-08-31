@@ -1,16 +1,18 @@
 import React, { useEffect, useState, useContext } from 'react';
 import apiClient from '../Auth/ApiClient';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, Link, Navigate } from 'react-router-dom';
 import logo from '../../assets/skedula.png';
 import axios from 'axios';
 import ConfirmationModal from '../Common/ConfirmationModal.jsx';
 import { toast } from 'react-toastify';
 import { AuthContext } from '../Auth/AuthContext';
+import { showErrorToast } from '../../utils/errorHandler';
 
 function Services() {
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [notFound, setNotFound] = useState(false);
   const { id } = useParams();
   const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
   const navigate = useNavigate();
@@ -26,6 +28,10 @@ function Services() {
           try {
             response = await apiClient.get(`/services-offered/get/${id}`);
           } catch (e) {
+            if (e.response?.status === 404) {
+              setNotFound(true);
+              return;
+            }
             response = await axios.get(`${baseUrl}/public/getService/${id}`);
           }
         } else {
@@ -36,6 +42,11 @@ function Services() {
         setService(response.data.data);
       } catch (error) {
         if (ignore) return;
+        if (error.response?.status === 404) {
+          setNotFound(true);
+        } else {
+          showErrorToast(error, 'Failed to load service details');
+        }
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -96,24 +107,8 @@ function Services() {
     );
   }
 
-  if (!service) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center py-20 px-6 bg-mesh-subtle">
-        <div className="bg-white rounded-3xl p-10 max-w-md w-full text-center border border-neutral-border shadow-card space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center text-3xl mx-auto">
-            <i className="bi bi-calendar-x"></i>
-          </div>
-          <h2 className="text-2xl font-bold font-primary text-brand-primary">Service Not Found</h2>
-          <p className="text-xs text-text-secondary">This service may no longer be offered or has been updated.</p>
-          <Link
-            to="/services"
-            className="inline-block bg-brand-primary text-white px-6 py-2.5 rounded-full text-xs font-bold shadow-sm hover:bg-brand-dark transition-all cursor-pointer"
-          >
-            ← Back to Services
-          </Link>
-        </div>
-      </div>
-    );
+  if (notFound || !service) {
+    return <Navigate to="/404" replace />;
   }
 
   return (

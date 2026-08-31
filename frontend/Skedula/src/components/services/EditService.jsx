@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient';
 import { toast } from 'react-toastify';
+import { showErrorToast } from '../../utils/errorHandler';
 
 function EditService() {
   const { id, serviceId } = useParams();
@@ -53,7 +54,7 @@ function EditService() {
         navigate(`/services/${serviceId}`);
       }, 500);
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to update service');
+      showErrorToast(err, 'Failed to update service');
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient.js';
 import { toast } from 'react-toastify';
+import { showErrorToast } from '../../utils/errorHandler';
 
 function Wallet() {
   const [walletData, setWalletData] = useState({ balance: 0, transactions: [] });
@@ -33,7 +34,7 @@ function Wallet() {
         setWithdrawals(withdrawRes.value.data || []);
       }
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to load wallet ledger');
+      showErrorToast(err, 'Failed to load wallet ledger');
     } finally {
       setLoading(false);
     }
@@ -83,7 +84,7 @@ function Wallet() {
       setIfscCode('');
       fetchWalletData();
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || err.response?.data?.message || 'Withdrawal failed. Please try again.');
+      showErrorToast(err, 'Withdrawal failed. Please try again.');
     } finally {
       setWithdrawing(false);
     }

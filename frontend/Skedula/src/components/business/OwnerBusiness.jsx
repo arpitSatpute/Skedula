@@ -4,6 +4,7 @@ import apiClient from '../Auth/ApiClient.js';
 import ConfirmationModal from '../Common/ConfirmationModal.jsx';
 import BusinessQrModal from './BusinessQrModal.jsx';
 import { toast } from 'react-toastify';
+import { showErrorToast } from '../../utils/errorHandler';
 
 const OwnerBusiness = () => {
   const [business, setBusiness] = useState(null);
@@ -25,13 +26,9 @@ const OwnerBusiness = () => {
         }
       } catch (err) {
         if (err.response && err.response.status === 404) {
-          if (!ignore) {
-            setBusiness(null);
-          }
+          if (!ignore) setBusiness(null);
         } else {
-          if (!ignore) {
-            toast.error(err.response?.data?.error?.message || 'Failed to load business data');
-          }
+          if (!ignore) showErrorToast(err, 'Failed to load business data');
         }
       } finally {
         if (!ignore) setLoading(false);
@@ -111,7 +108,7 @@ const OwnerBusiness = () => {
       toast.info('Business deleted successfully!');
       setBusiness(null);
     } catch (error) {
-      toast.error(error.response?.data?.error?.message || 'Failed to delete business');
+      showErrorToast(error, 'Failed to delete business');
     } finally {
       setLoading(false);
     }

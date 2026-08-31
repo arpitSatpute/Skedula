@@ -1,3 +1,4 @@
+import { showErrorToast } from "../../utils/errorHandler";
 import React, { useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient';
@@ -56,7 +57,7 @@ function AddService() {
         navigate(`/services`);
       }, 1000);
     } catch (error) {
-      toast.error(error.response?.data?.error?.message || 'Failed to create service');
+      showErrorToast(error, 'Failed to create service');
     } finally {
       setLoading(false);
     }
