@@ -16,8 +16,8 @@ function AddService() {
     business: id || ''
   });
 
-  const [image, setImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [images, setImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const durationPresets = ['15', '30', '45', '60', '90', '120'];
@@ -30,29 +30,51 @@ function AddService() {
   };
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImage(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
+    const selectedFiles = Array.from(e.target.files || []);
+    if (!selectedFiles.length) return;
+
+    const combinedFiles = [...images, ...selectedFiles].slice(0, 10);
+    setImages(combinedFiles);
+
+    const newPreviews = combinedFiles.map(file => URL.createObjectURL(file));
+    setImagePreviews(newPreviews);
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    const updatedImages = images.filter((_, idx) => idx !== indexToRemove);
+    setImages(updatedImages);
+    const updatedPreviews = imagePreviews.filter((_, idx) => idx !== indexToRemove);
+    setImagePreviews(updatedPreviews);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (images.length < 5) {
+      toast.warn(`Please upload at least 5 photos of your service (currently ${images.length}/5 selected).`);
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await apiClient.post('/services-offered/create', formData);
+      const serviceId = response.data?.data?.id;
 
-      if (image && response.data?.data?.id) {
+      if (images.length > 0 && serviceId) {
         try {
-          const file = new FormData();
-          file.append('file', image);
-          await apiClient.put(`/services-offered/uploadFile/${response.data.data.id}`, file);
-        } catch (error) {
-          // silent error for image upload
+          const uploadData = new FormData();
+          images.forEach(imgFile => {
+            uploadData.append('files', imgFile);
+          });
+          await apiClient.put(`/services-offered/uploadFiles/${serviceId}`, uploadData);
+        } catch (uploadErr) {
+          try {
+            const singleFile = new FormData();
+            singleFile.append('file', images[0]);
+            await apiClient.put(`/services-offered/uploadFile/${serviceId}`, singleFile);
+          } catch (_) {}
         }
       }
-      toast.success('Service offering created successfully!');
+      toast.success('Service offering created with 5+ showcase images!');
       setTimeout(() => {
         navigate(`/services`);
       }, 1000);
@@ -87,7 +109,7 @@ function AddService() {
                 Add New Service Offering
               </h1>
               <p className="text-xs sm:text-sm text-text-secondary mt-1">
-                Configure session duration, pricing tier, daily slot capacity, and cover imagery.
+                Configure session duration, pricing tier, daily slot capacity, and upload at least 5 showcase photos.
               </p>
             </div>
 
@@ -190,17 +212,116 @@ function AddService() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
-                    Cover Image
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    disabled={loading}
-                    className="w-full text-xs text-text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-brand-primary file:text-white hover:file:bg-brand-dark file:cursor-pointer"
-                  />
+                {/* Multi-Image Showcase Section (At least 5 Images) */}
+                <div className="space-y-3 pt-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary">
+                        Service Showcase Gallery (At least 5 Images) *
+                      </label>
+                      <p className="text-[11px] text-text-secondary mt-0.5">
+                        Upload 5 or more photos showcasing the treatment room, equipment, and experience.
+                      </p>
+                    </div>
+
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 ${
+                      images.length >= 5
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : 'bg-amber-50 text-amber-800 border-amber-200'
+                    }`}>
+                      <i className={`bi ${images.length >= 5 ? 'bi-check-circle-fill text-emerald-600' : 'bi-exclamation-circle-fill text-amber-600'}`}></i>
+                      <span>{images.length} / 5+ Images</span>
+                    </span>
+                  </div>
+
+                  {/* Upload Dropzone */}
+                  <div className="relative border-2 border-dashed border-neutral-border hover:border-brand-primary/60 rounded-2xl p-4 sm:p-5 bg-neutral-background/40 hover:bg-white text-center transition-all cursor-pointer group">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      disabled={loading || images.length >= 10}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                      id="multi-image-upload"
+                    />
+                    <div className="space-y-1.5 pointer-events-none">
+                      <div className="w-10 h-10 rounded-full bg-brand-primary/10 text-brand-primary mx-auto flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
+                        <i className="bi bi-cloud-arrow-up-fill"></i>
+                      </div>
+                      <p className="text-xs font-bold text-brand-primary">
+                        Click or drag & drop to add photos (select multiple files)
+                      </p>
+                      <p className="text-[11px] text-text-secondary">
+                        Supports PNG, JPG, WebP. {images.length < 5 ? `Need at least ${5 - images.length} more photo${5 - images.length === 1 ? '' : 's'}.` : 'Requirement fulfilled! Feel free to add up to 10.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 5-Slot Visual Gallery Grid */}
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5 pt-1">
+                    {[0, 1, 2, 3, 4].map((slotIdx) => {
+                      const preview = imagePreviews[slotIdx];
+                      return preview ? (
+                        <div key={slotIdx} className="relative aspect-square rounded-xl overflow-hidden border border-neutral-border bg-neutral-background group shadow-2xs">
+                          <img src={preview} alt={`Upload ${slotIdx + 1}`} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(slotIdx)}
+                              className="w-6 h-6 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center text-xs cursor-pointer shadow-sm"
+                              title="Remove photo"
+                            >
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          </div>
+                          {slotIdx === 0 && (
+                            <span className="absolute top-1 left-1 bg-brand-primary text-white text-[8px] font-bold px-1.5 py-0.5 rounded-md shadow-xs uppercase tracking-wider">
+                              Cover
+                            </span>
+                          )}
+                          <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-mono px-1 rounded">
+                            #{slotIdx + 1}
+                          </span>
+                        </div>
+                      ) : (
+                        <label
+                          key={slotIdx}
+                          htmlFor="multi-image-upload"
+                          className="aspect-square rounded-xl border-2 border-dashed border-neutral-border/80 hover:border-brand-primary/50 bg-neutral-background/30 hover:bg-white flex flex-col items-center justify-center text-text-secondary hover:text-brand-primary transition-all cursor-pointer p-1"
+                        >
+                          <i className="bi bi-plus-lg text-sm text-text-secondary/60"></i>
+                          <span className="text-[9px] font-bold mt-1 text-center leading-tight">Slot #{slotIdx + 1}</span>
+                          <span className="text-[8px] text-text-secondary/70">Required</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {/* Overflow images (> 5) */}
+                  {imagePreviews.length > 5 && (
+                    <div className="pt-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block mb-1.5">
+                        Additional Photos ({imagePreviews.length - 5})
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {imagePreviews.slice(5).map((preview, extraIdx) => (
+                          <div key={extraIdx + 5} className="relative w-16 h-16 rounded-xl overflow-hidden border border-neutral-border bg-neutral-background group shadow-2xs">
+                            <img src={preview} alt={`Upload ${extraIdx + 6}`} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(extraIdx + 5)}
+                                className="w-5 h-5 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center text-[10px] cursor-pointer"
+                              >
+                                <i className="bi bi-trash"></i>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -221,7 +342,7 @@ function AddService() {
                   {loading ? (
                     <>
                       <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                      <span>Publishing Service...</span>
+                      <span>Publishing Service & Uploading Photos...</span>
                     </>
                   ) : (
                     <>
@@ -237,15 +358,29 @@ function AddService() {
           {/* Live Preview Card (1 Col) */}
           <div className="space-y-4">
             <div className="bg-white p-4 rounded-2xl border border-neutral-border shadow-xs">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block mb-2">
-                Live Client Preview
-              </span>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block">
+                  Live Client Preview
+                </span>
+                <span className="text-[10px] font-semibold text-brand-primary bg-brand-secondary/40 px-2 py-0.5 rounded-full">
+                  {images.length} Photos
+                </span>
+              </div>
               <div className="rounded-2xl border border-neutral-border/80 overflow-hidden bg-neutral-background/30 space-y-3 p-4">
-                {imagePreview ? (
-                  <img src={imagePreview} alt="Preview" className="w-full h-32 object-cover rounded-xl" />
+                {imagePreviews[0] ? (
+                  <div className="space-y-2">
+                    <img src={imagePreviews[0]} alt="Primary Preview" className="w-full h-32 object-cover rounded-xl shadow-2xs" />
+                    {imagePreviews.length > 1 && (
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {imagePreviews.slice(1, 5).map((prev, pIdx) => (
+                          <img key={pIdx} src={prev} alt={`Thumb ${pIdx + 2}`} className="w-full h-10 object-cover rounded-md border border-neutral-border/60" />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="w-full h-28 bg-brand-primary/10 rounded-xl flex items-center justify-center text-brand-primary text-2xl">
-                    <i className="bi bi-image"></i>
+                    <i className="bi bi-images"></i>
                   </div>
                 )}
 

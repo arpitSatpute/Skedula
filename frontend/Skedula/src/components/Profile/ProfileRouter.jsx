@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
+import { Navigate } from 'react-router-dom';
 import { AuthContext } from '../Auth/AuthContext';
 import CustomerProfile from './CustomerProfile';
-import OwnerProfile from './OwnerProfile';
 
 const ProfileRouter = () => {
   const { isOwner, loading } = useContext(AuthContext);
@@ -17,9 +17,9 @@ const ProfileRouter = () => {
     );
   }
 
-  // If user is a Business Owner, show the Owner Profile & Analytics Dashboard
+  // If user is a Business Owner, route directly to the main Business Management Hub
   if (isOwner) {
-    return <OwnerProfile />;
+    return <Navigate to="/businesses" replace />;
   }
 
   // Otherwise, show the Customer Profile
@@ -27,4 +27,3 @@ const ProfileRouter = () => {
 };
 
 export default ProfileRouter;
-

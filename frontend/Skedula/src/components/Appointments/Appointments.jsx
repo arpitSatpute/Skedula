@@ -104,9 +104,12 @@ function Appointments() {
   const filteredAppointments = appointments.filter(app => {
     const statusMatch = filter === 'all' || app.appointmentStatus?.toLowerCase() === filter.toLowerCase();
     const dateMatch = selectedDate === '' || new Date(app.dateTime).toISOString().split('T')[0] === selectedDate;
-    const searchMatch = !searchQuery ||
-      String(app.appointmentId || app.id).includes(searchQuery) ||
-      (app.notes && app.notes.toLowerCase().includes(searchQuery.toLowerCase()));
+    const query = searchQuery.trim().toLowerCase();
+    const searchMatch = !query ||
+      String(app.appointmentId || app.id).includes(query) ||
+      (app.notes && app.notes.toLowerCase().includes(query)) ||
+      (app.business && app.business.name && app.business.name.toLowerCase().includes(query)) ||
+      (app.businessName && app.businessName.toLowerCase().includes(query));
     return statusMatch && dateMatch && searchMatch;
   });
 
@@ -198,98 +201,141 @@ function Appointments() {
           </Link>
         </div>
 
-        {/* Filter Pills */}
-        <div className="bg-white rounded-3xl p-6 border border-neutral-border shadow-card space-y-6" data-animation-on-scroll="">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              {[
-                { id: 'all', label: 'All', count: counts.total },
-                { id: 'pending', label: 'Pending', count: counts.pending },
-                { id: 'booked', label: 'Confirmed', count: counts.booked },
-                { id: 'done', label: 'Completed', count: counts.done },
-                { id: 'cancelled', label: 'Cancelled', count: counts.cancelled },
-                { id: 'rejected', label: 'Declined', count: counts.rejected },
-              ].map(tab => (
+        {/* Search & Status Filter Controls */}
+        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-neutral-border shadow-card space-y-4" data-animation-on-scroll="">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
+            {/* Search Input */}
+            <div className="relative sm:col-span-2 lg:col-span-5">
+              <i className="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-sm"></i>
+              <input
+                type="text"
+                placeholder="Search by ID, business, or notes..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full bg-neutral-background/70 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-2xl py-3 pl-11 pr-9 text-xs sm:text-sm text-brand-primary outline-none transition-all font-medium placeholder:text-text-secondary/70"
+              />
+              {searchQuery && (
                 <button
-                  key={tab.id}
-                  onClick={() => setFilter(tab.id)}
-                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${filter === tab.id
-                      ? 'bg-brand-primary text-white shadow-2xs'
-                      : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
-                    }`}
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-neutral-border/60 hover:bg-neutral-border text-[10px] text-text-secondary hover:text-brand-primary flex items-center justify-center font-bold cursor-pointer transition-colors"
+                  title="Clear search"
                 >
-                  <span>{tab.label}</span>
-                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${filter === tab.id ? 'bg-white/20 text-white' : 'bg-neutral-border text-text-secondary'
-                    }`}>
-                    {tab.count}
-                  </span>
+                  ✕
                 </button>
-              ))}
+              )}
             </div>
 
-            {/* Search */}
-            <div className="w-full sm:w-64">
+            {/* Status Dropdown Menu */}
+            <div className="relative sm:col-span-1 lg:col-span-4">
               <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search by ID or notes..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-full py-2 pl-9 pr-4 text-xs font-bold text-brand-primary outline-none transition-all"
-                />
-                <i className="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary text-xs"></i>
+                <i className="bi bi-funnel-fill absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-primary/70 text-xs pointer-events-none"></i>
+                <select
+                  value={filter}
+                  onChange={e => setFilter(e.target.value)}
+                  className="w-full bg-neutral-background/70 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-2xl py-3 pl-9 pr-8 text-xs font-bold text-brand-primary outline-none transition-all cursor-pointer appearance-none truncate"
+                >
+                  <option value="all">✦ All Statuses ({counts.total})</option>
+                  <option value="pending">⏳ Pending Confirmation ({counts.pending})</option>
+                  <option value="booked">✓ Confirmed & Booked ({counts.booked})</option>
+                  <option value="done">★ Completed Sessions ({counts.done})</option>
+                  <option value="cancelled">✕ Cancelled ({counts.cancelled})</option>
+                  <option value="rejected">⛔ Declined ({counts.rejected})</option>
+                </select>
+                <i className="bi bi-chevron-down absolute right-3.5 top-1/2 -translate-y-1/2 text-text-secondary text-xs pointer-events-none"></i>
+              </div>
+            </div>
+
+            {/* Date Selector Dropdown */}
+            <div className="relative sm:col-span-1 lg:col-span-3">
+              <div className="relative">
+                <i className="bi bi-calendar-event absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-primary/70 text-xs pointer-events-none"></i>
+                <select
+                  value={selectedDate}
+                  onChange={e => setSelectedDate(e.target.value)}
+                  className="w-full bg-neutral-background/70 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-2xl py-3 pl-9 pr-8 text-xs font-bold text-brand-primary outline-none transition-all cursor-pointer appearance-none truncate"
+                >
+                  <option value="">All Scheduled Dates</option>
+                  {getAvailableDates().map(date => (
+                    <option key={date} value={date}>
+                      {formatDate(date)}
+                    </option>
+                  ))}
+                </select>
+                <i className="bi bi-chevron-down absolute right-3.5 top-1/2 -translate-y-1/2 text-text-secondary text-xs pointer-events-none"></i>
               </div>
             </div>
           </div>
 
-          {/* Quick Date Filters */}
-          <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-neutral-border/60">
-            <span className="text-xs font-bold uppercase tracking-wider text-text-secondary mr-2">Filter by Date:</span>
-            <button
-              onClick={setToday}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${selectedDate === new Date().toISOString().split('T')[0]
-                  ? 'bg-brand-primary text-white'
-                  : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
-                }`}
-            >
-              Today
-            </button>
-            <button
-              onClick={setTomorrow}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${selectedDate === new Date(Date.now() + 86400000).toISOString().split('T')[0]
-                  ? 'bg-brand-primary text-white'
-                  : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
-                }`}
-            >
-              Tomorrow
-            </button>
-
-            <select
-              value={selectedDate}
-              onChange={e => setSelectedDate(e.target.value)}
-              className="bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-xl py-1.5 px-3 text-xs font-bold text-brand-primary outline-none transition-all cursor-pointer"
-            >
-              <option value="">Specific Date</option>
-              {getAvailableDates().map(date => (
-                <option key={date} value={date}>
-                  {formatDate(date)}
-                </option>
-              ))}
-            </select>
-
-            {selectedDate && (
+          {/* Quick Date Jumps & Active Filters Row */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-neutral-border/60 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Quick:</span>
               <button
-                onClick={clearDateFilter}
-                className="text-xs font-bold text-brand-primary hover:underline ml-2 cursor-pointer"
+                type="button"
+                onClick={setToday}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  selectedDate === new Date().toISOString().split('T')[0]
+                    ? 'bg-brand-primary text-white shadow-2xs'
+                    : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
+                }`}
               >
-                Clear Date
+                Today
+              </button>
+              <button
+                type="button"
+                onClick={setTomorrow}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  selectedDate === new Date(Date.now() + 86400000).toISOString().split('T')[0]
+                    ? 'bg-brand-primary text-white shadow-2xs'
+                    : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
+                }`}
+              >
+                Tomorrow
+              </button>
+
+              {/* Active Filter Badges */}
+              {searchQuery.trim() && (
+                <span className="inline-flex items-center gap-1.5 bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-xs font-semibold">
+                  <span>"{searchQuery.trim()}"</span>
+                  <button type="button" onClick={() => setSearchQuery('')} className="hover:text-rose-600 font-bold cursor-pointer">×</button>
+                </span>
+              )}
+
+              {filter !== 'all' && (
+                <span className="inline-flex items-center gap-1.5 bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-xs font-semibold">
+                  <span className="capitalize">{filter}</span>
+                  <button type="button" onClick={() => setFilter('all')} className="hover:text-rose-600 font-bold cursor-pointer">×</button>
+                </span>
+              )}
+
+              {selectedDate && (
+                <span className="inline-flex items-center gap-1.5 bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-xs font-semibold">
+                  <span>{formatDate(selectedDate)}</span>
+                  <button type="button" onClick={clearDateFilter} className="hover:text-rose-600 font-bold cursor-pointer">×</button>
+                </span>
+              )}
+            </div>
+
+            {(searchQuery.trim() || filter !== 'all' || selectedDate !== '') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setFilter('all');
+                  setSelectedDate('');
+                }}
+                className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <i className="bi bi-arrow-counterclockwise"></i>
+                <span>Reset Filters</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* Appointments List Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-animation-on-scroll="">
+        {/* Appointments List Grid (Max 2 Cards Per Row) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6" data-animation-on-scroll="">
           {filteredAppointments.map(app => {
             const badge = getStatusBadge(app.appointmentStatus);
             const isBooked = app.appointmentStatus?.toLowerCase() === 'booked';

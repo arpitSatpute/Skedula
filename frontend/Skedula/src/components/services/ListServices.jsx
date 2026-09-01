@@ -70,6 +70,20 @@ const ListServices = () => {
       return 0;
     });
 
+  const hasActiveFilters = Boolean(
+    search.trim() ||
+    selectedCategory !== 'all' ||
+    durationFilter !== 'all' ||
+    priceSort !== 'default'
+  );
+
+  const resetAllFilters = () => {
+    setSearch('');
+    setSelectedCategory('all');
+    setDurationFilter('all');
+    setPriceSort('default');
+  };
+
   return (
     <div className="py-12 md:py-16 px-4 sm:px-6 bg-mesh-subtle">
       <div className="container mx-auto max-w-6xl space-y-10">
@@ -87,90 +101,134 @@ const ListServices = () => {
           </p>
         </div>
 
-        {/* Search & Filter Controls */}
-        <div className="bg-white p-6 rounded-3xl border border-neutral-border shadow-card space-y-4" data-animation-on-scroll="">
-          <div className="flex flex-col md:flex-row gap-3">
-            <div className="relative flex-1">
-              <i className="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-base"></i>
+        {/* Improvised Search & Filter Controls (Dropdown Driven) */}
+        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-neutral-border shadow-card space-y-4" data-animation-on-scroll="">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
+            {/* Search Input */}
+            <div className="relative sm:col-span-2 lg:col-span-5">
+              <i className="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-sm"></i>
               <input
                 type="text"
-                className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-2xl py-3.5 pl-11 pr-4 text-xs sm:text-sm text-brand-primary outline-none transition-all font-medium"
+                className="w-full bg-neutral-background/70 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-2xl py-3 pl-11 pr-9 text-xs sm:text-sm text-brand-primary outline-none transition-all font-medium placeholder:text-text-secondary/70"
                 placeholder="Search treatments by name, symptoms, or keyword..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
               {search && (
                 <button
+                  type="button"
                   onClick={() => setSearch("")}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-text-secondary hover:text-brand-primary font-bold cursor-pointer"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-neutral-border/60 hover:bg-neutral-border text-[10px] text-text-secondary hover:text-brand-primary flex items-center justify-center font-bold cursor-pointer transition-colors"
+                  title="Clear search"
                 >
                   ✕
                 </button>
               )}
             </div>
 
-            <div className="flex gap-2">
-              <select
-                value={priceSort}
-                onChange={e => setPriceSort(e.target.value)}
-                className="bg-neutral-background/60 border border-neutral-border focus:border-brand-primary rounded-2xl px-4 py-3.5 text-xs font-bold text-brand-primary outline-none transition-all cursor-pointer"
-              >
-                <option value="default">Default Sort</option>
-                <option value="lowToHigh">Price: Low to High</option>
-                <option value="highToLow">Price: High to Low</option>
-              </select>
+            {/* Category Dropdown */}
+            <div className="relative sm:col-span-1 lg:col-span-3">
+              <div className="relative">
+                <i className="bi bi-grid-fill absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-primary/70 text-xs pointer-events-none"></i>
+                <select
+                  value={selectedCategory}
+                  onChange={e => setSelectedCategory(e.target.value)}
+                  className="w-full bg-neutral-background/70 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-2xl py-3 pl-9 pr-8 text-xs font-bold text-brand-primary outline-none transition-all cursor-pointer appearance-none truncate"
+                >
+                  <option value="all">✦ All Categories</option>
+                  {BUSINESS_CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+                <i className="bi bi-chevron-down absolute right-3.5 top-1/2 -translate-y-1/2 text-text-secondary text-xs pointer-events-none"></i>
+              </div>
+            </div>
+
+            {/* Duration Dropdown */}
+            <div className="relative sm:col-span-1 lg:col-span-2">
+              <div className="relative">
+                <i className="bi bi-clock-fill absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-primary/70 text-xs pointer-events-none"></i>
+                <select
+                  value={durationFilter}
+                  onChange={e => setDurationFilter(e.target.value)}
+                  className="w-full bg-neutral-background/70 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-2xl py-3 pl-9 pr-8 text-xs font-bold text-brand-primary outline-none transition-all cursor-pointer appearance-none truncate"
+                >
+                  <option value="all">All Durations</option>
+                  <option value="30">⚡ Quick (≤ 30 mins)</option>
+                  <option value="60">⏱ Standard (30-60 mins)</option>
+                  <option value="90plus">🌿 Extended (60+ mins)</option>
+                </select>
+                <i className="bi bi-chevron-down absolute right-3.5 top-1/2 -translate-y-1/2 text-text-secondary text-xs pointer-events-none"></i>
+              </div>
+            </div>
+
+            {/* Price Sort Dropdown */}
+            <div className="relative sm:col-span-1 lg:col-span-2">
+              <div className="relative">
+                <i className="bi bi-arrow-down-up absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-primary/70 text-xs pointer-events-none"></i>
+                <select
+                  value={priceSort}
+                  onChange={e => setPriceSort(e.target.value)}
+                  className="w-full bg-neutral-background/70 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-2xl py-3 pl-9 pr-8 text-xs font-bold text-brand-primary outline-none transition-all cursor-pointer appearance-none truncate"
+                >
+                  <option value="default">Sort: Recommended</option>
+                  <option value="lowToHigh">Price: Low to High</option>
+                  <option value="highToLow">Price: High to Low</option>
+                </select>
+                <i className="bi bi-chevron-down absolute right-3.5 top-1/2 -translate-y-1/2 text-text-secondary text-xs pointer-events-none"></i>
+              </div>
             </div>
           </div>
 
-          {/* Category Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none">
-            <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider mr-1">Category:</span>
-            {["all", ...BUSINESS_CATEGORIES].map(cat => {
-              const meta = CATEGORY_META[cat];
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
-                    selectedCategory === cat
-                      ? 'bg-brand-primary text-white shadow-2xs'
-                      : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60 hover:bg-neutral-border/40'
-                  }`}
-                >
-                  {cat === 'all' ? (
-                    <span>✦ All Categories</span>
-                  ) : (
-                    <>
-                      {meta?.icon && <i className={`bi ${meta.icon} text-xs`}></i>}
-                      <span>{cat}</span>
-                    </>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          {/* Active Filter Chips & Reset Bar (Only shown when filters are engaged) */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-neutral-border/60 text-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] uppercase font-bold text-text-secondary tracking-wider">Active:</span>
 
-          {/* Duration Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none border-t border-neutral-border/60 pt-3">
-            <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider mr-1">Duration:</span>
-            {[
-              { id: 'all', label: 'All Durations' },
-              { id: '30', label: '⚡ Quick (≤ 30 mins)' },
-              { id: '60', label: '⏱ Standard (30-60 mins)' },
-              { id: '90plus', label: '🌿 Extended (60+ mins)' }
-            ].map(pill => (
+                {search.trim() && (
+                  <span className="inline-flex items-center gap-1.5 bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-xs font-semibold">
+                    <span>"{search.trim()}"</span>
+                    <button type="button" onClick={() => setSearch('')} className="hover:text-rose-600 font-bold cursor-pointer">×</button>
+                  </span>
+                )}
+
+                {selectedCategory !== 'all' && (
+                  <span className="inline-flex items-center gap-1.5 bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-xs font-semibold">
+                    <span>{selectedCategory}</span>
+                    <button type="button" onClick={() => setSelectedCategory('all')} className="hover:text-rose-600 font-bold cursor-pointer">×</button>
+                  </span>
+                )}
+
+                {durationFilter !== 'all' && (
+                  <span className="inline-flex items-center gap-1.5 bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-xs font-semibold">
+                    <span>
+                      {durationFilter === '30' ? '≤ 30 mins' : durationFilter === '60' ? '30-60 mins' : '60+ mins'}
+                    </span>
+                    <button type="button" onClick={() => setDurationFilter('all')} className="hover:text-rose-600 font-bold cursor-pointer">×</button>
+                  </span>
+                )}
+
+                {priceSort !== 'default' && (
+                  <span className="inline-flex items-center gap-1.5 bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-xs font-semibold">
+                    <span>{priceSort === 'lowToHigh' ? 'Price: Low-High' : 'Price: High-Low'}</span>
+                    <button type="button" onClick={() => setPriceSort('default')} className="hover:text-rose-600 font-bold cursor-pointer">×</button>
+                  </span>
+                )}
+              </div>
+
               <button
-                key={pill.id}
-                onClick={() => setDurationFilter(pill.id)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${durationFilter === pill.id
-                    ? 'bg-brand-primary text-white shadow-2xs'
-                    : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
-                  }`}
+                type="button"
+                onClick={resetAllFilters}
+                className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
               >
-                {pill.label}
+                <i className="bi bi-arrow-counterclockwise"></i>
+                <span>Reset Filters</span>
               </button>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Summary Count Bar */}

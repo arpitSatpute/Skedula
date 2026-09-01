@@ -13,7 +13,8 @@ export const BUSINESS_CATEGORIES = [
   "Financial & Tax Consulting",
   "Tattoo & Piercing Studios",
   "Therapy & Mental Counseling",
-  "Photography & Creative Studios"
+  "Photography & Creative Studios",
+  "Other"
 ];
 
 export const CATEGORY_META = {
@@ -76,5 +77,9 @@ export const CATEGORY_META = {
   "Photography & Creative Studios": {
     icon: "bi-camera",
     badge: "bg-cyan-50 text-cyan-700 border-cyan-200"
+  },
+  "Other": {
+    icon: "bi-grid",
+    badge: "bg-slate-100 text-slate-700 border-slate-200"
   }
 };

@@ -8,7 +8,7 @@ const Business = () => {
   const { id } = useParams();
   const [business, setBusiness] = useState(null);
   const [services, setServices] = useState([]);
-  const [reviewSummary, setReviewSummary] = useState({ averageRating: 5.0, totalReviews: 0, reviews: [] });
+  const [reviewSummary, setReviewSummary] = useState({ averageRating: 0.0, totalReviews: 0, reviews: [] });
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const baseURl = import.meta.env.VITE_BACKEND_BASE_URL;
@@ -40,7 +40,10 @@ const Business = () => {
         }
 
         if (srvRes.status === 'fulfilled') setServices(srvRes.value.data?.data || srvRes.value.data || []);
-        if (revRes.status === 'fulfilled') setReviewSummary(revRes.value.data || { averageRating: 5.0, totalReviews: 0, reviews: [] });
+        if (revRes.status === 'fulfilled') {
+          const revPayload = revRes.value.data?.data || revRes.value.data;
+          setReviewSummary(revPayload || { averageRating: 0.0, totalReviews: 0, reviews: [] });
+        }
       } catch (err) {
         if (!ignore) showErrorToast(err, 'Unable to load business profile');
       } finally {
@@ -120,9 +123,6 @@ const Business = () => {
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 pb-6 border-b border-neutral-border/60">
             <div className="space-y-3">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="bg-brand-secondary text-brand-primary text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-                  Verified Sanctuary
-                </span>
                 {business.category && (
                   <span className="bg-brand-secondary/30 text-brand-primary border border-brand-primary/15 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
                     <i className="bi bi-tag-fill text-[10px]"></i>
@@ -141,11 +141,18 @@ const Business = () => {
                 </span>
 
                 {/* Rating Badge */}
-                <span className="bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold px-3 py-0.5 rounded-full flex items-center gap-1">
-                  <i className="bi bi-star-fill text-amber-500 text-[11px]"></i>
-                  <span>{(reviewSummary.averageRating || 5.0).toFixed(1)}</span>
-                  <span className="text-text-secondary font-normal">({reviewSummary.totalReviews || 0} reviews)</span>
-                </span>
+                {reviewSummary.totalReviews > 0 ? (
+                  <span className="bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold px-3 py-0.5 rounded-full flex items-center gap-1">
+                    <i className="bi bi-star-fill text-amber-500 text-[11px]"></i>
+                    <span>{(reviewSummary.averageRating || 0).toFixed(1)}</span>
+                    <span className="text-text-secondary font-normal">({reviewSummary.totalReviews} {reviewSummary.totalReviews === 1 ? 'review' : 'reviews'})</span>
+                  </span>
+                ) : (
+                  <span className="bg-slate-50 text-slate-600 border border-slate-200 text-xs font-semibold px-3 py-0.5 rounded-full flex items-center gap-1">
+                    <i className="bi bi-star text-slate-400 text-[11px]"></i>
+                    <span>No reviews yet</span>
+                  </span>
+                )}
               </div>
 
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-primary text-brand-primary">
@@ -218,7 +225,7 @@ const Business = () => {
               Book Real-Time Appointment Slots
             </h2>
             <p className="text-xs sm:text-sm text-text-secondary mt-1">
-              All appointments are escrow-protected with automated refund guarantees.
+              All appointments include instant slot locking with automated refund guarantees.
             </p>
           </div>
 
@@ -309,24 +316,26 @@ const Business = () => {
             <div className="flex items-center gap-3 bg-neutral-background px-5 py-3 rounded-2xl border border-neutral-border/60">
               <div className="text-center">
                 <span className="text-3xl font-bold font-primary text-brand-primary block">
-                  {(reviewSummary.averageRating || 5.0).toFixed(1)}
+                  {reviewSummary.totalReviews > 0 ? (reviewSummary.averageRating || 0).toFixed(1) : '—'}
                 </span>
                 <div className="flex items-center gap-0.5 text-amber-500 text-xs">
                   {[...Array(5)].map((_, i) => (
                     <i
                       key={i}
                       className={`bi ${
-                        i < Math.round(reviewSummary.averageRating || 5)
+                        reviewSummary.totalReviews > 0 && i < Math.round(reviewSummary.averageRating || 0)
                           ? 'bi-star-fill'
-                          : 'bi-star'
+                          : 'bi-star text-neutral-border'
                       }`}
                     ></i>
                   ))}
                 </div>
               </div>
               <div className="border-l border-neutral-border/60 pl-3 text-xs text-text-secondary">
-                <span className="font-bold text-brand-primary block">{reviewSummary.totalReviews || 0} Ratings</span>
-                <span>100% Verified Visits</span>
+                <span className="font-bold text-brand-primary block">
+                  {reviewSummary.totalReviews || 0} {reviewSummary.totalReviews === 1 ? 'Rating' : 'Ratings'}
+                </span>
+                <span>{reviewSummary.totalReviews > 0 ? '100% Verified Visits' : 'Awaiting First Review'}</span>
               </div>
             </div>
           </div>

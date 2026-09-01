@@ -37,7 +37,8 @@ export default function BusinessAnalytics({ businessId }) {
     setLoading(true);
     try {
       const res = await apiClient.get(`/business/analytics/${businessId}`);
-      setData(res.data);
+      const payload = res.data?.data || res.data;
+      setData(payload);
     } catch (err) {
       showErrorToast(err, 'Failed to load business analytics');
     } finally {
@@ -244,20 +245,24 @@ export default function BusinessAnalytics({ businessId }) {
           <div>
             <div className="flex items-baseline gap-2">
               <h3 className="text-2xl sm:text-3xl font-bold font-primary text-brand-primary">
-                {data.averageRating ? data.averageRating.toFixed(1) : '5.0'}
+                {data.totalReviews > 0 ? (data.averageRating || 0).toFixed(1) : '—'}
               </h3>
               <div className="flex text-amber-400 text-xs">
                 {[1, 2, 3, 4, 5].map((s) => (
                   <i
                     key={s}
-                    className={`bi ${s <= Math.round(data.averageRating || 5) ? 'bi-star-fill' : 'bi-star'}`}
+                    className={`bi ${data.totalReviews > 0 && s <= Math.round(data.averageRating || 0) ? 'bi-star-fill' : 'bi-star text-neutral-border'}`}
                   ></i>
                 ))}
               </div>
             </div>
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">
-                {data.totalReviews} verified reviews
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                data.totalReviews > 0
+                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                  : 'bg-slate-100 text-slate-600 border border-slate-200'
+              }`}>
+                {data.totalReviews > 0 ? `${data.totalReviews} verified reviews` : 'Awaiting reviews'}
               </span>
             </div>
           </div>
@@ -716,33 +721,57 @@ export default function BusinessAnalytics({ businessId }) {
 
           {/* Recent Reviews snippet */}
           <div className="pt-3 border-t border-neutral-border/60 space-y-2.5">
-            <span className="text-[10px] uppercase font-bold text-text-secondary tracking-wider block">
-              Recent Verified Client Feedback
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase font-bold text-text-secondary tracking-wider block">
+                Recent Verified Client Feedback ({data.recentReviews?.length || 0})
+              </span>
+              {data.totalReviews > 0 && (
+                <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  100% Real Clients
+                </span>
+              )}
+            </div>
             {data.recentReviews && data.recentReviews.length > 0 ? (
-              data.recentReviews.slice(0, 3).map((r, i) => (
-                <div key={i} className="bg-neutral-background/60 p-3 rounded-2xl border border-neutral-border/50 space-y-1">
+              data.recentReviews.map((r, i) => (
+                <div key={r.id || i} className="bg-neutral-background/60 p-3.5 rounded-2xl border border-neutral-border/50 space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <div className="flex text-amber-400 text-[11px]">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <i key={s} className={`bi ${s <= r.rating ? 'bi-star-fill' : 'bi-star'}`}></i>
-                      ))}
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-brand-primary text-xs">
+                        {r.customerName || 'Verified Client'}
+                      </span>
+                      <div className="flex text-amber-400 text-[10px]">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <i key={s} className={`bi ${s <= r.rating ? 'bi-star-fill' : 'bi-star text-neutral-border'}`}></i>
+                        ))}
+                      </div>
                     </div>
                     {r.serviceName && (
-                      <span className="text-[10px] font-bold text-brand-primary bg-white px-2 py-0.5 rounded-full border border-neutral-border">
+                      <span className="text-[10px] font-bold text-brand-primary bg-white px-2 py-0.5 rounded-full border border-neutral-border truncate max-w-[150px]">
                         {r.serviceName}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-text-primary italic">
-                    "{r.comment || 'Smooth appointment experience.'}"
-                  </p>
+                  {r.comment ? (
+                    <p className="text-xs text-text-primary italic leading-relaxed">
+                      "{r.comment}"
+                    </p>
+                  ) : (
+                    <p className="text-xs text-text-secondary italic">
+                      "Great overall experience and smooth appointment process."
+                    </p>
+                  )}
+                  {r.createdAt && (
+                    <span className="text-[10px] text-text-secondary/70 block">
+                      {new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                  )}
                 </div>
               ))
             ) : (
-              <p className="text-xs text-text-secondary italic">
-                No customer reviews submitted yet.
-              </p>
+              <div className="text-center py-6 bg-neutral-background/40 rounded-2xl border border-neutral-border/40 text-xs text-text-secondary">
+                <i className="bi bi-chat-heart text-lg text-text-secondary/50 block mb-1"></i>
+                No customer reviews submitted yet. Reviews appear here after clients complete appointments!
+              </div>
             )}
           </div>
         </div>

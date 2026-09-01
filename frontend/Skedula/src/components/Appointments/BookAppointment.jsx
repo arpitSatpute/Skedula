@@ -160,7 +160,7 @@ function BookAppointment() {
     };
 
     await apiClient.post('/appointments/create', payload);
-    toast.success('Appointment booked successfully in escrow!');
+    toast.success('Appointment booked successfully!');
     setTimeout(() => {
       navigate('/appointments');
     }, 1200);
@@ -287,7 +287,7 @@ function BookAppointment() {
           {/* Header */}
           <div className="border-b border-neutral-border/60 pb-6">
             <span className="bg-brand-secondary text-brand-primary text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-              Escrow Slot Reservation
+              Appointment Slot Reservation
             </span>
             <h1 className="text-2xl sm:text-3xl font-bold font-primary text-brand-primary mt-2">
               Confirm Your Appointment
@@ -442,7 +442,7 @@ function BookAppointment() {
               <div className="flex items-center justify-between text-xs font-bold text-brand-primary pb-2 border-b border-neutral-border/60">
                 <span className="flex items-center gap-1.5">
                   <i className="bi bi-wallet2 text-sm text-brand-primary"></i>
-                  <span>Escrow Checkout Breakdown</span>
+                  <span>Payment Breakdown</span>
                 </span>
                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                   hasSufficientBalance ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
@@ -473,7 +473,7 @@ function BookAppointment() {
             <div className="grid grid-cols-3 gap-3 p-4 bg-neutral-background/70 rounded-2xl border border-neutral-border/60 text-center text-xs">
               <div className="space-y-1">
                 <i className="bi bi-shield-check text-brand-primary text-base"></i>
-                <span className="block text-[11px] font-bold text-brand-primary">Direct Escrow</span>
+                <span className="block text-[11px] font-bold text-brand-primary">Guaranteed Slot</span>
               </div>
               <div className="space-y-1">
                 <i className="bi bi-arrow-repeat text-brand-primary text-base"></i>

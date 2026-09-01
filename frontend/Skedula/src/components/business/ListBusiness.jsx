@@ -316,82 +316,90 @@ function ListBusiness() {
             </button>
           </div>
 
-          {/* Secondary Filter Row: Radius & City/State */}
-          <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-neutral-border/60">
-            {nearMeActive && (
+          {/* Secondary Filter Row: Category, City/State, Radius, & Reset */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-neutral-border/60">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Category Dropdown */}
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Radius:</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Category:</span>
                 <select
-                  value={radiusKm}
-                  onChange={(e) => setRadiusKm(Number(e.target.value))}
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
                   className="bg-neutral-background/80 border border-neutral-border rounded-xl py-1.5 px-3 text-xs font-bold text-brand-primary outline-none cursor-pointer"
                 >
-                  <option value={5}>Within 5 km</option>
-                  <option value={10}>Within 10 km</option>
-                  <option value={25}>Within 25 km</option>
-                  <option value={50}>Within 50 km</option>
-                </select>
-              </div>
-            )}
-
-            {availableCities.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">City:</span>
-                <select
-                  value={selectedCity}
-                  onChange={(e) => setSelectedCity(e.target.value)}
-                  className="bg-neutral-background/80 border border-neutral-border rounded-xl py-1.5 px-3 text-xs font-bold text-brand-primary outline-none cursor-pointer"
-                >
-                  <option value="all">All Cities</option>
-                  {availableCities.map(city => (
-                    <option key={city} value={city}>{city}</option>
+                  <option value="all">✦ All Categories</option>
+                  {BUSINESS_CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
               </div>
-            )}
 
-            {availableStates.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">State:</span>
-                <select
-                  value={selectedState}
-                  onChange={(e) => setSelectedState(e.target.value)}
-                  className="bg-neutral-background/80 border border-neutral-border rounded-xl py-1.5 px-3 text-xs font-bold text-brand-primary outline-none cursor-pointer"
-                >
-                  <option value="all">All States</option>
-                  {availableStates.map(st => (
-                    <option key={st} value={st}>{st}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
+              {nearMeActive && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Radius:</span>
+                  <select
+                    value={radiusKm}
+                    onChange={(e) => setRadiusKm(Number(e.target.value))}
+                    className="bg-neutral-background/80 border border-neutral-border rounded-xl py-1.5 px-3 text-xs font-bold text-brand-primary outline-none cursor-pointer"
+                  >
+                    <option value={5}>Within 5 km</option>
+                    <option value={10}>Within 10 km</option>
+                    <option value={25}>Within 25 km</option>
+                    <option value={50}>Within 50 km</option>
+                  </select>
+                </div>
+              )}
 
-          {/* Quick Filter Categories */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none">
-            {categories.map(cat => {
-              const meta = CATEGORY_META[cat];
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
-                    selectedCategory === cat
-                      ? 'bg-brand-primary text-white shadow-2xs'
-                      : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60 hover:bg-neutral-border/40'
-                  }`}
-                >
-                  {cat === 'all' ? (
-                    <span>✦ All Categories</span>
-                  ) : (
-                    <>
-                      {meta?.icon && <i className={`bi ${meta.icon} text-xs`}></i>}
-                      <span>{cat}</span>
-                    </>
-                  )}
-                </button>
-              );
-            })}
+              {availableCities.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">City:</span>
+                  <select
+                    value={selectedCity}
+                    onChange={(e) => setSelectedCity(e.target.value)}
+                    className="bg-neutral-background/80 border border-neutral-border rounded-xl py-1.5 px-3 text-xs font-bold text-brand-primary outline-none cursor-pointer"
+                  >
+                    <option value="all">All Cities</option>
+                    {availableCities.map(city => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {availableStates.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">State:</span>
+                  <select
+                    value={selectedState}
+                    onChange={(e) => setSelectedState(e.target.value)}
+                    className="bg-neutral-background/80 border border-neutral-border rounded-xl py-1.5 px-3 text-xs font-bold text-brand-primary outline-none cursor-pointer"
+                  >
+                    <option value="all">All States</option>
+                    {availableStates.map(st => (
+                      <option key={st} value={st}>{st}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {(search || selectedCategory !== 'all' || nearMeActive || onlyOpenNow || selectedCity !== 'all' || selectedState !== 'all') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch('');
+                  setSelectedCategory('all');
+                  setNearMeActive(false);
+                  setOnlyOpenNow(false);
+                  setSelectedCity('all');
+                  setSelectedState('all');
+                }}
+                className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <i className="bi bi-arrow-counterclockwise"></i>
+                <span>Reset Filters</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -421,7 +429,7 @@ function ListBusiness() {
               {filteredBusinesses.map(business => {
                 const open = isOpenNow(business.openTime, business.closeTime);
                 const fullLocation = [business.address, business.city, business.state, business.zipCode].filter(Boolean).join(', ');
-                const rating = business.averageRating || 5.0;
+                const rating = business.averageRating || 0;
                 const reviewCount = business.totalReviews || 0;
 
                 return (
@@ -442,9 +450,6 @@ function ListBusiness() {
                                 <span>{business.category}</span>
                               </span>
                             )}
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-brand-primary bg-brand-secondary/40 px-2.5 py-0.5 rounded-full">
-                              Verified
-                            </span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                               open
                                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
@@ -475,11 +480,18 @@ function ListBusiness() {
 
                             <span>•</span>
 
-                            <span className="flex items-center gap-1 text-amber-600 font-bold">
-                              <i className="bi bi-star-fill text-amber-500 text-[11px]"></i>
-                              <span>{rating.toFixed(1)}</span>
-                              <span className="text-text-secondary font-normal">({reviewCount})</span>
-                            </span>
+                            {reviewCount > 0 ? (
+                              <span className="flex items-center gap-1 text-amber-600 font-bold">
+                                <i className="bi bi-star-fill text-amber-500 text-[11px]"></i>
+                                <span>{rating.toFixed(1)}</span>
+                                <span className="text-text-secondary font-normal">({reviewCount})</span>
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-text-secondary font-medium">
+                                <i className="bi bi-star text-neutral-border text-[11px]"></i>
+                                <span>No reviews yet</span>
+                              </span>
+                            )}
                           </div>
                         </div>
 

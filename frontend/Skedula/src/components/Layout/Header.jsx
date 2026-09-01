@@ -279,14 +279,6 @@ function Header() {
                   </div>
 
                   <div className="py-1">
-                    <Link
-                      to="/profile"
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:text-brand-primary hover:bg-neutral-background transition-colors"
-                    >
-                      <i className="bi bi-person text-base text-brand-primary"></i>
-                      <span>{isOwner ? 'Business Profile & Stats' : 'My Profile'}</span>
-                    </Link>
-
                     {isOwner ? (
                       <>
                         <Link
@@ -312,13 +304,22 @@ function Header() {
                         </Link>
                       </>
                     ) : (
-                      <Link
-                        to="/appointments"
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:text-brand-primary hover:bg-neutral-background transition-colors"
-                      >
-                        <i className="bi bi-calendar-check text-base text-brand-primary"></i>
-                        <span>My Appointments</span>
-                      </Link>
+                      <>
+                        <Link
+                          to="/profile"
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:text-brand-primary hover:bg-neutral-background transition-colors"
+                        >
+                          <i className="bi bi-person text-base text-brand-primary"></i>
+                          <span>My Profile</span>
+                        </Link>
+                        <Link
+                          to="/appointments"
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:text-brand-primary hover:bg-neutral-background transition-colors"
+                        >
+                          <i className="bi bi-calendar-check text-base text-brand-primary"></i>
+                          <span>My Appointments</span>
+                        </Link>
+                      </>
                     )}
 
                     <Link
@@ -426,12 +427,6 @@ function Header() {
                     className="block px-4 py-2.5 rounded-xl font-semibold text-base text-brand-primary hover:bg-black/5"
                   >
                     Wallet & Payments
-                  </Link>
-                  <Link
-                    to="/profile"
-                    className="block px-4 py-2.5 rounded-xl font-semibold text-base text-brand-primary hover:bg-black/5"
-                  >
-                    Business Profile & Stats
                   </Link>
                 </>
               ) : (

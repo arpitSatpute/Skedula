@@ -15,7 +15,7 @@ const BusinessQrModal = ({ business, bookingUrl, onClose }) => {
   };
 
   const handleShareWhatsApp = () => {
-    const text = `📅 Book your appointment directly with *${business?.name || 'us'}* on Skedula:\n👉 ${bookingUrl}\n\n1-tap instant reservation with escrow security!`;
+    const text = `📅 Book your appointment directly with *${business?.name || 'us'}* on Skedula:\n👉 ${bookingUrl}\n\n1-tap instant reservation with guaranteed slot protection!`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -112,7 +112,7 @@ const BusinessQrModal = ({ business, bookingUrl, onClose }) => {
             </div>
             <p class="scan-tip">📲 Scan to Book Instantly</p>
             <p class="url-text">${bookingUrl}</p>
-            <div class="footer">Powered by Skedula Smart Escrow Booking</div>
+            <div class="footer">Powered by Skedula Instant Booking</div>
           </div>
           <script>
             window.onload = function() {

@@ -10,7 +10,7 @@ const ShareableBookingPage = () => {
   const { slug } = useParams();
   const [business, setBusiness] = useState(null);
   const [services, setServices] = useState([]);
-  const [reviewSummary, setReviewSummary] = useState({ averageRating: 5.0, totalReviews: 0, reviews: [] });
+  const [reviewSummary, setReviewSummary] = useState({ averageRating: 0.0, totalReviews: 0, reviews: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notFound, setNotFound] = useState(false);
@@ -72,7 +72,8 @@ const ShareableBookingPage = () => {
             setServices(servRes.value.data?.data || servRes.value.data || []);
           }
           if (revRes.status === 'fulfilled') {
-            setReviewSummary(revRes.value.data || { averageRating: 5.0, totalReviews: 0, reviews: [] });
+            const revPayload = revRes.value.data?.data || revRes.value.data;
+            setReviewSummary(revPayload || { averageRating: 0.0, totalReviews: 0, reviews: [] });
           }
         }
       } catch (err) {
@@ -215,11 +216,18 @@ const ShareableBookingPage = () => {
                   </span>
 
                   {/* Rating Pill */}
-                  <span className="bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-bold px-3 py-0.5 rounded-full flex items-center gap-1">
-                    <i className="bi bi-star-fill text-amber-400 text-[11px]"></i>
-                    <span>{(reviewSummary.averageRating || 5.0).toFixed(1)}</span>
-                    <span className="text-white/70 font-normal">({reviewSummary.totalReviews || 0})</span>
-                  </span>
+                  {reviewSummary.totalReviews > 0 ? (
+                    <span className="bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-bold px-3 py-0.5 rounded-full flex items-center gap-1">
+                      <i className="bi bi-star-fill text-amber-400 text-[11px]"></i>
+                      <span>{(reviewSummary.averageRating || 0).toFixed(1)}</span>
+                      <span className="text-white/70 font-normal">({reviewSummary.totalReviews})</span>
+                    </span>
+                  ) : (
+                    <span className="bg-white/10 text-white/80 border border-white/20 text-xs font-semibold px-3 py-0.5 rounded-full flex items-center gap-1">
+                      <i className="bi bi-star text-white/60 text-[11px]"></i>
+                      <span>No reviews yet</span>
+                    </span>
+                  )}
                 </div>
 
                 <h1 className="text-2xl sm:text-4xl font-bold font-primary text-white tracking-tight">
@@ -227,7 +235,7 @@ const ShareableBookingPage = () => {
                 </h1>
 
                 <p className="text-xs sm:text-sm text-white/80 max-w-xl leading-relaxed">
-                  {business.description || 'Welcome to our official direct booking portal. Book real-time appointment slots with instant escrow confirmation.'}
+                  {business.description || 'Welcome to our official direct booking portal. Book real-time appointment slots with instant confirmation.'}
                 </p>
 
                 {/* Operating & Policy Chips */}
@@ -310,10 +318,10 @@ const ShareableBookingPage = () => {
             </div>
 
             <div className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary">Payment & Escrow</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary">Booking Guarantee</span>
               <p className="font-semibold text-emerald-800 flex items-center gap-1.5">
                 <i className="bi bi-shield-check text-emerald-600"></i>
-                <span>100% Escrow Protected</span>
+                <span>100% Guaranteed Booking</span>
               </p>
               <p className="text-[11px] text-text-secondary">
                 Instant refund if cancelled {cutoffHours}h before start.
@@ -412,7 +420,7 @@ const ShareableBookingPage = () => {
               </div>
               <div className="flex items-center gap-2 bg-neutral-background px-3.5 py-1.5 rounded-xl border border-neutral-border/60">
                 <i className="bi bi-star-fill text-amber-500 text-sm"></i>
-                <span className="text-sm font-bold text-brand-primary">{(reviewSummary.averageRating || 5.0).toFixed(1)}</span>
+                <span className="text-sm font-bold text-brand-primary">{(reviewSummary.averageRating || 0).toFixed(1)}</span>
                 <span className="text-xs text-text-secondary">({reviewSummary.totalReviews})</span>
               </div>
             </div>
@@ -424,7 +432,7 @@ const ShareableBookingPage = () => {
                     <span className="font-bold text-brand-primary">{rev.customerName}</span>
                     <div className="flex items-center gap-0.5 text-amber-500 text-[11px]">
                       {[...Array(5)].map((_, i) => (
-                        <i key={i} className={`bi ${i < rev.rating ? 'bi-star-fill' : 'bi-star'}`}></i>
+                        <i key={i} className={`bi ${i < rev.rating ? 'bi-star-fill' : 'bi-star text-neutral-border'}`}></i>
                       ))}
                     </div>
                   </div>
@@ -440,15 +448,15 @@ const ShareableBookingPage = () => {
           </div>
         )}
 
-        {/* Safe Escrow Policy Guarantee */}
+        {/* Booking Guarantee */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-neutral-border shadow-card space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-brand-dark text-brand-secondary flex items-center justify-center text-lg border border-white/10 shadow-xs">
-              <i className="bi bi-shield-lock"></i>
+              <i className="bi bi-shield-check"></i>
             </div>
             <div>
-              <h4 className="text-base font-bold font-primary text-brand-primary">Skedula 1-Tap Escrow Guarantee</h4>
-              <p className="text-xs text-text-secondary">Your payment is held safely until the treatment is successfully completed.</p>
+              <h4 className="text-base font-bold font-primary text-brand-primary">Skedula Booking Guarantee</h4>
+              <p className="text-xs text-text-secondary">Your slot is reserved with 1-tap confirmation and automated refund protection.</p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-neutral-border/60 text-xs">
