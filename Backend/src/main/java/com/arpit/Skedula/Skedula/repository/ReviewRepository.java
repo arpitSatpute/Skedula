@@ -12,7 +12,8 @@ import java.util.Optional;
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
-    List<Review> findByBusiness_IdOrderByCreatedAtDesc(Long businessId);
+    @Query("SELECT r FROM Review r LEFT JOIN FETCH r.customer c LEFT JOIN FETCH c.user LEFT JOIN FETCH r.service WHERE r.business.id = :businessId ORDER BY r.createdAt DESC")
+    List<Review> findByBusiness_IdOrderByCreatedAtDesc(@Param("businessId") Long businessId);
 
     Optional<Review> findByAppointment_Id(Long appointmentId);
 

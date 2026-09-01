@@ -83,6 +83,8 @@ public class BusinessAnalyticsDTO {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class RecentReviewDTO {
+        private Long id;
+        private String customerName;
         private Integer rating;
         private String comment;
         private String createdAt;

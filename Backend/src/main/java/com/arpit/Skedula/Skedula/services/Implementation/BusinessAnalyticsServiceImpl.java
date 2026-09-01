@@ -176,14 +176,18 @@ public class BusinessAnalyticsServiceImpl {
                     monthlyRating.put(key, Math.round(val * 10.0) / 10.0);
                 });
 
-        // Recent reviews (up to 5)
+        // Recent reviews (up to 15)
         List<BusinessAnalyticsDTO.RecentReviewDTO> recentReviews = allReviews.stream()
-                .limit(5)
+                .limit(15)
                 .map(r -> BusinessAnalyticsDTO.RecentReviewDTO.builder()
+                        .id(r.getId())
+                        .customerName(r.getCustomer() != null && r.getCustomer().getUser() != null
+                                ? r.getCustomer().getUser().getName()
+                                : "Verified Client")
                         .rating(r.getRating())
                         .comment(r.getComment())
-                        .createdAt(r.getCreatedAt() != null ? r.getCreatedAt().format(monthFmt) : null)
-                        .serviceName(r.getService() != null ? r.getService().getName() : null)
+                        .createdAt(r.getCreatedAt() != null ? r.getCreatedAt().toString() : null)
+                        .serviceName(r.getService() != null ? r.getService().getName() : "General Consultation")
                         .build())
                 .collect(Collectors.toList());
 

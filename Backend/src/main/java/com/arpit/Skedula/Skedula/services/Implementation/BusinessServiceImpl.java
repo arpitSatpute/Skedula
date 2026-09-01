@@ -337,10 +337,10 @@ public class BusinessServiceImpl implements BusinessService {
             try {
                 Double avg = reviewRepository.getAverageRatingByBusinessId(business.getId());
                 Long total = reviewRepository.countByBusiness_Id(business.getId());
-                businessCard.setAverageRating(avg != null ? Math.round(avg * 10.0) / 10.0 : 5.0);
+                businessCard.setAverageRating(avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0);
                 businessCard.setTotalReviews(total != null ? total : 0L);
             } catch (Exception ignored) {
-                businessCard.setAverageRating(5.0);
+                businessCard.setAverageRating(0.0);
                 businessCard.setTotalReviews(0L);
             }
         }

@@ -81,6 +81,7 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BusinessReviewSummaryDTO getReviewsByBusiness(Long businessId) {
         List<Review> reviews = reviewRepository.findByBusiness_IdOrderByCreatedAtDesc(businessId);
         Double avgRating = reviewRepository.getAverageRatingByBusinessId(businessId);
@@ -99,13 +100,14 @@ public class ReviewServiceImpl implements ReviewService {
         ).collect(Collectors.toList());
 
         return BusinessReviewSummaryDTO.builder()
-                .averageRating(avgRating != null ? Math.round(avgRating * 10.0) / 10.0 : 5.0)
+                .averageRating(avgRating != null ? Math.round(avgRating * 10.0) / 10.0 : 0.0)
                 .totalReviews(count != null ? count : 0L)
                 .reviews(dtos)
                 .build();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseReviewDTO getReviewByAppointment(Long appointmentId) {
         return reviewRepository.findByAppointment_Id(appointmentId)
                 .map(r -> ResponseReviewDTO.builder()
