@@ -18,9 +18,11 @@ public class UserDTO {
     @NotEmpty(message = "Email cannot be empty")
     private String email;
 
-//    @NotBlank
-//    @Size(min = 10, max = 10, message = "Phone number must be 10 digits")
-//    private String phone;
+    private String phone;
+
+    private java.time.LocalDate dob;
+
+    private String address;
 
     private String imageUrl;
 

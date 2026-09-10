@@ -44,6 +44,9 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         userDTO.setId(user.getId());
         userDTO.setEmail(user.getEmail());
         userDTO.setName(user.getName());
+        userDTO.setPhone(user.getPhone());
+        userDTO.setDob(user.getDob());
+        userDTO.setAddress(user.getAddress());
         userDTO.setRoles(user.getRoles());
         userDTO.setImageUrl(user.getImageUrl());
         return userDTO;

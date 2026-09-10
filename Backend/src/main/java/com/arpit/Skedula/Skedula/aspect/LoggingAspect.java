@@ -20,7 +20,7 @@ public class LoggingAspect {
     @AfterReturning(pointcut = "execution(* com.arpit.Skedula.Skedula.services.*.*(..))", returning = "result")
     public void logAfterReturning(JoinPoint joinPoint, Object result) {
         String methodName = joinPoint.getSignature().getName();
-        log.info("Exiting method: {}() with result: {}", methodName, result != null ? result : "void");
+        log.info("Exiting method: {}()", methodName);
     }
 
     @AfterThrowing(pointcut = "execution(* com.arpit.Skedula.Skedula.services.*.*(..))", throwing = "error")

@@ -70,6 +70,9 @@ public class AuthServiceImpl implements AuthService {
         User mappedUser = new User();
         mappedUser.setName(signupDto.getName());
         mappedUser.setEmail(signupDto.getEmail());
+        mappedUser.setPhone(signupDto.getPhone());
+        mappedUser.setDob(signupDto.getDob());
+        mappedUser.setAddress(signupDto.getAddress());
         mappedUser.setImageUrl(null);
         mappedUser.setPassword(signupDto.getPassword());
         mappedUser.setRoles(Set.of(signupDto.getRole()));

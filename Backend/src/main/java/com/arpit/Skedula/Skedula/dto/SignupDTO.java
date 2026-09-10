@@ -23,9 +23,11 @@ public class SignupDTO {
     @NotBlank
     private String email;
 
-    @NotBlank
-    @Size(min = 10, max = 10, message = "Phone number must be 10 digits")
     private String phone;
+
+    private java.time.LocalDate dob;
+
+    private String address;
 
     @NotBlank
     @Size(min = 8, message = "Password must be at least 8 characters")

@@ -15,6 +15,8 @@ import com.arpit.Skedula.Skedula.repository.BusinessRepository;
 import com.arpit.Skedula.Skedula.repository.BusinessServiceOfferedRepository;
 import com.arpit.Skedula.Skedula.services.AppointmentService;
 import com.arpit.Skedula.Skedula.services.BusinessServiceOfferedService;
+import com.arpit.Skedula.Skedula.services.CacheService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.uploadcare.api.Client;
 import com.uploadcare.upload.FileUploader;
 import com.uploadcare.upload.UploadFailureException;
@@ -29,7 +31,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.*;
@@ -46,7 +50,32 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
     private final Client client;
     private final AppointmentRepository appointmentRepository;
     private final AppointmentService appointmentService;
+    private final CacheService cacheService;
 
+    private String cleanAndDeduplicateImageUrls(String imageUrl) {
+        if (imageUrl == null || imageUrl.trim().isEmpty()) {
+            return null;
+        }
+        LinkedHashSet<String> set = Arrays.stream(imageUrl.split("[,;\\n]+"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty() && (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("/") || s.startsWith("data:") || s.startsWith("blob:")))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (set.isEmpty()) {
+            return null;
+        }
+        return String.join(",", set);
+    }
+
+    private List<String> extractImageList(String imageUrl) {
+        if (imageUrl == null || imageUrl.trim().isEmpty()) {
+            return List.of();
+        }
+        return Arrays.stream(imageUrl.split("[,;\\n]+"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty() && (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("/") || s.startsWith("data:") || s.startsWith("blob:")))
+                .distinct()
+                .collect(Collectors.toList());
+    }
 
     @Override
     public String uploadFile(MultipartFile multipartFile) {
@@ -87,12 +116,17 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         BusinessServiceOffered businessServiceOffered = businessServiceOfferedRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
         String fileUrl = uploadFile(multipartFile);
-        if (businessServiceOffered.getImageUrl() != null && !businessServiceOffered.getImageUrl().trim().isEmpty()) {
-            businessServiceOffered.setImageUrl(businessServiceOffered.getImageUrl().trim() + "," + fileUrl);
-        } else {
-            businessServiceOffered.setImageUrl(fileUrl);
+        LinkedHashSet<String> urls = new LinkedHashSet<>(extractImageList(businessServiceOffered.getImageUrl()));
+        if (fileUrl != null && !fileUrl.trim().isEmpty()) {
+            urls.add(fileUrl.trim());
         }
+        businessServiceOffered.setImageUrl(urls.isEmpty() ? null : String.join(",", urls));
         businessServiceOfferedRepository.save(businessServiceOffered);
+        cacheService.delete("v1:service:id:" + id);
+        if (businessServiceOffered.getBusiness() != null) {
+            cacheService.deleteByPattern("v1:services:biz:" + businessServiceOffered.getBusiness().getId() + "*");
+        }
+        cacheService.deleteByPattern("v1:business:*");
         System.out.println("file set: -------------------------------------------------------------");
 
         return null;
@@ -103,24 +137,25 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         BusinessServiceOffered businessServiceOffered = businessServiceOfferedRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
 
-        StringBuilder sb = new StringBuilder();
-        if (businessServiceOffered.getImageUrl() != null && !businessServiceOffered.getImageUrl().trim().isEmpty()) {
-            sb.append(businessServiceOffered.getImageUrl().trim());
-        }
+        LinkedHashSet<String> urls = new LinkedHashSet<>(extractImageList(businessServiceOffered.getImageUrl()));
 
         if (multipartFiles != null) {
             for (MultipartFile file : multipartFiles) {
                 if (file != null && !file.isEmpty()) {
                     String url = uploadFile(file);
-                    if (sb.length() > 0) {
-                        sb.append(",");
+                    if (url != null && !url.trim().isEmpty()) {
+                        urls.add(url.trim());
                     }
-                    sb.append(url);
                 }
             }
         }
-        businessServiceOffered.setImageUrl(sb.toString());
+        businessServiceOffered.setImageUrl(urls.isEmpty() ? null : String.join(",", urls));
         businessServiceOfferedRepository.save(businessServiceOffered);
+        cacheService.delete("v1:service:id:" + id);
+        if (businessServiceOffered.getBusiness() != null) {
+            cacheService.deleteByPattern("v1:services:biz:" + businessServiceOffered.getBusiness().getId() + "*");
+        }
+        cacheService.deleteByPattern("v1:business:*");
         return null;
     }
 
@@ -159,6 +194,9 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
 
         businessServiceOfferedRepository.save(businessServiceOffered);
 
+        cacheService.deleteByPattern("v1:services:biz:" + serviceOfferedDTO.getBusiness() + "*");
+        cacheService.deleteByPattern("v1:business:*");
+
         BusinessServiceOfferedDTO result = new BusinessServiceOfferedDTO();
         result.setId(businessServiceOffered.getId());
         result.setBusiness(businessServiceOffered.getBusiness().getId());
@@ -181,13 +219,15 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
 
     @Override
     public BusinessServiceOfferedDTO getServiceById(Long id) {
-        BusinessServiceOffered service = businessServiceOfferedRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
-        if (service.getStatus() == ServiceStatus.UNAVAILABLE) {
-            throw new ResourceNotFoundException("Service is currently unavailable");
-        }
-        return convertToDTO(service);
-
+        String cacheKey = "v1:service:id:" + id;
+        return cacheService.getOrLoad(cacheKey, BusinessServiceOfferedDTO.class, Duration.ofMinutes(10), () -> {
+            BusinessServiceOffered service = businessServiceOfferedRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
+            if (service.getStatus() == ServiceStatus.UNAVAILABLE) {
+                throw new ResourceNotFoundException("Service is currently unavailable");
+            }
+            return convertToDTO(service);
+        });
     }
 
     @Override
@@ -210,6 +250,11 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
 //        service.setBusiness(null);
 //        service.setServiceOfferedId(null);
         businessServiceOfferedRepository.save(service);
+        cacheService.delete("v1:service:id:" + id);
+        if (service.getBusiness() != null) {
+            cacheService.deleteByPattern("v1:services:biz:" + service.getBusiness().getId() + "*");
+        }
+        cacheService.deleteByPattern("v1:business:*");
         return null;
     }
 
@@ -225,11 +270,15 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         existingService.setPrice(serviceOfferedDTO.getPrice());
         existingService.setTotalSlots(serviceOfferedDTO.getTotalSlots());
         existingService.setDuration(serviceOfferedDTO.getDuration());
-        existingService.setImageUrl(serviceOfferedDTO.getImageUrl());
+        existingService.setImageUrl(cleanAndDeduplicateImageUrls(serviceOfferedDTO.getImageUrl()));
         Business business = businessRepository.findById(serviceOfferedDTO.getBusiness())
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + serviceOfferedDTO.getBusiness()));
         existingService.setBusiness(business);
         businessServiceOfferedRepository.save(existingService);
+
+        cacheService.delete("v1:service:id:" + id);
+        cacheService.deleteByPattern("v1:services:biz:" + serviceOfferedDTO.getBusiness() + "*");
+        cacheService.deleteByPattern("v1:business:*");
 
         return convertToDTO(existingService);
     }
@@ -249,22 +298,23 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
 
     @Override
     public List<BusinessServiceOfferedCard> getServiceByBusinessId(Long businessId) {
-
-        Business business = businessRepository.findById(businessId)
+        String cacheKey = "v1:services:biz:" + businessId;
+        return cacheService.getOrLoad(cacheKey, new TypeReference<List<BusinessServiceOfferedCard>>() {}, Duration.ofMinutes(5), () -> {
+            Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
 
-        if(business.getStatus() == BusinessStatus.UNAVAILABLE) {
-            throw new ResourceNotFoundException("Business is currently unavailable");
-        }
+            if(business.getStatus() == BusinessStatus.UNAVAILABLE) {
+                throw new ResourceNotFoundException("Business is currently unavailable");
+            }
 
-        List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_IdAndStatus(businessId, ServiceStatus.AVAILABLE);
-        if (services == null || services.isEmpty()) {
-            return null;
-        }
-        return services.stream()
-                .map(this::convertToCard)
-                .collect(Collectors.toList());
-
+            List<BusinessServiceOffered> services = businessServiceOfferedRepository.findByBusiness_IdAndStatus(businessId, ServiceStatus.AVAILABLE);
+            if (services == null || services.isEmpty()) {
+                return null;
+            }
+            return services.stream()
+                    .map(this::convertToCard)
+                    .collect(Collectors.toList());
+        });
     }
 
     @Override
@@ -277,6 +327,8 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
             service.setStatus(ServiceStatus.UNAVAILABLE);
             businessServiceOfferedRepository.save(service);
         }
+        cacheService.deleteByPattern("v1:services:biz:" + id + "*");
+        cacheService.deleteByPattern("v1:service:id:*");
     }
 
 
@@ -293,17 +345,14 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         dto.setPrice(services.getPrice());
         dto.setTotalSlots(services.getTotalSlots());
         dto.setDuration(services.getDuration());
-        dto.setImageUrl(services.getImageUrl());
-        if (services.getImageUrl() != null && !services.getImageUrl().trim().isEmpty()) {
-            List<String> urls = Arrays.stream(services.getImageUrl().split("[,;\\n]+"))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .collect(Collectors.toList());
-            dto.setImageUrls(urls);
-        } else {
-            dto.setImageUrls(List.of());
+        String cleanImageUrl = cleanAndDeduplicateImageUrls(services.getImageUrl());
+        dto.setImageUrl(cleanImageUrl);
+        dto.setImageUrls(extractImageList(cleanImageUrl));
+        if (services.getBusiness() != null) { 
+            dto.setBusiness(services.getBusiness().getId()); 
+            dto.setBusinessName(services.getBusiness().getName()); 
+            dto.setCategory(services.getBusiness().getCategory() != null ? services.getBusiness().getCategory() : "Spa & Wellness"); 
         }
-        if (services.getBusiness() != null) { dto.setBusiness(services.getBusiness().getId()); dto.setBusinessName(services.getBusiness().getName()); dto.setCategory(services.getBusiness().getCategory() != null ? services.getBusiness().getCategory() : "Spa & Wellness"); }
         dto.setStatus(services.getStatus());
 
         return dto;
@@ -318,17 +367,15 @@ public class BusinessServiceOfferedServiceImpl implements BusinessServiceOffered
         card.setPrice(services.getPrice());
         card.setTotalSlots(services.getTotalSlots());
         card.setDuration(services.getDuration());
-        card.setImageUrl(services.getImageUrl());
-        if (services.getImageUrl() != null && !services.getImageUrl().trim().isEmpty()) {
-            List<String> urls = Arrays.stream(services.getImageUrl().split("[,;\\n]+"))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .collect(Collectors.toList());
-            card.setImageUrls(urls);
-        } else {
-            card.setImageUrls(List.of());
+        String cleanImageUrl = cleanAndDeduplicateImageUrls(services.getImageUrl());
+        card.setImageUrl(cleanImageUrl);
+        card.setImageUrls(extractImageList(cleanImageUrl));
+        card.setStatus(services.getStatus()); 
+        if (services.getBusiness() != null) { 
+            card.setBusinessId(services.getBusiness().getId()); 
+            card.setBusinessName(services.getBusiness().getName()); 
+            card.setCategory(services.getBusiness().getCategory() != null ? services.getBusiness().getCategory() : "Spa & Wellness"); 
         }
-        card.setStatus(services.getStatus()); if (services.getBusiness() != null) { card.setBusinessId(services.getBusiness().getId()); card.setBusinessName(services.getBusiness().getName()); card.setCategory(services.getBusiness().getCategory() != null ? services.getBusiness().getCategory() : "Spa & Wellness"); }
 
         return card;
     }

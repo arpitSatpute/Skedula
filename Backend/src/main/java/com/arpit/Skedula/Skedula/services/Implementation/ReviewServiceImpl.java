@@ -13,12 +13,14 @@ import com.arpit.Skedula.Skedula.repository.AppointmentRepository;
 import com.arpit.Skedula.Skedula.repository.CustomerRepository;
 import com.arpit.Skedula.Skedula.repository.ReviewRepository;
 import com.arpit.Skedula.Skedula.repository.UserRepository;
+import com.arpit.Skedula.Skedula.services.CacheService;
 import com.arpit.Skedula.Skedula.services.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,6 +32,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
+    private final CacheService cacheService;
 
     @Override
     @Transactional
@@ -70,6 +73,11 @@ public class ReviewServiceImpl implements ReviewService {
 
         Review saved = reviewRepository.save(review);
 
+        if (appointment.getBusiness() != null) {
+            cacheService.deleteByPattern("v1:reviews:biz:" + appointment.getBusiness().getId() + "*");
+        }
+        cacheService.deleteByPattern("v1:business:*");
+
         return ResponseReviewDTO.builder()
                 .id(saved.getId())
                 .customerName(customer.getUser() != null ? customer.getUser().getName() : "Verified Customer")
@@ -83,27 +91,30 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional(readOnly = true)
     public BusinessReviewSummaryDTO getReviewsByBusiness(Long businessId) {
-        List<Review> reviews = reviewRepository.findByBusiness_IdOrderByCreatedAtDesc(businessId);
-        Double avgRating = reviewRepository.getAverageRatingByBusinessId(businessId);
-        Long count = reviewRepository.countByBusiness_Id(businessId);
+        String cacheKey = "v1:reviews:biz:" + businessId;
+        return cacheService.getOrLoad(cacheKey, BusinessReviewSummaryDTO.class, Duration.ofMinutes(5), () -> {
+            List<Review> reviews = reviewRepository.findByBusiness_IdOrderByCreatedAtDesc(businessId);
+            Double avgRating = reviewRepository.getAverageRatingByBusinessId(businessId);
+            Long count = reviewRepository.countByBusiness_Id(businessId);
 
-        List<ResponseReviewDTO> dtos = reviews.stream().map(r -> ResponseReviewDTO.builder()
-                .id(r.getId())
-                .customerName(r.getCustomer() != null && r.getCustomer().getUser() != null
-                        ? r.getCustomer().getUser().getName()
-                        : "Verified Guest")
-                .serviceName(r.getService() != null ? r.getService().getName() : "")
-                .rating(r.getRating())
-                .comment(r.getComment())
-                .createdAt(r.getCreatedAt())
-                .build()
-        ).collect(Collectors.toList());
+            List<ResponseReviewDTO> dtos = reviews.stream().map(r -> ResponseReviewDTO.builder()
+                    .id(r.getId())
+                    .customerName(r.getCustomer() != null && r.getCustomer().getUser() != null
+                            ? r.getCustomer().getUser().getName()
+                            : "Verified Guest")
+                    .serviceName(r.getService() != null ? r.getService().getName() : "")
+                    .rating(r.getRating())
+                    .comment(r.getComment())
+                    .createdAt(r.getCreatedAt())
+                    .build()
+            ).collect(Collectors.toList());
 
-        return BusinessReviewSummaryDTO.builder()
-                .averageRating(avgRating != null ? Math.round(avgRating * 10.0) / 10.0 : 0.0)
-                .totalReviews(count != null ? count : 0L)
-                .reviews(dtos)
-                .build();
+            return BusinessReviewSummaryDTO.builder()
+                    .averageRating(avgRating != null ? Math.round(avgRating * 10.0) / 10.0 : 0.0)
+                    .totalReviews(count != null ? count : 0L)
+                    .reviews(dtos)
+                    .build();
+        });
     }
 
     @Override

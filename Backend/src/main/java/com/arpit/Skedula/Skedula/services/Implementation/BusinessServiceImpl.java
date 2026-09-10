@@ -19,6 +19,7 @@ import com.arpit.Skedula.Skedula.repository.UserRepository;
 import com.arpit.Skedula.Skedula.services.AppointmentService;
 import com.arpit.Skedula.Skedula.services.BusinessService;
 import com.arpit.Skedula.Skedula.services.BusinessServiceOfferedService;
+import com.arpit.Skedula.Skedula.services.CacheService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 
@@ -30,6 +31,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -46,6 +48,7 @@ public class BusinessServiceImpl implements BusinessService {
     private final AppointmentService appointmentService;
     private final BusinessServiceOfferedService businessServiceOfferedService;
     private final ReviewRepository reviewRepository;
+    private final CacheService cacheService;
 
     @Override
     public Page<BusinessCard> getAllBusiness(Integer pageOffset, Integer pageSize) {
@@ -58,12 +61,15 @@ public class BusinessServiceImpl implements BusinessService {
 
     @Override
     public BusinessCard getBusinessById(Long id) {
-        Business business = businessRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Business not found with id: " + id));
-        if(business.getStatus() == BusinessStatus.UNAVAILABLE) {
-            throw new RuntimeException("Business status is not AVAILABLE");
-        }
-        return convertToCard(business);
+        String cacheKey = "v1:business:id:" + id;
+        return cacheService.getOrLoad(cacheKey, BusinessCard.class, Duration.ofMinutes(10), () -> {
+            Business business = businessRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Business not found with id: " + id));
+            if(business.getStatus() == BusinessStatus.UNAVAILABLE) {
+                throw new RuntimeException("Business status is not AVAILABLE");
+            }
+            return convertToCard(business);
+        });
     }
 
     @Override
@@ -72,36 +78,39 @@ public class BusinessServiceImpl implements BusinessService {
             throw new ResourceNotFoundException("Invalid business slug");
         }
 
-        Business business = null;
+        String cacheKey = "v1:business:slug:" + slug.trim().toLowerCase();
+        return cacheService.getOrLoad(cacheKey, BusinessCard.class, Duration.ofMinutes(10), () -> {
+            Business business = null;
 
-        // 1. Try numeric ID
-        try {
-            Long id = Long.parseLong(slug.trim());
-            business = businessRepository.findById(id).orElse(null);
-        } catch (NumberFormatException ignored) {
-        }
+            // 1. Try numeric ID
+            try {
+                Long id = Long.parseLong(slug.trim());
+                business = businessRepository.findById(id).orElse(null);
+            } catch (NumberFormatException ignored) {
+            }
 
-        // 2. Try by custom businessId (e.g. SBE1234567)
-        if (business == null) {
-            business = businessRepository.findByBusinessId(slug.trim()).orElse(null);
-        }
+            // 2. Try by custom businessId (e.g. SBE1234567)
+            if (business == null) {
+                business = businessRepository.findByBusinessId(slug.trim()).orElse(null);
+            }
 
-        // 3. Try by Name (replacing dashes with spaces)
-        if (business == null) {
-            String nameWithSpaces = slug.trim().replace("-", " ");
-            business = businessRepository.findByNameIgnoreCase(nameWithSpaces).orElse(null);
-        }
+            // 3. Try by Name (replacing dashes with spaces)
+            if (business == null) {
+                String nameWithSpaces = slug.trim().replace("-", " ");
+                business = businessRepository.findByNameIgnoreCase(nameWithSpaces).orElse(null);
+            }
 
-        // 4. Try exact name
-        if (business == null) {
-            business = businessRepository.findByNameIgnoreCase(slug.trim()).orElse(null);
-        }
+            // 4. Try exact name
+            if (business == null) {
+                business = businessRepository.findByNameIgnoreCase(slug.trim()).orElse(null);
+            }
 
-        if (business == null || business.getStatus() == BusinessStatus.UNAVAILABLE) {
-            throw new ResourceNotFoundException("Business not found or unavailable with slug: " + slug);
-        }
+            if (business == null || business.getStatus() == BusinessStatus.UNAVAILABLE) {
+                throw new ResourceNotFoundException("Business not found or unavailable with slug: " + slug);
+            }
 
-        return convertToCard(business);
+            return convertToCard(business);
+        });
     }
 
     @Override
@@ -192,6 +201,7 @@ public class BusinessServiceImpl implements BusinessService {
         if (businessDTO.getCancellationFeePercentage() != null) business.setCancellationFeePercentage(businessDTO.getCancellationFeePercentage());
 
         Business saved = businessRepository.save(business);
+        cacheService.deleteByPattern("v1:business:*");
         return convertToDTO(saved);
     }
 
@@ -219,6 +229,7 @@ public class BusinessServiceImpl implements BusinessService {
         if(businessDTO.getCancellationFeePercentage() != null) business.setCancellationFeePercentage(businessDTO.getCancellationFeePercentage());
 
         Business saved = businessRepository.save(business);
+        cacheService.deleteByPattern("v1:business:*");
         return convertToDTO(saved);
     }
 
@@ -268,6 +279,9 @@ public class BusinessServiceImpl implements BusinessService {
         Business business = businessRepository.findById(id).orElseThrow(() -> new RuntimeException("Business not found with id: " + id));
         business.setStatus(BusinessStatus.UNAVAILABLE);
         businessRepository.save(business);
+        cacheService.deleteByPattern("v1:business:*");
+        cacheService.deleteByPattern("v1:services:biz:" + id + "*");
+        cacheService.deleteByPattern("v1:reviews:biz:" + id + "*");
     }
 
     @Override

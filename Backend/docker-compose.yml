@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   rabbitmq:
     image: rabbitmq:3-management
     container_name: skedula-rabbitmq
     restart: unless-stopped
     ports:
-      - "5672:5672"     # AMQP Protocol (Used by Spring Boot)
+      - "5672:5672"     # AMQP Protocol
       - "15672:15672"   # Management Web UI (http://localhost:15672)
     environment:
       RABBITMQ_DEFAULT_USER: guest
@@ -19,6 +17,45 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: skedula-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"     # Redis Port
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: skedula-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    env_file:
+      - .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
   rabbitmq_data:
+    driver: local
+  redis_data:
     driver: local

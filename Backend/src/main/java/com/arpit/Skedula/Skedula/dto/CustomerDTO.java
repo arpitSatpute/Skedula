@@ -17,6 +17,11 @@ public class CustomerDTO {
     public Long id;
     public String customerId;
     public Long user;
+    public String name;
+    public String email;
+    public String phone;
+    public java.time.LocalDate dob;
+    public String address;
     List<Appointment> appointments;
 
 }
