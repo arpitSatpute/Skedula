@@ -22,6 +22,8 @@ public class BusinessServiceOffered {
     private String description;
     private Integer duration;
     private BigDecimal price;
+
+    @Column(columnDefinition = "TEXT")
     private String imageUrl;
 
     private Long totalSlots;

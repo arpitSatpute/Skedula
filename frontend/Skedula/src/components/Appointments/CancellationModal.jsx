@@ -123,7 +123,7 @@ function CancellationModal({ appointment, onClose, onSuccess }) {
             </div>
 
             <p className="text-[11px] text-text-secondary italic">
-              Refunds are credited immediately to your Skedula wallet balance for instant re-booking or bank withdrawal.
+              Refunds are credited immediately to your Skedula wallet balance for instant re-booking.
             </p>
           </div>
         )}

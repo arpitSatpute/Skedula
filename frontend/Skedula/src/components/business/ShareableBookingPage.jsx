@@ -151,7 +151,7 @@ const ShareableBookingPage = () => {
           <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-3xl mx-auto">
             <i className="bi bi-geo-alt-fill"></i>
           </div>
-          <h2 className="text-2xl font-bold font-primary text-brand-primary">Sanctuary Not Found</h2>
+          <h2 className="text-2xl font-bold font-primary text-brand-primary">Business Not Found</h2>
           <p className="text-xs text-text-secondary">
             This business link may have expired or is temporarily unavailable on the Skedula network.
           </p>
@@ -159,7 +159,7 @@ const ShareableBookingPage = () => {
             to="/businesses/explore"
             className="inline-block bg-brand-primary text-white px-6 py-2.5 rounded-full text-xs font-bold hover:bg-brand-dark transition-all"
           >
-            Explore Verified Sanctuaries
+            Explore Verified Businesses
           </Link>
         </div>
       </div>
@@ -196,7 +196,7 @@ const ShareableBookingPage = () => {
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="bg-white/10 text-brand-secondary border border-white/15 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-xs">
-                    Verified Sanctuary
+                    Verified Business
                   </span>
                   {business.category && (
                     <span className="bg-white/15 text-brand-secondary border border-white/25 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 backdrop-blur-xs">
@@ -210,9 +210,6 @@ const ShareableBookingPage = () => {
                       : 'bg-white/10 text-white/70 border-white/15'
                   }`}>
                     {openStatus ? '● Open Now' : '○ Closed'}
-                  </span>
-                  <span className="text-xs font-mono text-white/60 bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-full">
-                    #{business.businessId}
                   </span>
 
                   {/* Rating Pill */}
@@ -335,7 +332,7 @@ const ShareableBookingPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold font-primary text-brand-primary">
-                Available Treatments & Services
+                Treatments & Services
               </h2>
               <p className="text-xs text-text-secondary mt-0.5">
                 Select a session below to view live appointment slots.
@@ -415,7 +412,7 @@ const ShareableBookingPage = () => {
                   Verified Client Reviews
                 </h3>
                 <p className="text-xs text-text-secondary mt-0.5">
-                  Real feedback from customers who completed bookings at this sanctuary.
+                  Real feedback from customers who completed bookings at this business.
                 </p>
               </div>
               <div className="flex items-center gap-2 bg-neutral-background px-3.5 py-1.5 rounded-xl border border-neutral-border/60">

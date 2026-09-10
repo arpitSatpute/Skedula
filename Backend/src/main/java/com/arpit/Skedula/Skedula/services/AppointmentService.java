@@ -24,6 +24,8 @@ public interface AppointmentService {
 
     AppointmentCard getAppointmentById(Long id);
 
+    com.arpit.Skedula.Skedula.dto.AppointmentDetailDTO getAppointmentDetails(Long id);
+
     AppointmentDTO cancelAppointmentByCustomer(Long id);
 
     AppointmentDTO cancelAppointmentByOwner(Long id);

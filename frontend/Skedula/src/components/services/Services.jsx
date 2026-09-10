@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, Link, useNavigate, Navigate } from 'react-router-dom';
+import axios from 'axios';
 import apiClient from '../Auth/ApiClient';
 import { AuthContext } from '../Auth/AuthContext';
 import ConfirmationModal from '../Common/ConfirmationModal';
@@ -7,6 +8,7 @@ import { CATEGORY_META } from '../../constants/categories';
 import logo from '../logo/logo.png';
 import { toast } from 'react-toastify';
 import { showErrorToast } from '../../utils/errorHandler';
+import { extractServiceImages } from '../../utils/imageHelper';
 
 function Services() {
   const { id } = useParams();
@@ -30,8 +32,9 @@ function Services() {
     const fetchMyBusiness = async () => {
       try {
         const res = await apiClient.get('/business/get/user');
-        if (!ignore && res.data?.data?.id) {
-          setMyBusinessId(res.data.data.id);
+        const biz = res.data?.data || res.data;
+        if (!ignore && biz?.id) {
+          setMyBusinessId(biz.id);
         }
       } catch (_) {
         // Owner may not have a business yet
@@ -47,9 +50,10 @@ function Services() {
       setLoading(true);
       setNotFound(false);
       try {
-        const res = await apiClient.get(`/public/getService/${id}`);
-        const serviceData = res.data?.data;
-        if (!serviceData) {
+        const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
+        const res = await axios.get(`${baseUrl}/public/getService/${id}`);
+        const serviceData = res.data?.data || res.data;
+        if (!serviceData || typeof serviceData !== 'object' || (!serviceData.id && !serviceData.serviceOfferedId && !serviceData.name)) {
           setNotFound(true);
           return;
         }
@@ -59,12 +63,13 @@ function Services() {
         }
 
         // Fetch providing business information
-        const bizId = serviceData.business;
+        const bizId = serviceData.business || serviceData.businessId;
         if (bizId) {
           try {
-            const bizRes = await apiClient.get(`/public/getBusiness/${bizId}`);
-            if (!ignore && bizRes.data?.data) {
-              setBusinessInfo(bizRes.data.data);
+            const bizRes = await axios.get(`${baseUrl}/public/getBusiness/${bizId}`);
+            const bizData = bizRes.data?.data || bizRes.data;
+            if (!ignore && bizData) {
+              setBusinessInfo(bizData);
             }
           } catch (_) {
             // Optional host info load
@@ -129,6 +134,114 @@ function Services() {
     }
   };
 
+  const handleQuickRemoveImage = async (indexToRemove, e) => {
+    if (e) e.stopPropagation();
+    if (!window.confirm('Are you sure you want to remove this photo from the service gallery?')) {
+      return;
+    }
+
+    try {
+      const remaining = galleryImages.filter((_, idx) => idx !== indexToRemove);
+      const updatedImageUrl = remaining.length > 0 ? remaining.join(',') : '';
+      const bizId = service.business || myBusinessId || (businessInfo ? businessInfo.id : null);
+
+      const requestData = {
+        name: service.name,
+        description: service.description,
+        duration: parseInt(service.duration),
+        price: parseFloat(service.price),
+        totalSlots: parseInt(service.totalSlots),
+        business: parseInt(bizId),
+        imageUrl: updatedImageUrl
+      };
+
+      await apiClient.put(`/services-offered/update/${service.id}`, requestData);
+      toast.success('Photo removed successfully from service showcase!');
+      
+      setService(prev => ({
+        ...prev,
+        imageUrl: updatedImageUrl,
+        imageUrls: remaining
+      }));
+      setActiveImageIndex(prev => (prev >= remaining.length ? Math.max(0, remaining.length - 1) : prev));
+    } catch (err) {
+      showErrorToast(err, 'Failed to remove photo');
+    }
+  };
+
+  const galleryImages = extractServiceImages(service);
+  const touchStartX = React.useRef(null);
+  const touchEndX = React.useRef(null);
+  const thumbnailsRef = React.useRef(null);
+
+  // Keyboard navigation for image carousel
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (galleryImages.length > 1) {
+        if (e.key === 'ArrowLeft') {
+          setActiveImageIndex(prev => (prev === 0 ? galleryImages.length - 1 : prev - 1));
+        } else if (e.key === 'ArrowRight') {
+          setActiveImageIndex(prev => (prev === galleryImages.length - 1 ? 0 : prev + 1));
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [galleryImages.length]);
+
+  // Scroll active thumbnail into view
+  useEffect(() => {
+    if (thumbnailsRef.current) {
+      const activeEl = thumbnailsRef.current.children[activeImageIndex];
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [activeImageIndex]);
+
+  const handlePrevPhoto = (e) => {
+    if (e) e.stopPropagation();
+    setActiveImageIndex(prev => (prev === 0 ? galleryImages.length - 1 : prev - 1));
+  };
+
+  const handleNextPhoto = (e) => {
+    if (e) e.stopPropagation();
+    setActiveImageIndex(prev => (prev === galleryImages.length - 1 ? 0 : prev + 1));
+  };
+
+  // Touch and wheel swipe handlers
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (galleryImages.length <= 1 || touchStartX.current === null || touchEndX.current === null) return;
+    const distance = touchStartX.current - touchEndX.current;
+    if (distance > 40) {
+      handleNextPhoto(e);
+    } else if (distance < -40) {
+      handlePrevPhoto(e);
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  const handleWheelScroll = (e) => {
+    if (galleryImages.length <= 1) return;
+    if (Math.abs(e.deltaX) > 25) {
+      e.preventDefault();
+      if (e.deltaX > 0) {
+        handleNextPhoto(e);
+      } else {
+        handlePrevPhoto(e);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[75vh] flex items-center justify-center py-20 bg-mesh-subtle">
@@ -149,20 +262,7 @@ function Services() {
 
   const categoryMeta = CATEGORY_META[service.category] || null;
   const isMyService = isOwner && myBusinessId && String(service.business) === String(myBusinessId);
-  const galleryImages = (service.imageUrls && service.imageUrls.length > 0)
-    ? service.imageUrls
-    : (service.imageUrl ? [service.imageUrl] : [logo]);
   const currentPhoto = galleryImages[activeImageIndex] || galleryImages[0] || logo;
-
-  const handlePrevPhoto = (e) => {
-    e.stopPropagation();
-    setActiveImageIndex(prev => (prev === 0 ? galleryImages.length - 1 : prev - 1));
-  };
-
-  const handleNextPhoto = (e) => {
-    e.stopPropagation();
-    setActiveImageIndex(prev => (prev === galleryImages.length - 1 ? 0 : prev + 1));
-  };
 
   return (
     <div className="py-10 md:py-16 px-4 sm:px-6 bg-mesh-subtle min-h-screen">
@@ -186,12 +286,6 @@ function Services() {
               </span>
             )}
           </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-text-secondary bg-white px-3 py-1.5 rounded-full border border-neutral-border shadow-2xs">
-              ID: #{service.serviceOfferedId || service.id}
-            </span>
-          </div>
         </div>
 
         {/* Dual-Column Master Layout */}
@@ -202,11 +296,19 @@ function Services() {
             
             {/* Main Imagery & Multi-Photo Showcase Card */}
             <div className="bg-white rounded-3xl border border-neutral-border shadow-card overflow-hidden" data-animation-on-scroll="">
-              <div className="relative h-72 sm:h-96 w-full bg-neutral-background overflow-hidden group">
+              <div
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onWheel={handleWheelScroll}
+                className="relative h-72 sm:h-96 w-full bg-neutral-background overflow-hidden select-none"
+              >
                 <img
                   src={currentPhoto}
                   alt={`${service.name} - Photo ${activeImageIndex + 1}`}
-                  className="w-full h-full object-cover transition-transform duration-500"
+                  onError={(e) => { e.target.src = logo; }}
+                  className="w-full h-full object-cover transition-transform duration-500 pointer-events-none"
+                  draggable={false}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/85 via-brand-dark/25 to-transparent pointer-events-none"></div>
 
@@ -218,11 +320,22 @@ function Services() {
                       <span>{service.category}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 pointer-events-auto">
+                    {isMyService && galleryImages.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleQuickRemoveImage(activeImageIndex, e)}
+                        className="bg-black/60 hover:bg-rose-600 text-white backdrop-blur-md text-[11px] font-bold px-3 py-1 rounded-full border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-105"
+                        title="Delete currently previewed photo"
+                      >
+                        <i className="bi bi-trash-fill text-[10px]"></i>
+                        <span>Remove Photo</span>
+                      </button>
+                    )}
                     {galleryImages.length > 1 && (
-                      <span className="bg-black/60 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-sm">
-                        <i className="bi bi-camera-fill mr-1"></i>
-                        {activeImageIndex + 1} / {galleryImages.length}
+                      <span className="bg-black/60 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+                        <i className="bi bi-images"></i>
+                        <span>{activeImageIndex + 1} / {galleryImages.length}</span>
                       </span>
                     )}
                     <span className="bg-brand-secondary/90 backdrop-blur-md text-brand-primary text-xs font-bold px-3 py-1 rounded-full shadow-sm border border-white/40">
@@ -231,22 +344,22 @@ function Services() {
                   </div>
                 </div>
 
-                {/* Left/Right Photo Carousel Arrows */}
+                {/* Left/Right Photo Carousel Arrows (Transparent Frosted Glass) */}
                 {galleryImages.length > 1 && (
                   <>
                     <button
                       type="button"
                       onClick={handlePrevPhoto}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 hover:bg-white text-brand-primary flex items-center justify-center text-sm shadow-md transition-all cursor-pointer opacity-80 hover:opacity-100 z-10"
-                      title="Previous Photo"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/35 hover:bg-black/65 text-white backdrop-blur-md border border-white/30 flex items-center justify-center text-lg shadow-lg transition-all cursor-pointer opacity-85 hover:opacity-100 hover:scale-110 active:scale-95 z-10"
+                      title="Previous Photo (or swipe left/right)"
                     >
                       <i className="bi bi-chevron-left"></i>
                     </button>
                     <button
                       type="button"
                       onClick={handleNextPhoto}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 hover:bg-white text-brand-primary flex items-center justify-center text-sm shadow-md transition-all cursor-pointer opacity-80 hover:opacity-100 z-10"
-                      title="Next Photo"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/35 hover:bg-black/65 text-white backdrop-blur-md border border-white/30 flex items-center justify-center text-lg shadow-lg transition-all cursor-pointer opacity-85 hover:opacity-100 hover:scale-110 active:scale-95 z-10"
+                      title="Next Photo (or swipe left/right)"
                     >
                       <i className="bi bi-chevron-right"></i>
                     </button>
@@ -256,9 +369,11 @@ function Services() {
                 {/* Hero Overlay Content (Bottom) */}
                 <div className="absolute bottom-6 left-6 right-6 text-white space-y-2.5 z-10 pointer-events-none">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="bg-white/20 backdrop-blur-md text-white text-[11px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full border border-white/20">
-                      {service.status || 'Active Service'}
-                    </span>
+                    {service.status && service.status !== 'AVAILABLE' && (
+                      <span className="bg-rose-500/80 backdrop-blur-md text-white text-[11px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full border border-white/20">
+                        {service.status}
+                      </span>
+                    )}
                     <span className="bg-emerald-500/25 backdrop-blur-md text-emerald-300 text-[11px] font-bold px-3 py-0.5 rounded-full border border-emerald-400/30 flex items-center gap-1">
                       <i className="bi bi-shield-check"></i>
                       <span>Guaranteed Slot</span>
@@ -272,21 +387,29 @@ function Services() {
 
               {/* Multi-Photo Thumbnail Bar */}
               {galleryImages.length > 1 && (
-                <div className="p-3 bg-neutral-background/70 border-b border-neutral-border/60 flex items-center gap-2 overflow-x-auto scrollbar-none">
+                <div
+                  ref={thumbnailsRef}
+                  className="p-3 bg-neutral-background/70 border-b border-neutral-border/60 flex items-center gap-2.5 overflow-x-auto scroll-smooth scrollbar-thin"
+                >
                   {galleryImages.map((photo, pIdx) => (
                     <button
                       key={pIdx}
                       type="button"
                       onClick={() => setActiveImageIndex(pIdx)}
-                      className={`relative shrink-0 w-16 h-12 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                      className={`relative shrink-0 w-20 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
                         activeImageIndex === pIdx
-                          ? 'border-brand-primary shadow-sm scale-105 ring-2 ring-brand-primary/20'
+                          ? 'border-brand-primary shadow-sm scale-105 ring-2 ring-brand-primary/20 opacity-100'
                           : 'border-transparent opacity-60 hover:opacity-100'
                       }`}
                     >
-                      <img src={photo} alt={`Thumb ${pIdx + 1}`} className="w-full h-full object-cover" />
+                      <img
+                        src={photo}
+                        alt={`Thumb ${pIdx + 1}`}
+                        onError={(e) => { e.target.src = logo; }}
+                        className="w-full h-full object-cover"
+                      />
                       {pIdx === 0 && (
-                        <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] font-bold text-center">
+                        <span className="absolute bottom-0 inset-x-0 bg-brand-primary/80 text-brand-secondary text-[8px] font-bold text-center py-0.5 uppercase tracking-wider">
                           Cover
                         </span>
                       )}
@@ -426,12 +549,110 @@ function Services() {
               </div>
             </div>
 
-            {/* Business Sanctuary Profile Card */}
+            {/* Dedicated Multi-Image Gallery Showcase Section */}
+            {galleryImages.length > 0 && (
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-neutral-border shadow-card space-y-5" data-animation-on-scroll="">
+                <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-neutral-border/60">
+                  <div>
+                    <span className="bg-brand-secondary text-brand-primary text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+                      Visual Showcase
+                    </span>
+                    <h2 className="text-lg font-bold font-primary text-brand-primary mt-2 flex items-center gap-2">
+                      <i className="bi bi-images text-brand-primary"></i>
+                      <span>Service Photo Gallery ({galleryImages.length} Images)</span>
+                    </h2>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      Explore detailed views of treatment environments, tools, and results. Click any photo to preview above.
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-2.5">
+                    {isMyService && (
+                      <button
+                        type="button"
+                        onClick={handleEditService}
+                        className="bg-neutral-background hover:bg-neutral-border text-brand-primary border border-neutral-border text-xs font-bold px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <i className="bi bi-pencil-square"></i>
+                        <span>Edit & Add Photos</span>
+                      </button>
+                    )}
+                    <span className="hidden sm:inline-flex bg-neutral-background text-brand-primary text-xs font-bold px-3 py-1.5 rounded-full border border-neutral-border/60">
+                      Active: Photo #{activeImageIndex + 1}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Photo Gallery Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+                  {galleryImages.map((photo, pIdx) => {
+                    const isActive = activeImageIndex === pIdx;
+                    return (
+                      <div
+                        key={pIdx}
+                        onClick={() => {
+                          setActiveImageIndex(pIdx);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className={`group relative rounded-2xl overflow-hidden cursor-pointer border-2 transition-all duration-300 aspect-4/3 bg-neutral-background ${
+                          isActive
+                            ? 'border-brand-primary ring-3 ring-brand-primary/20 shadow-md scale-102'
+                            : 'border-neutral-border/70 hover:border-brand-primary/50 hover:shadow-sm'
+                        }`}
+                      >
+                        <img
+                          src={photo}
+                          alt={`${service.name} gallery item ${pIdx + 1}`}
+                          onError={(e) => { e.target.src = logo; }}
+                          className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity"></div>
+                        
+                        {/* Photo Number Pill */}
+                        <div className="absolute top-2 left-2 z-10">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-xs shadow-2xs ${
+                            isActive
+                              ? 'bg-brand-secondary text-brand-primary font-extrabold'
+                              : 'bg-black/50 text-white'
+                          }`}>
+                            #{pIdx + 1}
+                          </span>
+                        </div>
+
+                        {/* Owner Quick Delete Button */}
+                        {isMyService && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleQuickRemoveImage(pIdx, e)}
+                            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-rose-600/90 hover:bg-rose-700 text-white shadow-md flex items-center justify-center text-xs cursor-pointer z-20 transition-transform hover:scale-110 active:scale-95"
+                            title="Remove this photo from service"
+                            aria-label="Remove photo"
+                          >
+                            <i className="bi bi-trash-fill text-[11px]"></i>
+                          </button>
+                        )}
+
+                        {/* Status Label on Bottom */}
+                        <div className="absolute bottom-2 inset-x-2 flex items-center justify-between text-[11px] text-white font-bold pointer-events-none">
+                          <span>{pIdx === 0 ? 'Cover Photo' : `Photo ${pIdx + 1}`}</span>
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-brand-secondary flex items-center gap-0.5 text-[10px]">
+                            <span>View</span>
+                            <i className="bi bi-arrow-up-right"></i>
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Business Profile Card */}
             {businessInfo && (
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-neutral-border shadow-card space-y-4" data-animation-on-scroll="">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-border/60">
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block">Host Sanctuary</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block">Host Business</span>
                     <h3 className="text-xl font-bold font-primary text-brand-primary">{businessInfo.name}</h3>
                     <p className="text-xs text-text-secondary flex items-center gap-1.5">
                       <i className="bi bi-geo-alt-fill text-brand-primary"></i>
@@ -443,7 +664,7 @@ function Services() {
                     onClick={handleViewBusiness}
                     className="self-start sm:self-center px-5 py-2.5 rounded-full text-xs font-bold bg-neutral-background hover:bg-neutral-border text-brand-primary border border-neutral-border transition-all flex items-center gap-1.5 cursor-pointer"
                   >
-                    <span>View Sanctuary</span>
+                    <span>View Business</span>
                     <i className="bi bi-arrow-up-right text-xs"></i>
                   </button>
                 </div>
@@ -549,7 +770,7 @@ function Services() {
                         className="w-full bg-neutral-background hover:bg-neutral-border text-brand-primary font-bold py-3 rounded-full text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <i className="bi bi-building"></i>
-                        <span>View Sanctuary Profile</span>
+                        <span>View Business</span>
                       </button>
                     )}
                   </div>

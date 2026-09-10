@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @Getter
@@ -34,6 +35,7 @@ public class BusinessServiceOfferedDTO {
     private BigDecimal price;
 
     private String imageUrl;
+    private List<String> imageUrls;
 
     @NotNull(message =" Enter Approx Service Duration")
     @Min(value = 1, message = "Required at least 1 slot")

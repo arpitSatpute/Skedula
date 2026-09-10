@@ -29,6 +29,8 @@ public interface BusinessServiceOfferedService {
 
     Void setFile(MultipartFile multipartFile, Long id);
 
+    Void setFiles(List<MultipartFile> multipartFiles, Long id);
+
     List<BusinessServiceOfferedDTO> getServiceByUser();
 
     BusinessServiceOfferedDTO convertToDTO(BusinessServiceOffered services);

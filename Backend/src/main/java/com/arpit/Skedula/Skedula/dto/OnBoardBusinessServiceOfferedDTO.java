@@ -37,5 +37,5 @@ public class OnBoardBusinessServiceOfferedDTO {
     //Business ID
     private Long business;
 
-
+    private String imageUrl;
 }

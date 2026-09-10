@@ -30,19 +30,27 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
 
     @Override
     public List<ResponseWalletTransactionDTO> convertToTransactionDTOs(List<WalletTransaction> transactions) {
+        if (transactions == null) {
+            return new ArrayList<>();
+        }
         List<ResponseWalletTransactionDTO> responseWalletTransactionDTOs = new ArrayList<>();
-        for(WalletTransaction walletTransaction : transactions){
-            ResponseWalletTransactionDTO responseWalletTransactionDTO = new ResponseWalletTransactionDTO();
-            responseWalletTransactionDTO.setId(walletTransaction.getId());
-            responseWalletTransactionDTO.setTransactionId(walletTransaction.getTransactionId());
-            responseWalletTransactionDTO.setAmount(walletTransaction.getAmount());
-            responseWalletTransactionDTO.setTransactionType(walletTransaction.getTransactionType());
-            responseWalletTransactionDTO.setTimeStamp(walletTransaction.getTimeStamp());
-            responseWalletTransactionDTOs.add(responseWalletTransactionDTO);
-
+        for (WalletTransaction walletTransaction : transactions) {
+            if (walletTransaction == null) continue;
+            ResponseWalletTransactionDTO dto = new ResponseWalletTransactionDTO();
+            dto.setId(walletTransaction.getId());
+            dto.setTransactionId(walletTransaction.getTransactionId());
+            dto.setAmount(walletTransaction.getAmount());
+            dto.setTransactionType(walletTransaction.getTransactionType());
+            dto.setTimeStamp(walletTransaction.getTimeStamp());
+            if (walletTransaction.getAppointment() != null) {
+                dto.setAppointmentId(walletTransaction.getAppointment().getId());
+                if (walletTransaction.getAppointment().getServiceOffered() != null) {
+                    dto.setServiceName(walletTransaction.getAppointment().getServiceOffered().getName());
+                }
+            }
+            responseWalletTransactionDTOs.add(dto);
         }
         return responseWalletTransactionDTOs;
-
     }
 
 }

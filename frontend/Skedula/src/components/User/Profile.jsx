@@ -112,9 +112,9 @@ function Profile() {
       },
     
       {
-        icon: 'bi-hash',
+        icon: 'bi-person-badge',
         label: 'Customer ID',
-        value: userData.customer?.customerId ? `#${userData.customer.customerId}` : 'Not assigned',
+        value: userData.customer?.customerId ? userData.customer.customerId : 'Not assigned',
         iconColor: 'text-warning'
       }
     ]
@@ -222,7 +222,7 @@ function Profile() {
                     <div className="mb-4">
                       <span className="badge bg-primary bg-gradient px-4 py-2 fs-6 rounded-pill">
                         <i className="bi bi-person-badge me-2"></i>
-                        Customer ID: #{customer?.customerId || 'Not assigned'}
+                        Customer ID: {customer?.customerId || 'Not assigned'}
                       </span>
                     </div>
                     

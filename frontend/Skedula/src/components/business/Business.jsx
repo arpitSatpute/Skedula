@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import logo from '../logo/logo.png';
 import { showErrorToast } from '../../utils/errorHandler';
+import { extractServiceImages } from '../../utils/imageHelper';
+import ServiceImageCarousel from '../Common/ServiceImageCarousel';
 
 const Business = () => {
   const { id } = useParams();
@@ -136,9 +138,6 @@ const Business = () => {
                 }`}>
                   {open ? '● Open Right Now' : '○ Closed for the day'}
                 </span>
-                <span className="text-xs font-mono text-text-secondary bg-neutral-background px-2.5 py-0.5 rounded-full border border-neutral-border/60">
-                  ID: #{business.businessId}
-                </span>
 
                 {/* Rating Badge */}
                 {reviewSummary.totalReviews > 0 ? (
@@ -219,7 +218,7 @@ const Business = () => {
         <div className="space-y-6">
           <div>
             <span className="bg-brand-secondary text-brand-primary text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-              Available Treatments & Services
+              Treatments & Services
             </span>
             <h2 className="text-2xl sm:text-3xl font-bold font-primary text-brand-primary mt-2">
               Book Real-Time Appointment Slots
@@ -231,58 +230,63 @@ const Business = () => {
 
           {/* Services Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map(service => (
-              <div
-                key={service.id}
-                className="bg-white rounded-3xl overflow-hidden border border-neutral-border shadow-card hover:shadow-card-hover transition-all flex flex-col justify-between group"
-              >
-                <div>
-                  {/* Service Image */}
-                  <div className="h-48 w-full bg-neutral-background overflow-hidden relative">
-                    <img
-                      src={service.imageUrl || logo}
+            {services.map(service => {
+              const servicePhotos = extractServiceImages(service, logo);
+              const primaryPhoto = servicePhotos[0] || logo;
+
+              return (
+                <div
+                  key={service.id}
+                  className="bg-white rounded-3xl overflow-hidden border border-neutral-border shadow-card hover:shadow-card-hover transition-all flex flex-col justify-between group"
+                >
+                  <div>
+                    {/* Service Image with Multi-Photo Carousel */}
+                    <ServiceImageCarousel
+                      images={servicePhotos}
                       alt={service.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="h-48 w-full"
+                      badge={
+                        <div className="absolute top-3 right-3 bg-brand-secondary text-brand-primary text-xs font-bold px-3 py-1 rounded-full shadow-sm z-10 pointer-events-none">
+                          ₹{service.price}
+                        </div>
+                      }
                     />
-                    <div className="absolute top-3 right-3 bg-brand-secondary text-brand-primary text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-                      ₹{service.price}
-                    </div>
-                  </div>
 
-                  {/* Body */}
-                  <div className="p-6 space-y-3">
-                    <h3 className="text-lg font-bold font-primary text-brand-primary leading-snug">
-                      {service.name}
-                    </h3>
-                    <p className="text-xs text-text-secondary line-clamp-2 leading-relaxed">
-                      {service.description || 'Professional service handled by certified specialists.'}
-                    </p>
+                    {/* Body */}
+                    <div className="p-6 space-y-3">
+                      <h3 className="text-lg font-bold font-primary text-brand-primary leading-snug">
+                        {service.name}
+                      </h3>
+                      <p className="text-xs text-text-secondary line-clamp-2 leading-relaxed">
+                        {service.description || 'Professional service handled by certified specialists.'}
+                      </p>
 
-                    <div className="grid grid-cols-2 gap-2 pt-2 text-xs">
-                      <div className="bg-neutral-background p-2.5 rounded-xl text-center border border-neutral-border/50">
-                        <span className="text-text-secondary block text-[10px] uppercase font-bold">Duration</span>
-                        <span className="font-bold text-brand-primary">{service.duration} mins</span>
-                      </div>
-                      <div className="bg-neutral-background p-2.5 rounded-xl text-center border border-neutral-border/50">
-                        <span className="text-text-secondary block text-[10px] uppercase font-bold">Operating Slots</span>
-                        <span className="font-bold text-brand-primary">{service.totalSlots} Slots</span>
+                      <div className="grid grid-cols-2 gap-2 pt-2 text-xs">
+                        <div className="bg-neutral-background p-2.5 rounded-xl text-center border border-neutral-border/50">
+                          <span className="text-text-secondary block text-[10px] uppercase font-bold">Duration</span>
+                          <span className="font-bold text-brand-primary">{service.duration} mins</span>
+                        </div>
+                        <div className="bg-neutral-background p-2.5 rounded-xl text-center border border-neutral-border/50">
+                          <span className="text-text-secondary block text-[10px] uppercase font-bold">Operating Slots</span>
+                          <span className="font-bold text-brand-primary">{service.totalSlots} Slots</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Card Action */}
-                <div className="p-6 pt-0">
-                  <button
-                    onClick={() => navigate(`/services/${service.id}`)}
-                    className="w-full bg-brand-primary text-white hover:bg-brand-dark py-3 rounded-full text-xs font-bold shadow-card hover:shadow-card-hover transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>View & Book Appointment</span>
-                    <i className="bi bi-arrow-right text-brand-secondary"></i>
-                  </button>
+                  {/* Card Action */}
+                  <div className="p-6 pt-0">
+                    <button
+                      onClick={() => navigate(`/services/${service.id}`)}
+                      className="w-full bg-brand-primary text-white hover:bg-brand-dark py-3 rounded-full text-xs font-bold shadow-card hover:shadow-card-hover transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>View & Book Appointment</span>
+                      <i className="bi bi-arrow-right text-brand-secondary"></i>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {services.length === 0 && (
               <div className="col-span-full bg-white rounded-3xl p-12 text-center border border-neutral-border space-y-3 shadow-card">

@@ -306,7 +306,7 @@ function AdminDashboard() {
               {/* Registered Businesses */}
               <div className="bg-white rounded-3xl p-6 border border-neutral-border shadow-card space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase font-bold text-text-secondary tracking-wider">Verified Sanctuaries</span>
+                  <span className="text-[10px] uppercase font-bold text-text-secondary tracking-wider">Verified Businesses</span>
                   <div className="w-9 h-9 rounded-xl bg-brand-secondary/30 text-brand-primary flex items-center justify-center text-base">
                     <i className="bi bi-building-check"></i>
                   </div>
@@ -421,7 +421,7 @@ function AdminDashboard() {
                       <tr key={b.id} className="hover:bg-neutral-background/40 transition-colors">
                         <td className="py-4 pr-3">
                           <span className="font-bold text-brand-primary block">{b.name}</span>
-                          <span className="text-[10px] font-mono text-text-secondary">#{b.businessId}</span>
+                          <span className="text-[10px] font-mono text-text-secondary">ID: {b.businessId}</span>
                         </td>
                         <td className="py-4 pr-3 text-text-secondary">
                           <span>{b.city || 'N/A'}, {b.state || ''}</span>
@@ -436,7 +436,7 @@ function AdminDashboard() {
                               ? 'bg-emerald-100 text-emerald-800'
                               : 'bg-rose-100 text-rose-800'
                           }`}>
-                            ● {b.status}
+                            ● {isAvailable ? 'Active' : (b.status || 'Suspended')}
                           </span>
                         </td>
                         <td className="py-4 text-right space-x-2">
@@ -502,7 +502,7 @@ function AdminDashboard() {
                 <thead>
                   <tr className="border-b border-neutral-border/60 text-[11px] uppercase tracking-wider text-text-secondary">
                     <th className="pb-3 font-bold">Service & ID</th>
-                    <th className="pb-3 font-bold">Provider Sanctuary</th>
+                    <th className="pb-3 font-bold">Provider Business</th>
                     <th className="pb-3 font-bold">Session Specs</th>
                     <th className="pb-3 font-bold">Price</th>
                     <th className="pb-3 font-bold">Status</th>
@@ -516,10 +516,10 @@ function AdminDashboard() {
                       <tr key={s.id} className="hover:bg-neutral-background/40 transition-colors">
                         <td className="py-4 pr-3">
                           <span className="font-bold text-brand-primary block">{s.name}</span>
-                          <span className="text-[10px] font-mono text-text-secondary">#{s.serviceOfferedId}</span>
+                          <span className="text-[10px] font-mono text-text-secondary">ID: {s.serviceOfferedId}</span>
                         </td>
                         <td className="py-4 pr-3 text-text-secondary font-medium">
-                          {s.businessName || 'Business ID #' + s.businessId}
+                          {s.businessName || 'Business ID ' + s.businessId}
                         </td>
                         <td className="py-4 pr-3 text-text-secondary">
                           <span>{s.duration} mins • {s.totalSlots} daily slots</span>
@@ -533,7 +533,7 @@ function AdminDashboard() {
                               ? 'bg-emerald-100 text-emerald-800'
                               : 'bg-rose-100 text-rose-800'
                           }`}>
-                            ● {s.status}
+                            ● {isAvailable ? 'Active' : (s.status || 'Locked')}
                           </span>
                         </td>
                         <td className="py-4 text-right space-x-2">
@@ -611,7 +611,7 @@ function AdminDashboard() {
                     return (
                       <tr key={u.id} className="hover:bg-neutral-background/40 transition-colors">
                         <td className="py-4 pr-3 font-bold text-brand-primary">
-                          {u.name || 'User #' + u.id}
+                          {u.name || 'User ' + u.id}
                         </td>
                         <td className="py-4 pr-3 text-text-secondary">
                           {u.email}
@@ -819,7 +819,7 @@ function AdminDashboard() {
                   <thead className="bg-neutral-background/70 border-b border-neutral-border text-text-secondary uppercase text-[10px] tracking-wider font-bold">
                     <tr>
                       <th className="py-3.5 px-5">Who Added Funds (Customer)</th>
-                      <th className="py-3.5 px-5">For Whom (Sanctuary / Provider)</th>
+                      <th className="py-3.5 px-5">For Whom (Business / Provider)</th>
                       <th className="py-3.5 px-5">For What (Service & Session)</th>
                       <th className="py-3.5 px-5 text-right">Escrow Amount & Split</th>
                       <th className="py-3.5 px-5 text-center">Custody Status</th>

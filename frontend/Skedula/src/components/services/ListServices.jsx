@@ -4,6 +4,8 @@ import logo from '../../assets/skedula.png';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { BUSINESS_CATEGORIES, CATEGORY_META } from '../../constants/categories';
+import { extractServiceImages, getPrimaryServiceImage } from '../../utils/imageHelper';
+import ServiceImageCarousel from '../Common/ServiceImageCarousel';
 
 const ListServices = () => {
   const [services, setServices] = useState([]);
@@ -29,7 +31,16 @@ const ListServices = () => {
 
       const response = await axios.get(endpoint, { params });
       if (ignore) return;
-      setServices(response.data.data || []);
+      const rawData = response.data;
+      let servicesList = [];
+      if (Array.isArray(rawData)) {
+        servicesList = rawData;
+      } else if (rawData && Array.isArray(rawData.data)) {
+        servicesList = rawData.data;
+      } else if (rawData && Array.isArray(rawData.content)) {
+        servicesList = rawData.content;
+      }
+      setServices(servicesList);
     } catch (error) {
       if (!ignore) {
         setServices([]);
@@ -94,7 +105,7 @@ const ListServices = () => {
             Curated Treatment Catalog
           </div>
           <h1 className="text-3xl sm:text-5xl font-bold font-primary text-brand-primary">
-            Explore All Available Services
+            Explore All Services
           </h1>
           <p className="text-sm sm:text-base text-text-secondary">
             Find certified practitioners, verify transparent pricing, and reserve guaranteed time slots with automated escrow.
@@ -250,34 +261,40 @@ const ListServices = () => {
         ) : (
           /* Services Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredServices.map(service => (
-              <div
-                key={service.id}
-                className="bg-white rounded-3xl border border-neutral-border shadow-sm hover:shadow-card hover:-translate-y-1 transition-all overflow-hidden flex flex-col justify-between group"
-                data-animation-on-scroll=""
-              >
-                <div>
-                  {/* Image Section */}
-                  <div className="h-48 w-full bg-neutral-background overflow-hidden relative">
-                    <img
-                      src={service.imageUrl || logo}
-                      alt={service.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute top-3 right-3 bg-brand-secondary text-brand-primary text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-                      ₹{service.price}
-                    </div>
-                    {service.category && (
-                      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs text-brand-primary text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs border border-neutral-border/60 flex items-center gap-1">
-                        {CATEGORY_META[service.category]?.icon && <i className={`bi ${CATEGORY_META[service.category].icon} text-[9px]`}></i>}
-                        <span>{service.category}</span>
-                      </div>
-                    )}
-                  </div>
+            {filteredServices.map(service => {
+              const servicePhotos = extractServiceImages(service, logo);
+              const primaryPhoto = servicePhotos[0] || logo;
 
-                  {/* Card Body */}
-                  <div className="p-6 space-y-3">
-                    <div>
+              return (
+                <div
+                  key={service.id}
+                  className="bg-white rounded-3xl border border-neutral-border shadow-sm hover:shadow-card hover:-translate-y-1 transition-all overflow-hidden flex flex-col justify-between group"
+                  data-animation-on-scroll=""
+                >
+                  <div>
+                    {/* Image Section with Multi-Photo Carousel */}
+                    <ServiceImageCarousel
+                      images={servicePhotos}
+                      alt={service.name}
+                      className="h-48 w-full"
+                      badge={
+                        <>
+                          <div className="absolute top-3 right-3 bg-brand-secondary text-brand-primary text-xs font-bold px-3 py-1 rounded-full shadow-sm z-10 pointer-events-none">
+                            ₹{service.price}
+                          </div>
+                          {service.category && (
+                            <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs text-brand-primary text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs border border-neutral-border/60 flex items-center gap-1 z-10 pointer-events-none">
+                              {CATEGORY_META[service.category]?.icon && <i className={`bi ${CATEGORY_META[service.category].icon} text-[9px]`}></i>}
+                              <span>{service.category}</span>
+                            </div>
+                          )}
+                        </>
+                      }
+                    />
+
+                    {/* Card Body */}
+                    <div className="p-6 space-y-3">
+                      <div>
                       <h3 className="text-lg font-bold font-primary text-brand-primary leading-snug">
                         {service.name}
                       </h3>
@@ -316,7 +333,8 @@ const ListServices = () => {
                   </button>
                 </div>
               </div>
-            ))}
+            );
+          })}
 
             {/* Empty State */}
             {filteredServices.length === 0 && (

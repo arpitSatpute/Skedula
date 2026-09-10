@@ -55,6 +55,7 @@ function OwnerAppointments() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
   const { id, serviceId } = useParams();
+  const navigate = useNavigate();
 
   const statusOptions = [
     { value: 'All', label: 'All Statuses' },
@@ -356,7 +357,7 @@ function OwnerAppointments() {
             return (
               <div
                 key={app.id}
-                className="bg-white rounded-3xl p-6 sm:p-7 border border-neutral-border shadow-sm hover:shadow-card transition-all space-y-5 flex flex-col justify-between relative overflow-hidden"
+                className="bg-white rounded-3xl p-6 sm:p-7 border border-neutral-border shadow-sm hover:shadow-card transition-all space-y-5 flex flex-col justify-between relative overflow-hidden group"
                 data-animation-on-scroll=""
               >
                 {app.rescheduledAt && (
@@ -364,13 +365,17 @@ function OwnerAppointments() {
                     Rescheduled
                   </div>
                 )}
-                <div className="space-y-4">
+                <div
+                  className="space-y-4 cursor-pointer"
+                  onClick={() => navigate(`/appointments/${app.id}`)}
+                  title="Click to view full appointment details"
+                >
                   {/* Card Header */}
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 group-hover:text-brand-primary">
                         <i className="bi bi-calendar-event text-brand-primary"></i>
-                        <span className="text-base font-bold text-brand-primary font-primary">
+                        <span className="text-base font-bold text-brand-primary font-primary group-hover:underline">
                           {new Date(app.dateTime).toLocaleDateString('en-IN', {
                             weekday: 'short',
                             year: 'numeric',
@@ -391,15 +396,15 @@ function OwnerAppointments() {
                     </span>
                   </div>
 
-                  {/* Metadata Chips */}
+                  {/* Metadata Chips without # */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="bg-neutral-background p-2.5 rounded-xl border border-neutral-border/50">
                       <span className="text-[10px] text-text-secondary uppercase font-semibold">Appointment ID</span>
-                      <p className="font-bold font-mono text-brand-primary truncate">#{app.appointmentId || app.id}</p>
+                      <p className="font-bold font-mono text-brand-primary truncate">{app.appointmentId || app.id}</p>
                     </div>
                     <div className="bg-neutral-background p-2.5 rounded-xl border border-neutral-border/50">
                       <span className="text-[10px] text-text-secondary uppercase font-semibold">Client Identifier</span>
-                      <p className="font-bold font-mono text-brand-primary truncate">#{app.bookedBy || app.customerId || 'Client'}</p>
+                      <p className="font-bold font-mono text-brand-primary truncate">{app.bookedBy || app.customerId || 'Client'}</p>
                     </div>
                   </div>
 
@@ -407,9 +412,15 @@ function OwnerAppointments() {
                   {app.notes && (
                     <div className="bg-neutral-background/70 p-3 rounded-2xl border border-neutral-border/60">
                       <p className="text-[10px] text-text-secondary uppercase font-bold mb-0.5">Client Notes:</p>
-                      <p className="text-xs text-brand-primary italic">"{app.notes}"</p>
+                      <p className="text-xs text-brand-primary italic">&quot;{app.notes}&quot;</p>
                     </div>
                   )}
+
+                  {/* View Details Link */}
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-brand-primary group-hover:translate-x-1 transition-transform">
+                    <span>View Appointment Details</span>
+                    <i className="bi bi-arrow-right text-[11px]"></i>
+                  </div>
                 </div>
 
                 {/* Owner Action Buttons */}
@@ -417,14 +428,20 @@ function OwnerAppointments() {
                   {activeTab === 'upcoming' && app.appointmentStatus === 'PENDING' && (
                     <div className="grid grid-cols-2 gap-2">
                       <button
-                        onClick={() => handleApprove(app.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleApprove(app.id);
+                        }}
                         className="bg-brand-primary text-white hover:bg-brand-dark py-2.5 rounded-full text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <i className="bi bi-check2 text-brand-secondary"></i>
                         <span>Approve Slot</span>
                       </button>
                       <button
-                        onClick={() => handleReject(app.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReject(app.id);
+                        }}
                         className="bg-red-50 hover:bg-red-100 text-red-600 py-2.5 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <i className="bi bi-x"></i>

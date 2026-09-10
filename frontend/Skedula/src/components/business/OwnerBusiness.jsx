@@ -4,9 +4,12 @@ import apiClient from '../Auth/ApiClient.js';
 import ConfirmationModal from '../Common/ConfirmationModal.jsx';
 import BusinessQrModal from './BusinessQrModal.jsx';
 import BusinessAnalytics from './BusinessAnalytics.jsx';
+import OwnerWithdrawals from './OwnerWithdrawals.jsx';
 import { toast } from 'react-toastify';
 import { showErrorToast } from '../../utils/errorHandler';
 import logo from '../logo/logo.png';
+import ServiceImageCarousel from '../Common/ServiceImageCarousel';
+import { extractServiceImages } from '../../utils/imageHelper';
 
 const OwnerBusiness = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -206,9 +209,6 @@ const OwnerBusiness = () => {
                 <span className="bg-brand-secondary text-brand-primary text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
                   Business Owner Hub
                 </span>
-                <span className="text-xs text-text-secondary font-mono bg-neutral-background px-2.5 py-0.5 rounded-full border border-neutral-border/60">
-                  ID: #{business.businessId}
-                </span>
 
                 {/* Real Rating Badge in Header */}
                 {reviewSummary.totalReviews > 0 ? (
@@ -373,7 +373,7 @@ const OwnerBusiness = () => {
           </div>
         </div>
 
-        {/* 3-Tab Navigation Bar for Owner: Services vs Analytics vs Reviews */}
+        {/* Navigation Bar for Owner: Services vs Analytics vs Reviews vs Payouts */}
         <div className="flex flex-wrap items-center gap-2 bg-white p-1.5 rounded-2xl border border-neutral-border shadow-xs w-fit">
           <button
             onClick={() => handleTabSwitch('services')}
@@ -413,11 +413,31 @@ const OwnerBusiness = () => {
             <i className="bi bi-chat-quote-fill text-amber-500"></i>
             <span>Client Reviews & Feedback ({reviewSummary.totalReviews || 0})</span>
           </button>
+
+          <button
+            onClick={() => handleTabSwitch('withdrawals')}
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'withdrawals'
+                ? 'bg-brand-primary text-white shadow-xs'
+                : 'text-text-secondary hover:text-brand-primary hover:bg-neutral-background'
+            }`}
+          >
+            <i className="bi bi-bank text-emerald-500"></i>
+            <span>Earnings & Withdrawals</span>
+            <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
+              Instant Payouts
+            </span>
+          </button>
         </div>
 
         {/* Tab 1: Performance & Analytics View */}
         {activeTab === 'analytics' && (
           <BusinessAnalytics businessId={business.id} />
+        )}
+
+        {/* Tab 2: RazorpayX Payouts & Withdrawals */}
+        {activeTab === 'withdrawals' && (
+          <OwnerWithdrawals businessId={business.id} />
         )}
 
         {/* Tab 2: Client Reviews & Verified Feedback */}
@@ -600,47 +620,46 @@ const OwnerBusiness = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {services && services.length > 0 ? (
-                services.map((service) => (
+                services.map((service) => {
+                  const servicePhotos = extractServiceImages(service);
+                  return (
                   <div
                     key={service.id}
                     className="bg-white rounded-3xl border border-neutral-border shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-card hover:-translate-y-1 transition-all duration-300 group"
                     data-animation-on-scroll=""
                   >
                     <div>
-                      {/* Image Header with Category and Status tags */}
-                      <div className="h-44 w-full relative bg-neutral-background overflow-hidden">
-                        <img
-                          src={service.imageUrl || logo}
-                          alt={service.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          onError={(e) => { e.currentTarget.src = logo; }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+                      {/* Image Header with Multi-Photo Carousel */}
+                      <ServiceImageCarousel
+                        images={servicePhotos}
+                        alt={service.name}
+                        className="h-44 w-full"
+                        badge={
+                          <>
+                            {/* Top Badges */}
+                            <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none z-10">
+                              {service.category ? (
+                                <span className="bg-brand-primary/80 backdrop-blur-md text-brand-secondary text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-white/20">
+                                  {service.category}
+                                </span>
+                              ) : <span />}
 
-                        {/* Top Badges */}
-                        <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
-                          {service.category ? (
-                            <span className="bg-brand-primary/80 backdrop-blur-md text-brand-secondary text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-white/20">
-                              {service.category}
-                            </span>
-                          ) : <span />}
+                              {service.status && service.status !== 'AVAILABLE' && (
+                                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full backdrop-blur-md border bg-slate-700/80 text-white/90 border-white/20">
+                                  {service.status}
+                                </span>
+                              )}
+                            </div>
 
-                          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full backdrop-blur-md border ${
-                            service.status === 'AVAILABLE'
-                              ? 'bg-emerald-500/80 text-white border-emerald-400/30'
-                              : 'bg-slate-700/80 text-white/90 border-white/20'
-                          }`}>
-                            {service.status === 'AVAILABLE' ? 'Available' : (service.status || 'Active')}
-                          </span>
-                        </div>
-
-                        {/* Price overlay at bottom */}
-                        <div className="absolute bottom-3 left-3">
-                          <span className="bg-white/90 backdrop-blur-md text-brand-primary text-sm font-bold px-3 py-1 rounded-xl shadow-xs border border-white/40">
-                            ₹{Number(service.price).toLocaleString('en-IN')}
-                          </span>
-                        </div>
-                      </div>
+                            {/* Price overlay at bottom */}
+                            <div className="absolute bottom-3 left-3 pointer-events-none z-10">
+                              <span className="bg-white/90 backdrop-blur-md text-brand-primary text-sm font-bold px-3 py-1 rounded-xl shadow-xs border border-white/40">
+                                ₹{Number(service.price).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                          </>
+                        }
+                      />
 
                       {/* Content */}
                       <div className="p-5 space-y-3">
@@ -698,7 +717,8 @@ const OwnerBusiness = () => {
                       </button>
                     </div>
                   </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="col-span-full bg-white rounded-3xl p-12 text-center border border-neutral-border space-y-4 shadow-sm">
                   <div className="w-16 h-16 rounded-2xl bg-brand-primary/10 text-brand-primary flex items-center justify-center text-3xl mx-auto">

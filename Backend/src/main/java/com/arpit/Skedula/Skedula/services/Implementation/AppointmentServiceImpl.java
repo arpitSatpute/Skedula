@@ -9,6 +9,7 @@ import com.arpit.Skedula.Skedula.entity.enums.Role;
 import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.*;
 import com.arpit.Skedula.Skedula.services.AppointmentService;
+import com.arpit.Skedula.Skedula.services.EmailService;
 import com.arpit.Skedula.Skedula.services.EscrowService;
 import com.arpit.Skedula.Skedula.services.PaymentService;
 import com.arpit.Skedula.Skedula.services.WalletService;
@@ -39,6 +40,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final UserRepository userRepository;
     private final EscrowService escrowService;
     private final WalletService walletService;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -128,6 +130,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         escrowService.holdInEscrow(savedAppointment, customer, business, serviceOffered, serviceOffered.getPrice());
         paymentService.createNewPayment(savedAppointment);
 
+        // Dispatch email alerts to customer and business
+        emailService.sendAppointmentBookedAlerts(savedAppointment);
+
         return convertToDTO(savedAppointment);
     }
 
@@ -180,9 +185,14 @@ public class AppointmentServiceImpl implements AppointmentService {
             }
         }
 
+        LocalDateTime oldDateTime = appointment.getAppointmentDateTime();
         appointment.setAppointmentDateTime(apptDateTime);
         appointment.setRescheduledAt(LocalDateTime.now());
         Appointment saved = appointmentRepository.save(appointment);
+
+        // Dispatch reschedule alerts to customer and business
+        emailService.sendAppointmentRescheduledAlerts(saved, oldDateTime);
+
         return convertToDTO(saved);
     }
 
@@ -256,6 +266,10 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointment.setAppointmentStatus(AppointmentStatus.BOOKED);
         Appointment savedAppointment = appointmentRepository.save(appointment);
         // Note: Funds remain safely in Escrow during BOOKED status until session is marked DONE!
+
+        // Dispatch approval alerts to customer and business
+        emailService.sendAppointmentApprovedAlerts(savedAppointment);
+
         return convertToDTO(savedAppointment);
     }
 
@@ -272,6 +286,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         BigDecimal refundAmt = savedAppointment.getServiceOffered() != null ? savedAppointment.getServiceOffered().getPrice() : BigDecimal.ZERO;
         escrowService.refundToCustomer(savedAppointment, refundAmt);
         paymentService.refundPayment(savedAppointment);
+
+        // Dispatch rejection alerts to customer and business
+        emailService.sendAppointmentRejectedAlerts(savedAppointment);
 
         return convertToDTO(savedAppointment);
     }
@@ -290,6 +307,12 @@ public class AppointmentServiceImpl implements AppointmentService {
         // RELEASE FROM ESCROW: Disburse payout to business owner
         escrowService.releaseToBusiness(savedAppointment);
         paymentService.processPayment(savedAppointment);
+
+        BigDecimal price = savedAppointment.getServiceOffered() != null ? savedAppointment.getServiceOffered().getPrice() : BigDecimal.ZERO;
+        BigDecimal netReleased = price.multiply(BigDecimal.valueOf(0.95));
+
+        // Dispatch completion & review prompt alerts
+        emailService.sendAppointmentCompletedAlerts(savedAppointment, netReleased);
 
         return convertToDTO(savedAppointment);
     }
@@ -313,6 +336,59 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
+    public com.arpit.Skedula.Skedula.dto.AppointmentDetailDTO getAppointmentDetails(Long id) {
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
+
+        BusinessServiceOffered service = appointment.getServiceOffered();
+        Business business = service != null && service.getBusiness() != null ? service.getBusiness() : appointment.getBusiness();
+        Customer customer = appointment.getBookedBy();
+        User customerUser = customer != null ? customer.getUser() : null;
+
+        BigDecimal price = service != null && service.getPrice() != null ? service.getPrice() : BigDecimal.ZERO;
+        BigDecimal platformFee = price.multiply(BigDecimal.valueOf(0.05));
+        BigDecimal netBusiness = price.subtract(platformFee);
+
+        return com.arpit.Skedula.Skedula.dto.AppointmentDetailDTO.builder()
+                .id(appointment.getId())
+                .appointmentId(appointment.getAppointmentId())
+                .dateTime(appointment.getAppointmentDateTime())
+                .appointmentStatus(appointment.getAppointmentStatus())
+                .notes(appointment.getNotes())
+                .rescheduledAt(appointment.getRescheduledAt())
+                .serviceId(service != null ? service.getId() : null)
+                .serviceOfferedId(service != null ? service.getServiceOfferedId() : null)
+                .serviceName(service != null ? service.getName() : "Service")
+                .serviceDescription(service != null ? service.getDescription() : null)
+                .price(price)
+                .durationInMinutes(service != null && service.getDuration() != null ? service.getDuration().longValue() : 60L)
+                .serviceImageUrl(service != null ? service.getImageUrl() : null)
+                .category(business != null ? business.getCategory() : null)
+                .businessId(business != null ? business.getId() : null)
+                .bid(business != null ? business.getBusinessId() : null)
+                .businessName(business != null ? business.getName() : "Business")
+                .businessDescription(business != null ? business.getDescription() : null)
+                .businessAddress(business != null ? business.getAddress() : null)
+                .businessCity(business != null ? business.getCity() : null)
+                .businessPhone(business != null ? business.getPhone() : null)
+                .businessEmail(business != null ? business.getEmail() : null)
+                .businessImageUrl(null)
+                .openTime(business != null && business.getOpenTime() != null ? business.getOpenTime().toString() : null)
+                .closeTime(business != null && business.getCloseTime() != null ? business.getCloseTime().toString() : null)
+                .customerId(customer != null ? customer.getId() : null)
+                .customId(customer != null ? customer.getCustomerId() : null)
+                .customerName(customerUser != null && customerUser.getName() != null ? customerUser.getName() : "Client")
+                .customerEmail(customerUser != null ? customerUser.getEmail() : null)
+                .customerPhone(null)
+                .customerImageUrl(customerUser != null ? customerUser.getImageUrl() : null)
+                .totalAmount(price)
+                .platformFee(platformFee)
+                .netBusinessAmount(netBusiness)
+                .paymentMethod("Digital Wallet Escrow")
+                .build();
+    }
+
+    @Override
     @Transactional
     public AppointmentDTO cancelAppointmentByCustomer(Long id){
         Appointment appointment = appointmentRepository.findById(id)
@@ -332,6 +408,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         BigDecimal price = savedAppointment.getServiceOffered() != null ? savedAppointment.getServiceOffered().getPrice() : BigDecimal.ZERO;
         escrowService.refundToCustomer(savedAppointment, price);
         paymentService.refundPayment(savedAppointment);
+
+        // Dispatch cancellation alert to customer and business
+        emailService.sendAppointmentCancelledAlerts(savedAppointment, "Business Provider", price, BigDecimal.ZERO);
 
         return convertToDTO(savedAppointment);
     }
@@ -420,6 +499,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         paymentService.refundBookedAppointmentPayment(savedAppointment, preview.getRefundAmount());
+
+        // Dispatch cancellation alert to customer and business
+        emailService.sendAppointmentCancelledAlerts(savedAppointment, "Customer", preview.getRefundAmount(), preview.getCancellationFee());
 
         return null;
     }

@@ -18,5 +18,7 @@ public class ResponseWalletTransactionDTO {
     private TransactionType transactionType;
     private String transactionId;
     private LocalDateTime timeStamp;
+    private Long appointmentId;
+    private String serviceName;
 
 }

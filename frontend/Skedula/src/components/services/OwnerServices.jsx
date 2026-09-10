@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../Auth/ApiClient';
 import logo from '../../assets/skedula.png';
 import { toast } from 'react-toastify';
+import { extractServiceImages } from '../../utils/imageHelper';
+import ServiceImageCarousel from '../Common/ServiceImageCarousel';
 
 const OwnerServices = () => {
   const [services, setServices] = useState([]);
@@ -124,28 +126,35 @@ const OwnerServices = () => {
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredServices.map(service => (
-            <div
-              key={service.id}
-              className="bg-white rounded-3xl border border-neutral-border shadow-sm hover:shadow-card hover:-translate-y-1 transition-all overflow-hidden flex flex-col justify-between group"
-              data-animation-on-scroll=""
-            >
-              <div>
-                <div className="h-44 w-full bg-neutral-background overflow-hidden relative">
-                  <img
-                    src={service.imageUrl || logo}
+          {filteredServices.map(service => {
+            const servicePhotos = extractServiceImages(service, logo);
+            const primaryPhoto = servicePhotos[0] || logo;
+
+            return (
+              <div
+                key={service.id}
+                className="bg-white rounded-3xl border border-neutral-border shadow-sm hover:shadow-card hover:-translate-y-1 transition-all overflow-hidden flex flex-col justify-between group"
+                data-animation-on-scroll=""
+              >
+                <div>
+                  {/* Service Image with Multi-Photo Carousel */}
+                  <ServiceImageCarousel
+                    images={servicePhotos}
                     alt={service.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="h-44 w-full"
+                    badge={
+                      <>
+                        <div className="absolute top-3 right-3 bg-brand-secondary text-brand-primary text-xs font-bold px-3 py-1 rounded-full shadow-sm z-10 pointer-events-none">
+                          ₹{service.price}
+                        </div>
+                        {service.status && service.status !== 'AVAILABLE' && (
+                          <div className="absolute top-3 left-3 bg-slate-800/90 backdrop-blur-xs text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-2xs z-10 pointer-events-none border border-white/20">
+                            {service.status}
+                          </div>
+                        )}
+                      </>
+                    }
                   />
-                  <div className="absolute top-3 right-3 bg-brand-secondary text-brand-primary text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-                    ₹{service.price}
-                  </div>
-                  {service.status && (
-                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs text-brand-primary text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-2xs">
-                      {service.status}
-                    </div>
-                  )}
-                </div>
 
                 <div className="p-6 space-y-3">
                   <h3 className="text-base font-bold font-primary text-brand-primary leading-snug">
@@ -167,7 +176,6 @@ const OwnerServices = () => {
                   </div>
                 </div>
               </div>
-
               <div className="p-6 pt-0">
                 <button
                   onClick={() => navigate(`/services/${service.id}`)}
@@ -178,7 +186,8 @@ const OwnerServices = () => {
                 </button>
               </div>
             </div>
-          ))}
+          );
+        })}
 
           {/* Empty State */}
           {filteredServices.length === 0 && (

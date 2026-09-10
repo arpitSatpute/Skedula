@@ -14,11 +14,14 @@ import java.time.LocalDateTime;
 @Builder
 public class WithdrawalResponseDTO {
     private Long id;
+    private String referenceId;
     private BigDecimal amount;
+    private String currency;
     private String status;
     private String destinationType;
     private String destinationDetails;
     private String payoutId;
     private String failureReason;
     private LocalDateTime createdAt;
+    private LocalDateTime processedAt;
 }

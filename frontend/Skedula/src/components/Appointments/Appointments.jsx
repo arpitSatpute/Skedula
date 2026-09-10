@@ -353,13 +353,17 @@ function Appointments() {
                   </div>
                 )}
 
-                <div className="space-y-4">
+                <div
+                  className="space-y-4 cursor-pointer"
+                  onClick={() => navigate(`/appointments/${app.id}`)}
+                  title="Click to view full appointment details"
+                >
                   {/* Card Header */}
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 group-hover:text-brand-primary">
                         <i className="bi bi-calendar-event text-brand-primary"></i>
-                        <h3 className="text-base font-bold font-primary text-brand-primary">
+                        <h3 className="text-base font-bold font-primary text-brand-primary group-hover:underline">
                           {formatDate(app.dateTime)}
                         </h3>
                       </div>
@@ -375,15 +379,15 @@ function Appointments() {
                     </div>
                   </div>
 
-                  {/* Metadata Chips */}
+                  {/* Metadata Chips without # */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="bg-neutral-background p-2.5 rounded-xl border border-neutral-border/50">
                       <span className="text-[10px] text-text-secondary uppercase font-semibold">Appointment ID</span>
-                      <p className="font-bold font-mono text-brand-primary truncate">#{app.appointmentId || app.id}</p>
+                      <p className="font-bold font-mono text-brand-primary truncate">{app.appointmentId || app.id}</p>
                     </div>
                     <div className="bg-neutral-background p-2.5 rounded-xl border border-neutral-border/50">
                       <span className="text-[10px] text-text-secondary uppercase font-semibold">Service ID</span>
-                      <p className="font-bold font-mono text-brand-primary truncate">#{app.serviceOfferedId || 'Service'}</p>
+                      <p className="font-bold font-mono text-brand-primary truncate">{app.serviceOfferedId || 'Service'}</p>
                     </div>
                   </div>
 
@@ -391,9 +395,15 @@ function Appointments() {
                   {app.notes && (
                     <div className="bg-neutral-background/70 p-3 rounded-2xl border border-neutral-border/60">
                       <p className="text-[10px] text-text-secondary uppercase font-bold mb-0.5">Booking Notes:</p>
-                      <p className="text-xs text-brand-primary italic">"{app.notes}"</p>
+                      <p className="text-xs text-brand-primary italic">&quot;{app.notes}&quot;</p>
                     </div>
                   )}
+
+                  {/* View Details Prompt */}
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-brand-primary group-hover:translate-x-1 transition-transform">
+                    <span>View Full Details</span>
+                    <i className="bi bi-arrow-right text-[11px]"></i>
+                  </div>
                 </div>
 
                 {/* Actions & Policy Area */}
@@ -402,7 +412,10 @@ function Appointments() {
                     <div className="flex items-center justify-between gap-2">
                       {/* Reschedule Button */}
                       <button
-                        onClick={() => setRescheduleTarget(app)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRescheduleTarget(app);
+                        }}
                         className="px-3.5 py-1.5 rounded-full text-xs font-bold text-brand-primary bg-neutral-background hover:bg-neutral-border/70 border border-neutral-border/80 transition-colors flex items-center gap-1.5 cursor-pointer"
                       >
                         <i className="bi bi-calendar2-range"></i>
@@ -411,7 +424,10 @@ function Appointments() {
 
                       {/* Cancel Button */}
                       <button
-                        onClick={() => setCancellationTarget(app)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCancellationTarget(app);
+                        }}
                         className="px-3.5 py-1.5 rounded-full text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors flex items-center gap-1.5 cursor-pointer"
                       >
                         <i className="bi bi-x-circle"></i>
@@ -428,7 +444,10 @@ function Appointments() {
                       </p>
 
                       <button
-                        onClick={() => setReviewTarget(app)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReviewTarget(app);
+                        }}
                         className="px-3.5 py-1.5 rounded-full text-xs font-bold text-brand-primary bg-brand-secondary/40 hover:bg-brand-secondary/80 border border-brand-primary/20 transition-all flex items-center gap-1.5 cursor-pointer"
                       >
                         <i className="bi bi-star-fill text-amber-500"></i>

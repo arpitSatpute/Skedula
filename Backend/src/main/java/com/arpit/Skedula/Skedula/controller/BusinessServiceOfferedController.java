@@ -35,6 +35,13 @@ public class BusinessServiceOfferedController {
         return ResponseEntity.ok(fileUrl);
     }
 
+    @PreAuthorize("@businessService.isOwnerOfService(#id)")
+    @PutMapping("uploadFiles/{id}")
+    public ResponseEntity<Void> uploadFiles(@PathVariable Long id, @RequestParam("files") List<MultipartFile> files) {
+        Void result = businessServiceOfferedService.setFiles(files, id);
+        return ResponseEntity.ok(result);
+    }
+
     // Update Details By ID
     @PreAuthorize("@businessService.isOwnerOfService(#id)")
     @PutMapping("/update/{id}")

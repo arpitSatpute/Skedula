@@ -116,7 +116,7 @@ function CustomerProfile() {
                   Customer
                 </span>
                 <span className="bg-neutral-background text-brand-primary text-xs font-bold px-3 py-1 rounded-full border border-neutral-border/60">
-                  ID: #{customer?.customerId || customer?.id || 'Active'}
+                  ID: {customer?.customerId || customer?.id || 'Active'}
                 </span>
               </div>
 
@@ -197,7 +197,7 @@ function CustomerProfile() {
 
             <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60">
               <span className="text-[10px] uppercase font-bold text-text-secondary block">Customer Unique ID</span>
-              <span className="text-sm font-bold text-brand-primary mt-0.5 block">#{customer?.customerId || customer?.id || 'Active'}</span>
+              <span className="text-sm font-bold text-brand-primary mt-0.5 block">{customer?.customerId || customer?.id || 'Active'}</span>
             </div>
 
             <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60">

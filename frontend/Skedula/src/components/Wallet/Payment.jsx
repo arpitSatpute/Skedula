@@ -184,11 +184,10 @@ function Payment() {
                   max="50000"
                   disabled={loading}
                   required
-                  className={`w-full bg-neutral-background/60 border rounded-2xl py-3.5 pl-10 pr-4 text-lg font-bold font-mono text-brand-primary outline-none transition-all ${
-                    error
+                  className={`w-full bg-neutral-background/60 border rounded-2xl py-3.5 pl-10 pr-4 text-lg font-bold font-mono text-brand-primary outline-none transition-all ${error
                       ? 'border-red-500 bg-red-50/40 focus:border-red-500'
                       : 'border-neutral-border focus:border-brand-primary focus:bg-white'
-                  }`}
+                    }`}
                 />
               </div>
 
@@ -209,11 +208,10 @@ function Payment() {
                         setAmount(preset);
                         if (error) setError('');
                       }}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border cursor-pointer text-center ${
-                        amount === preset
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border cursor-pointer text-center ${amount === preset
                           ? 'bg-brand-primary text-white border-brand-primary shadow-xs'
                           : 'bg-neutral-background hover:bg-neutral-border/70 text-brand-primary border-neutral-border/70'
-                      }`}
+                        }`}
                     >
                       +₹{preset}
                     </button>

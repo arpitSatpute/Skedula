@@ -43,6 +43,16 @@ public class AppointmentController {
     }
 
     /**
+     * Get detailed appointment view by ID.
+     * Allowed for: the customer who booked it, the business owner, or an admin.
+     */
+    @PreAuthorize("@appointmentService.isOwnerOrBusinessOwner(#id)")
+    @GetMapping("/detail/{id}")
+    public ResponseEntity<com.arpit.Skedula.Skedula.dto.AppointmentDetailDTO> getAppointmentDetails(@PathVariable Long id) {
+        return ResponseEntity.ok(appointmentService.getAppointmentDetails(id));
+    }
+
+    /**
      * Get cancellation preview.
      * Allowed for: the customer who booked or the business owner.
      */

@@ -39,7 +39,7 @@ function ReviewModal({ appointment, onClose, onSuccess }) {
           <div>
             <h3 className="text-lg font-bold font-primary text-brand-primary">Rate Your Experience</h3>
             <p className="text-xs text-text-secondary mt-0.5">
-              Verified review for appointment #{appointment.appointmentId || appointment.id}
+              Verified review for appointment {appointment.appointmentId || appointment.id}
             </p>
           </div>
           <button

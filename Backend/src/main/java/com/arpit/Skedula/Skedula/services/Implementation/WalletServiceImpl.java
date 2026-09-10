@@ -2,15 +2,11 @@ package com.arpit.Skedula.Skedula.services.Implementation;
 
 import com.arpit.Skedula.Skedula.dto.ResponseWalletDTO;
 import com.arpit.Skedula.Skedula.dto.UserDTO;
-import com.arpit.Skedula.Skedula.dto.WithdrawalRequestDTO;
-import com.arpit.Skedula.Skedula.dto.WithdrawalResponseDTO;
 import com.arpit.Skedula.Skedula.entity.*;
 import com.arpit.Skedula.Skedula.entity.enums.TransactionType;
-import com.arpit.Skedula.Skedula.entity.enums.WithdrawalStatus;
-import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.UserRepository;
 import com.arpit.Skedula.Skedula.repository.WalletRepository;
-import com.arpit.Skedula.Skedula.repository.WithdrawalRepository;
+import com.arpit.Skedula.Skedula.repository.WalletTransactionRepository;
 import com.arpit.Skedula.Skedula.services.WalletService;
 import com.arpit.Skedula.Skedula.services.WalletTransactionService;
 import lombok.RequiredArgsConstructor;
@@ -20,17 +16,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class WalletServiceImpl implements WalletService {
 
     private final WalletRepository walletRepository;
+    private final WalletTransactionRepository walletTransactionRepository;
     private final WalletTransactionService walletTransactionService;
     private final UserRepository userRepository;
-    private final WithdrawalRepository withdrawalRepository;
 
     @Override
     public Wallet createWallet(User user) {
@@ -92,74 +86,6 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
-    @Transactional
-    public WithdrawalResponseDTO requestWithdrawal(WithdrawalRequestDTO request) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
-
-        BigDecimal minWithdrawal = BigDecimal.valueOf(100);
-        if (request.getAmount() == null || request.getAmount().compareTo(minWithdrawal) < 0) {
-            throw new IllegalArgumentException("Minimum withdrawal amount is ₹100.00");
-        }
-
-        Wallet wallet = findByUser(user);
-        if (wallet.getBalance().compareTo(request.getAmount()) < 0) {
-            throw new RuntimeException("Insufficient wallet balance for this withdrawal request.");
-        }
-
-        // Deduct money from wallet
-        String txnId = "WDRAW-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        deductMoney(user, request.getAmount(), txnId, null);
-
-        // Simulate or execute RazorpayX Payout in sandbox/test mode
-        String payoutId = "pout_test_" + UUID.randomUUID().toString().replace("-", "").substring(0, 14);
-
-        Withdrawal withdrawal = Withdrawal.builder()
-                .user(user)
-                .amount(request.getAmount())
-                .status(WithdrawalStatus.SUCCESS) // Completed payout in test sandbox
-                .payoutId(payoutId)
-                .fundAccountId("fa_test_" + UUID.randomUUID().toString().substring(0, 10))
-                .destinationType(request.getDestinationType() != null ? request.getDestinationType().toUpperCase() : "UPI")
-                .destinationDetails(request.getDestinationDetails() != null ? request.getDestinationDetails() : "Account Linked")
-                .build();
-
-        Withdrawal saved = withdrawalRepository.save(withdrawal);
-
-        return WithdrawalResponseDTO.builder()
-                .id(saved.getId())
-                .amount(saved.getAmount())
-                .status(saved.getStatus().name())
-                .destinationType(saved.getDestinationType())
-                .destinationDetails(saved.getDestinationDetails())
-                .payoutId(saved.getPayoutId())
-                .createdAt(saved.getCreatedAt())
-                .build();
-    }
-
-    @Override
-    public List<WithdrawalResponseDTO> getUserWithdrawals() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
-
-        return withdrawalRepository.findByUser_IdOrderByCreatedAtDesc(user.getId())
-                .stream()
-                .map(w -> WithdrawalResponseDTO.builder()
-                        .id(w.getId())
-                        .amount(w.getAmount())
-                        .status(w.getStatus().name())
-                        .destinationType(w.getDestinationType())
-                        .destinationDetails(w.getDestinationDetails())
-                        .payoutId(w.getPayoutId())
-                        .failureReason(w.getFailureReason())
-                        .createdAt(w.getCreatedAt())
-                        .build())
-                .collect(Collectors.toList());
-    }
-
-    @Override
     public Wallet getWalletByUserId(Long id) {
         return walletRepository.findByUser_Id(id)
                 .orElseThrow(() -> new RuntimeException("Wallet not found for user ID: " + id));
@@ -178,6 +104,7 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseWalletDTO getWallet() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(email)
@@ -197,7 +124,10 @@ public class WalletServiceImpl implements WalletService {
         responseWalletDTO.setId(wallet.getId());
         responseWalletDTO.setUser(userDTO);
         responseWalletDTO.setBalance(wallet.getBalance());
-        responseWalletDTO.setTransactions(walletTransactionService.convertToTransactionDTOs(wallet.getTransactions()));
+
+        // Fetch real, complete list of wallet transactions ordered by latest first
+        List<WalletTransaction> transactions = walletTransactionRepository.findByWallet_IdOrderByTimeStampDesc(wallet.getId());
+        responseWalletDTO.setTransactions(walletTransactionService.convertToTransactionDTOs(transactions));
         return responseWalletDTO;
     }
 }

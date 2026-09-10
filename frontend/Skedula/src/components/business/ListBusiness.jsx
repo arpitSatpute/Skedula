@@ -253,7 +253,7 @@ function ListBusiness() {
             Verified Directory
           </div>
           <h1 className="text-3xl sm:text-5xl font-bold font-primary text-brand-primary">
-            Discover Verified Sanctuaries & Clinics
+            Discover Verified Businesses & Clinics
           </h1>
           <p className="text-sm sm:text-base text-text-secondary">
             Browse verified providers, inspect operating hours, and schedule instant appointment slots with escrow protection.

@@ -28,15 +28,28 @@ public class Withdrawal {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
+    @Builder.Default
+    private String currency = "INR";
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private WithdrawalStatus status;
 
     private String payoutId;
+    
+    @Column(unique = true)
+    private String referenceId;
+
+    @Column(unique = true)
+    private String idempotencyKey;
+
+    private String contactId;
     private String fundAccountId;
-    private String destinationType; // UPI or BANK
+    private String destinationType; // UPI or BANK_ACCOUNT
     private String destinationDetails; // upi id or masked account
     private String failureReason;
+
+    private LocalDateTime processedAt;
 
     @CurrentTimestamp
     private LocalDateTime createdAt;

@@ -160,7 +160,7 @@ const OwnerProfile = () => {
                 </span>
                 {business?.businessId && (
                   <span className="bg-neutral-background text-brand-primary text-xs font-bold px-3 py-1 rounded-full border border-neutral-border/60">
-                    Business #{business.businessId}
+                    Business ID: {business.businessId}
                   </span>
                 )}
               </div>
@@ -194,7 +194,7 @@ const OwnerProfile = () => {
             </div>
             <h3 className="text-lg font-bold text-amber-900">No Business Registered</h3>
             <p className="text-xs text-amber-800 max-w-md mx-auto">
-              You haven't registered a commercial business yet. Register your clinic or sanctuary to start receiving client appointments.
+              You haven't registered a commercial business yet. Register your business to start receiving client appointments.
             </p>
             <Link
               to="/businesses"
@@ -276,7 +276,7 @@ const OwnerProfile = () => {
                             <div key={app.id} className="p-4 bg-neutral-background rounded-2xl flex items-center justify-between gap-4">
                               <div>
                                 <span className="text-xs font-bold text-brand-primary block">
-                                  #{app.appointmentId || app.id}
+                                  {app.appointmentId || app.id}
                                 </span>
                                 <span className="text-[11px] text-text-secondary">
                                   {new Date(app.dateTime).toLocaleDateString('en-IN', {
@@ -303,7 +303,7 @@ const OwnerProfile = () => {
                   <div className="bg-white rounded-3xl p-6 sm:p-8 border border-neutral-border shadow-card space-y-6">
                     <div className="border-b border-neutral-border/60 pb-4">
                       <h3 className="text-lg font-bold font-primary text-brand-primary">
-                        Sanctuary Contacts
+                        Business Contacts
                       </h3>
                       <p className="text-xs text-text-secondary">Public contact details</p>
                     </div>

@@ -35,6 +35,7 @@ import EditService from './components/services/EditService.jsx';
 import AppointmentsRouter from './components/Appointments/AppointmentsRouter.jsx';
 import BookAppointment from './components/Appointments/BookAppointment.jsx';
 import OwnerAppointments from './components/Appointments/OwnerAppointments.jsx';
+import AppointmentDetails from './components/Appointments/AppointmentDetails.jsx';
 
 // Profile Components
 import ProfileRouter from './components/Profile/ProfileRouter.jsx';
@@ -83,6 +84,22 @@ const router = createBrowserRouter([
         element: <ListBusiness />
       },
       {
+        path: "/businesses/:id",
+        element: <Business />
+      },
+      {
+        path: "/services",
+        element: <ServicesRouter />
+      },
+      {
+        path: "/services/explore",
+        element: <ListServices />
+      },
+      {
+        path: "/services/:id",
+        element: <Services />
+      },
+      {
         path: "/404",
         element: <NotFound />
       },
@@ -93,14 +110,6 @@ const router = createBrowserRouter([
       {
         path: "/biz/:slug",
         element: <ShareableBookingPage />
-      },
-      {
-        path: "/services",
-        element: <ServicesRouter />
-      },
-      {
-        path: "/services/explore",
-        element: <ListServices />
       },
 
       // Protected General Routes (Accessible to authenticated Customers & Owners)
@@ -120,16 +129,12 @@ const router = createBrowserRouter([
             element: <Payment />
           },
           {
-            path: "/businesses/:id",
-            element: <Business />
-          },
-          {
-            path: "/services/:id",
-            element: <Services />
-          },
-          {
             path: "/appointments",
             element: <AppointmentsRouter />
+          },
+          {
+            path: "/appointments/:id",
+            element: <AppointmentDetails />
           }
         ]
       },
@@ -209,7 +214,7 @@ const router = createBrowserRouter([
 ]);
 
 createRoot(document.getElementById('root')).render(
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+  <AuthProvider>
+    <RouterProvider router={router} />
+  </AuthProvider>
 );

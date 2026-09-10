@@ -23,7 +23,11 @@ public class Wallet {
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     private User user;
 
+    @Builder.Default
     private BigDecimal balance = BigDecimal.ZERO;
+
+    @Builder.Default
+    private BigDecimal reservedBalance = BigDecimal.ZERO;
 
     @OneToMany(mappedBy = "wallet", fetch = FetchType.LAZY)
     private List<WalletTransaction> transactions;

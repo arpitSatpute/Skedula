@@ -203,7 +203,7 @@ function AddBusiness() {
       <div className="py-20 px-6 min-h-[70vh] flex items-center justify-center bg-mesh-subtle">
         <div className="bg-white rounded-3xl p-8 max-w-md text-center border border-neutral-border shadow-card space-y-4">
           <h4 className="text-xl font-bold font-primary text-brand-primary">Owner Portal Required</h4>
-          <p className="text-xs text-text-secondary">Please sign in as a Business Owner to register your enterprise sanctuary.</p>
+          <p className="text-xs text-text-secondary">Please sign in as a Business Owner to register your business.</p>
           <button 
             className="bg-brand-primary text-white px-6 py-2.5 rounded-full text-xs font-bold shadow-sm cursor-pointer"
             onClick={() => navigate('/login?role=owner')}

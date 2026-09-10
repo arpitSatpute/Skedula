@@ -1,15 +1,12 @@
 package com.arpit.Skedula.Skedula.services;
 
 import com.arpit.Skedula.Skedula.dto.ResponseWalletDTO;
-import com.arpit.Skedula.Skedula.dto.WithdrawalRequestDTO;
-import com.arpit.Skedula.Skedula.dto.WithdrawalResponseDTO;
 import com.arpit.Skedula.Skedula.entity.Appointment;
 import com.arpit.Skedula.Skedula.entity.User;
 import com.arpit.Skedula.Skedula.entity.Wallet;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 public interface WalletService {
@@ -27,8 +24,4 @@ public interface WalletService {
     Wallet getWalletByUserId(Long id);
 
     ResponseWalletDTO getWallet();
-
-    WithdrawalResponseDTO requestWithdrawal(WithdrawalRequestDTO request);
-
-    List<WithdrawalResponseDTO> getUserWithdrawals();
 }

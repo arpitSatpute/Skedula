@@ -66,7 +66,7 @@ export const parseApiError = (error, fallbackMessage = 'An unexpected error occu
       case 403:
         return 'Access denied. You do not have permission for this action.';
       case 404:
-        return 'The requested resource or sanctuary could not be found.';
+        return 'The requested resource or business could not be found.';
       case 409:
         return 'A scheduling or record conflict was detected. Please choose a different slot.';
       case 422:

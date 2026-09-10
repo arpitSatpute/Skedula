@@ -50,8 +50,8 @@ function BookAppointment() {
         ]);
 
         if (ignore) return;
-        if (srvRes.status === 'fulfilled') setService(srvRes.value.data?.data);
-        if (bizRes.status === 'fulfilled') setBusiness(bizRes.value.data?.data);
+        if (srvRes.status === 'fulfilled') setService(srvRes.value.data?.data || srvRes.value.data);
+        if (bizRes.status === 'fulfilled') setBusiness(bizRes.value.data?.data || bizRes.value.data);
 
         // Fetch wallet and current customer
         try {
@@ -343,8 +343,8 @@ function BookAppointment() {
                       type="button"
                       onClick={() => handleQuickDate(preset.offset)}
                       className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${isSelected
-                          ? 'bg-brand-primary text-white shadow-2xs'
-                          : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
+                        ? 'bg-brand-primary text-white shadow-2xs'
+                        : 'bg-neutral-background text-text-secondary hover:text-brand-primary border border-neutral-border/60'
                         }`}
                     >
                       {preset.label}
@@ -397,13 +397,12 @@ function BookAppointment() {
                         type="button"
                         disabled={!isAvailable || loading}
                         onClick={() => setSelectedTime(timeStr)}
-                        className={`p-2.5 rounded-xl text-center border transition-all text-xs font-mono font-semibold relative ${
-                          isSelected
+                        className={`p-2.5 rounded-xl text-center border transition-all text-xs font-mono font-semibold relative ${isSelected
                             ? 'bg-brand-primary text-white border-brand-primary shadow-xs'
                             : isAvailable
                               ? 'bg-neutral-background hover:bg-neutral-border/60 text-brand-primary border-neutral-border/70 cursor-pointer'
                               : 'bg-neutral-border/30 text-text-secondary/50 border-neutral-border/40 cursor-not-allowed opacity-60'
-                        }`}
+                          }`}
                       >
                         <span className={!isAvailable ? 'line-through' : ''}>{timeStr}</span>
                         {!isAvailable && (
@@ -444,9 +443,8 @@ function BookAppointment() {
                   <i className="bi bi-wallet2 text-sm text-brand-primary"></i>
                   <span>Payment Breakdown</span>
                 </span>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  hasSufficientBalance ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                }`}>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${hasSufficientBalance ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                  }`}>
                   {hasSufficientBalance ? '● Wallet Ready' : '● Top-Up Needed'}
                 </span>
               </div>
