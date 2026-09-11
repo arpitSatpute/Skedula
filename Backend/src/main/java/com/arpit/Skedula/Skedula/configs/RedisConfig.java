@@ -29,8 +29,11 @@ public class RedisConfig {
     @Value("${spring.data.redis.password:}")
     private String redisPassword;
 
-    @Value("${spring.data.redis.timeout:1000ms}")
+    @Value("${spring.data.redis.timeout:10000ms}")
     private Duration redisTimeout;
+
+    @Value("${spring.data.redis.ssl.enabled:false}")
+    private boolean redisSslEnabled;
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
@@ -41,11 +44,12 @@ public class RedisConfig {
 
         SocketOptions socketOptions = SocketOptions.builder()
                 .connectTimeout(redisTimeout)
+                .keepAlive(true)
                 .build();
 
         ClientOptions clientOptions = ClientOptions.builder()
                 .socketOptions(socketOptions)
-                .disconnectedBehavior(ClientOptions.DisconnectedBehavior.REJECT_COMMANDS)
+                .autoReconnect(true)
                 .build();
 
         GenericObjectPoolConfig<?> poolConfig = new GenericObjectPoolConfig<>();
@@ -54,11 +58,16 @@ public class RedisConfig {
         poolConfig.setMinIdle(0);
         poolConfig.setMaxWait(redisTimeout);
 
-        LettuceClientConfiguration clientConfig = LettucePoolingClientConfiguration.builder()
+        LettucePoolingClientConfiguration.LettucePoolingClientConfigurationBuilder clientConfigBuilder = LettucePoolingClientConfiguration.builder()
                 .poolConfig(poolConfig)
                 .clientOptions(clientOptions)
-                .commandTimeout(redisTimeout)
-                .build();
+                .commandTimeout(redisTimeout);
+
+        if (redisSslEnabled) {
+            clientConfigBuilder.useSsl();
+        }
+
+        LettuceClientConfiguration clientConfig = clientConfigBuilder.build();
 
         LettuceConnectionFactory factory = new LettuceConnectionFactory(serverConfig, clientConfig);
         factory.setValidateConnection(false);

@@ -43,8 +43,7 @@ public class WebSecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
         configuration.addAllowedOriginPattern("*");
-        configuration.addAllowedOrigin("https://skedula-customer.vercel.app");
-        configuration.addAllowedOrigin("https://skedula-business.vercel.app");
+        configuration.addAllowedOrigin("https://skedula.vercel.app");
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
 

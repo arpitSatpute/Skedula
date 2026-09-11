@@ -403,8 +403,8 @@ function OwnerAppointments() {
                       <p className="font-bold font-mono text-brand-primary truncate">{app.appointmentId || app.id}</p>
                     </div>
                     <div className="bg-neutral-background p-2.5 rounded-xl border border-neutral-border/50">
-                      <span className="text-[10px] text-text-secondary uppercase font-semibold">Client Identifier</span>
-                      <p className="font-bold font-mono text-brand-primary truncate">{app.bookedBy || app.customerId || 'Client'}</p>
+                      <span className="text-[10px] text-text-secondary uppercase font-semibold">Booking Status</span>
+                      <p className="font-bold text-brand-primary truncate">{app.appointmentStatus || 'Active'}</p>
                     </div>
                   </div>
 

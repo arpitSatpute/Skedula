@@ -141,8 +141,9 @@ function Services() {
     }
 
     try {
-      const remaining = galleryImages.filter((_, idx) => idx !== indexToRemove);
-      const updatedImageUrl = remaining.length > 0 ? remaining.join(',') : '';
+      const realImages = extractServiceImages(service, null).filter(Boolean);
+      const remaining = realImages.filter((_, idx) => idx !== indexToRemove);
+      const updatedImageUrl = remaining.length > 0 ? remaining.join(',') : null;
       const bizId = service.business || myBusinessId || (businessInfo ? businessInfo.id : null);
 
       const requestData = {

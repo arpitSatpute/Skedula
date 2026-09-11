@@ -442,9 +442,6 @@ const AppointmentDetails = () => {
                     <h3 className="text-lg font-bold text-brand-primary">
                       {appointment.businessName || 'Authorized Service Provider'}
                     </h3>
-                    <span className="text-xs text-text-secondary font-mono">
-                      Business ID: {appointment.businessId || 'N/A'}
-                    </span>
                   </div>
                 </div>
 
@@ -566,7 +563,6 @@ const AppointmentDetails = () => {
                 <div className="space-y-0.5 overflow-hidden">
                   <h4 className="text-sm font-bold text-brand-primary truncate">{appointment.customerName || 'Registered Customer'}</h4>
                   <p className="text-xs text-text-secondary truncate">{appointment.customerEmail || 'Verified User'}</p>
-                  <span className="text-[10px] font-mono text-text-secondary block">Client ID: {appointment.customerId || 'N/A'}</span>
                 </div>
               </div>
             </div>

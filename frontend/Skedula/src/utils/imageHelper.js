@@ -1,24 +1,24 @@
 import logo from '../components/logo/logo.png';
 
 /**
- * Robustly parses and extracts an array of valid image URLs from any service or business object.
- * Handles:
- * - Array of URLs: service.imageUrls = ['http...', 'http...']
- * - Single URL: service.imageUrl = 'http...'
- * - Comma-separated URLs: service.imageUrl = 'http...1, http...2'
- * - JSON string arrays: service.imageUrl = '["http...1", "http...2"]'
- * - Semicolon or pipe separated URLs: service.imageUrl = 'http...1;http...2'
+ * Robustly parses and extracts an array of valid, deduplicated image URLs from any service or business object.
+ * Prioritizes imageUrls array -> images array -> imageUrl string/array to prevent duplicate concatenation.
  */
 export const extractServiceImages = (service, fallback = logo) => {
-  if (!service) return [fallback];
+  if (!service) return fallback ? [fallback] : [];
 
   const rawInputs = [];
 
-  if (Array.isArray(service.imageUrls)) rawInputs.push(...service.imageUrls);
-  if (Array.isArray(service.images)) rawInputs.push(...service.images);
-  if (service.imageUrl) {
-    if (Array.isArray(service.imageUrl)) rawInputs.push(...service.imageUrl);
-    else rawInputs.push(service.imageUrl);
+  if (Array.isArray(service.imageUrls) && service.imageUrls.length > 0) {
+    rawInputs.push(...service.imageUrls);
+  } else if (Array.isArray(service.images) && service.images.length > 0) {
+    rawInputs.push(...service.images);
+  } else if (service.imageUrl) {
+    if (Array.isArray(service.imageUrl)) {
+      rawInputs.push(...service.imageUrl);
+    } else {
+      rawInputs.push(service.imageUrl);
+    }
   }
 
   const flattenedUrls = [];
@@ -61,10 +61,17 @@ export const extractServiceImages = (service, fallback = logo) => {
       url.startsWith('blob:')
     ));
 
-  return cleanUrls.length > 0 ? cleanUrls : [fallback];
+  // Deduplicate URLs while preserving order
+  const uniqueUrls = Array.from(new Set(cleanUrls));
+
+  if (uniqueUrls.length > 0) {
+    return uniqueUrls;
+  }
+  return fallback ? [fallback] : [];
 };
 
 export const getPrimaryServiceImage = (service, fallback = logo) => {
   const images = extractServiceImages(service, fallback);
   return images[0] || fallback;
 };
+

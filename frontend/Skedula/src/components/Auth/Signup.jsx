@@ -13,6 +13,8 @@ const Signup = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [dob, setDob] = useState('');
+  const [address, setAddress] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -36,7 +38,9 @@ const Signup = () => {
         email,
         password,
         role: role.toUpperCase(),
-        ...(role === 'OWNER' || phone ? { phone } : {})
+        ...(phone ? { phone } : {}),
+        ...(dob ? { dob } : {}),
+        ...(address ? { address } : {})
       };
 
       await signup(payload);
@@ -149,7 +153,7 @@ const Signup = () => {
             {/* Phone Field */}
             <div>
               <label htmlFor="phone" className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
-                Phone Number {role === 'OWNER' && <span className="text-red-500">*</span>}
+                Phone Number
               </label>
               <input
                 type="tel"
@@ -158,8 +162,38 @@ const Signup = () => {
                 placeholder="+91 9876543210"
                 onChange={(e) => setPhone(e.target.value)}
                 disabled={loading}
-                required={role === 'OWNER'}
                 className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-primary/10 rounded-xl py-3 px-4 text-sm text-brand-primary transition-all outline-none"
+              />
+            </div>
+
+            {/* Date of Birth Field */}
+            <div>
+              <label htmlFor="dob" className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                id="dob"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+                disabled={loading}
+                className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-primary/10 rounded-xl py-3 px-4 text-sm text-brand-primary transition-all outline-none"
+              />
+            </div>
+
+            {/* Address Field */}
+            <div>
+              <label htmlFor="address" className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+                Address
+              </label>
+              <textarea
+                id="address"
+                rows={2}
+                value={address}
+                placeholder="Street address, city, state, postal code"
+                onChange={(e) => setAddress(e.target.value)}
+                disabled={loading}
+                className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-primary/10 rounded-xl py-3 px-4 text-sm text-brand-primary transition-all outline-none resize-none"
               />
             </div>
 

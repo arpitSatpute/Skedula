@@ -131,6 +131,7 @@ function EditService() {
 
     try {
       // 1. Update service details and retain current curated existing images
+      const cleanedExisting = Array.from(new Set(existingImages.map(u => (typeof u === 'string' ? u.trim() : '')).filter(Boolean)));
       const requestData = {
         name: formData.name,
         description: formData.description,
@@ -138,7 +139,7 @@ function EditService() {
         price: parseFloat(formData.price),
         totalSlots: parseInt(formData.totalSlots),
         business: parseInt(formData.business || id),
-        imageUrl: existingImages.join(',') || null
+        imageUrl: cleanedExisting.length > 0 ? cleanedExisting.join(',') : null
       };
                   
       await apiClient.put(`/services-offered/update/${serviceId}`, requestData);

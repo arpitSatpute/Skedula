@@ -116,7 +116,7 @@ function CustomerProfile() {
                   Customer
                 </span>
                 <span className="bg-neutral-background text-brand-primary text-xs font-bold px-3 py-1 rounded-full border border-neutral-border/60">
-                  ID: {customer?.customerId || customer?.id || 'Active'}
+                  Verified Member
                 </span>
               </div>
 
@@ -196,13 +196,20 @@ function CustomerProfile() {
             </div>
 
             <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60">
-              <span className="text-[10px] uppercase font-bold text-text-secondary block">Customer Unique ID</span>
-              <span className="text-sm font-bold text-brand-primary mt-0.5 block">{customer?.customerId || customer?.id || 'Active'}</span>
+              <span className="text-[10px] uppercase font-bold text-text-secondary block">Phone Number</span>
+              <span className="text-sm font-bold text-brand-primary mt-0.5 block">{user?.phone || 'Not provided'}</span>
             </div>
 
             <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60">
-              <span className="text-[10px] uppercase font-bold text-text-secondary block">Account Tier</span>
-              <span className="text-sm font-bold text-brand-primary mt-0.5 block">Standard Client Member</span>
+              <span className="text-[10px] uppercase font-bold text-text-secondary block">Date of Birth</span>
+              <span className="text-sm font-bold text-brand-primary mt-0.5 block">
+                {user?.dob ? new Date(user.dob).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Not provided'}
+              </span>
+            </div>
+
+            <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60 sm:col-span-2">
+              <span className="text-[10px] uppercase font-bold text-text-secondary block">Address</span>
+              <span className="text-sm font-bold text-brand-primary mt-0.5 block">{user?.address || 'Not provided'}</span>
             </div>
           </div>
         </div>

@@ -110,12 +110,25 @@ function Profile() {
         value: userData.user?.email,
         iconColor: 'text-success'
       },
-    
       {
-        icon: 'bi-person-badge',
-        label: 'Customer ID',
-        value: userData.customer?.customerId ? userData.customer.customerId : 'Not assigned',
+        icon: 'bi-telephone',
+        label: 'Phone Number',
+        value: userData.user?.phone || userData.customer?.phone,
+        iconColor: 'text-info'
+      },
+      {
+        icon: 'bi-calendar-date',
+        label: 'Date of Birth',
+        value: userData.user?.dob || userData.customer?.dob
+          ? new Date(userData.user?.dob || userData.customer?.dob).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+          : null,
         iconColor: 'text-warning'
+      },
+      {
+        icon: 'bi-geo-alt',
+        label: 'Address',
+        value: userData.user?.address || userData.customer?.address,
+        iconColor: 'text-danger'
       }
     ]
   }, [userData.user, userData.customer])
