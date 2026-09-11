@@ -1,11 +1,7 @@
 package com.arpit.Skedula.Skedula.strategies;
 
-import com.arpit.Skedula.Skedula.entity.Business;
-import com.arpit.Skedula.Skedula.entity.Customer;
 import com.arpit.Skedula.Skedula.entity.Payment;
-import com.arpit.Skedula.Skedula.entity.Wallet;
 import com.arpit.Skedula.Skedula.entity.enums.PaymentStatus;
-import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.PaymentRepository;
 import com.arpit.Skedula.Skedula.repository.WalletRepository;
 import com.arpit.Skedula.Skedula.repository.WalletTransactionRepository;

@@ -9,6 +9,7 @@ import com.arpit.Skedula.Skedula.entity.enums.Role;
 import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.*;
 import com.arpit.Skedula.Skedula.services.AppointmentService;
+import com.arpit.Skedula.Skedula.services.CacheService;
 import com.arpit.Skedula.Skedula.services.EmailService;
 import com.arpit.Skedula.Skedula.services.EscrowService;
 import com.arpit.Skedula.Skedula.services.PaymentService;
@@ -41,6 +42,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final EscrowService escrowService;
     private final WalletService walletService;
     private final EmailService emailService;
+    private final CacheService cacheService;
 
     @Override
     @Transactional
@@ -133,6 +135,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         // Dispatch email alerts to customer and business
         emailService.sendAppointmentBookedAlerts(savedAppointment);
 
+        evictAppointmentCaches(savedAppointment);
         return convertToDTO(savedAppointment);
     }
 
@@ -193,6 +196,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         // Dispatch reschedule alerts to customer and business
         emailService.sendAppointmentRescheduledAlerts(saved, oldDateTime);
 
+        evictAppointmentCaches(saved);
         return convertToDTO(saved);
     }
 
@@ -270,6 +274,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         // Dispatch approval alerts to customer and business
         emailService.sendAppointmentApprovedAlerts(savedAppointment);
 
+        evictAppointmentCaches(savedAppointment);
         return convertToDTO(savedAppointment);
     }
 
@@ -290,6 +295,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         // Dispatch rejection alerts to customer and business
         emailService.sendAppointmentRejectedAlerts(savedAppointment);
 
+        evictAppointmentCaches(savedAppointment);
         return convertToDTO(savedAppointment);
     }
 
@@ -314,6 +320,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         // Dispatch completion & review prompt alerts
         emailService.sendAppointmentCompletedAlerts(savedAppointment, netReleased);
 
+        evictAppointmentCaches(savedAppointment);
         return convertToDTO(savedAppointment);
     }
 
@@ -330,62 +337,68 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public AppointmentCard getAppointmentById(Long id) {
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
-        return convertToCard(appointment);
+        String cacheKey = "v1:appointment:id:" + id;
+        return cacheService.getOrLoad(cacheKey, AppointmentCard.class, Duration.ofMinutes(5), () -> {
+            Appointment appointment = appointmentRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
+            return convertToCard(appointment);
+        });
     }
 
     @Override
     public com.arpit.Skedula.Skedula.dto.AppointmentDetailDTO getAppointmentDetails(Long id) {
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
+        String cacheKey = "v1:appointment:details:" + id;
+        return cacheService.getOrLoad(cacheKey, com.arpit.Skedula.Skedula.dto.AppointmentDetailDTO.class, Duration.ofMinutes(5), () -> {
+            Appointment appointment = appointmentRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
 
-        BusinessServiceOffered service = appointment.getServiceOffered();
-        Business business = service != null && service.getBusiness() != null ? service.getBusiness() : appointment.getBusiness();
-        Customer customer = appointment.getBookedBy();
-        User customerUser = customer != null ? customer.getUser() : null;
+            BusinessServiceOffered service = appointment.getServiceOffered();
+            Business business = service != null && service.getBusiness() != null ? service.getBusiness() : appointment.getBusiness();
+            Customer customer = appointment.getBookedBy();
+            User customerUser = customer != null ? customer.getUser() : null;
 
-        BigDecimal price = service != null && service.getPrice() != null ? service.getPrice() : BigDecimal.ZERO;
-        BigDecimal platformFee = price.multiply(BigDecimal.valueOf(0.05));
-        BigDecimal netBusiness = price.subtract(platformFee);
+            BigDecimal price = service != null && service.getPrice() != null ? service.getPrice() : BigDecimal.ZERO;
+            BigDecimal platformFee = price.multiply(BigDecimal.valueOf(0.05));
+            BigDecimal netBusiness = price.subtract(platformFee);
 
-        return com.arpit.Skedula.Skedula.dto.AppointmentDetailDTO.builder()
-                .id(appointment.getId())
-                .appointmentId(appointment.getAppointmentId())
-                .dateTime(appointment.getAppointmentDateTime())
-                .appointmentStatus(appointment.getAppointmentStatus())
-                .notes(appointment.getNotes())
-                .rescheduledAt(appointment.getRescheduledAt())
-                .serviceId(service != null ? service.getId() : null)
-                .serviceOfferedId(service != null ? service.getServiceOfferedId() : null)
-                .serviceName(service != null ? service.getName() : "Service")
-                .serviceDescription(service != null ? service.getDescription() : null)
-                .price(price)
-                .durationInMinutes(service != null && service.getDuration() != null ? service.getDuration().longValue() : 60L)
-                .serviceImageUrl(service != null ? service.getImageUrl() : null)
-                .category(business != null ? business.getCategory() : null)
-                .businessId(business != null ? business.getId() : null)
-                .bid(business != null ? business.getBusinessId() : null)
-                .businessName(business != null ? business.getName() : "Business")
-                .businessDescription(business != null ? business.getDescription() : null)
-                .businessAddress(business != null ? business.getAddress() : null)
-                .businessCity(business != null ? business.getCity() : null)
-                .businessPhone(business != null ? business.getPhone() : null)
-                .businessEmail(business != null ? business.getEmail() : null)
-                .businessImageUrl(null)
-                .openTime(business != null && business.getOpenTime() != null ? business.getOpenTime().toString() : null)
-                .closeTime(business != null && business.getCloseTime() != null ? business.getCloseTime().toString() : null)
-                .customerId(customer != null ? customer.getId() : null)
-                .customId(customer != null ? customer.getCustomerId() : null)
-                .customerName(customerUser != null && customerUser.getName() != null ? customerUser.getName() : "Client")
-                .customerEmail(customerUser != null ? customerUser.getEmail() : null)
-                .customerPhone(null)
-                .customerImageUrl(customerUser != null ? customerUser.getImageUrl() : null)
-                .totalAmount(price)
-                .platformFee(platformFee)
-                .netBusinessAmount(netBusiness)
-                .paymentMethod("Digital Wallet Escrow")
-                .build();
+            return com.arpit.Skedula.Skedula.dto.AppointmentDetailDTO.builder()
+                    .id(appointment.getId())
+                    .appointmentId(appointment.getAppointmentId())
+                    .dateTime(appointment.getAppointmentDateTime())
+                    .appointmentStatus(appointment.getAppointmentStatus())
+                    .notes(appointment.getNotes())
+                    .rescheduledAt(appointment.getRescheduledAt())
+                    .serviceId(service != null ? service.getId() : null)
+                    .serviceOfferedId(service != null ? service.getServiceOfferedId() : null)
+                    .serviceName(service != null ? service.getName() : "Service")
+                    .serviceDescription(service != null ? service.getDescription() : null)
+                    .price(price)
+                    .durationInMinutes(service != null && service.getDuration() != null ? service.getDuration().longValue() : 60L)
+                    .serviceImageUrl(service != null ? service.getImageUrl() : null)
+                    .category(business != null ? business.getCategory() : null)
+                    .businessId(business != null ? business.getId() : null)
+                    .bid(business != null ? business.getBusinessId() : null)
+                    .businessName(business != null ? business.getName() : "Business")
+                    .businessDescription(business != null ? business.getDescription() : null)
+                    .businessAddress(business != null ? business.getAddress() : null)
+                    .businessCity(business != null ? business.getCity() : null)
+                    .businessPhone(business != null ? business.getPhone() : null)
+                    .businessEmail(business != null ? business.getEmail() : null)
+                    .businessImageUrl(null)
+                    .openTime(business != null && business.getOpenTime() != null ? business.getOpenTime().toString() : null)
+                    .closeTime(business != null && business.getCloseTime() != null ? business.getCloseTime().toString() : null)
+                    .customerId(customer != null ? customer.getId() : null)
+                    .customId(customer != null ? customer.getCustomerId() : null)
+                    .customerName(customerUser != null && customerUser.getName() != null ? customerUser.getName() : "Client")
+                    .customerEmail(customerUser != null ? customerUser.getEmail() : null)
+                    .customerPhone(null)
+                    .customerImageUrl(customerUser != null ? customerUser.getImageUrl() : null)
+                    .totalAmount(price)
+                    .platformFee(platformFee)
+                    .netBusinessAmount(netBusiness)
+                    .paymentMethod("Digital Wallet Escrow")
+                    .build();
+        });
     }
 
     @Override
@@ -394,6 +407,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
         cancelBooking(id);
+        evictAppointmentCaches(appointment);
         return convertToDTO(appointment);
     }
 
@@ -412,15 +426,19 @@ public class AppointmentServiceImpl implements AppointmentService {
         // Dispatch cancellation alert to customer and business
         emailService.sendAppointmentCancelledAlerts(savedAppointment, "Business Provider", price, BigDecimal.ZERO);
 
+        evictAppointmentCaches(savedAppointment);
         return convertToDTO(savedAppointment);
     }
 
     @Override
     public List<AppointmentCard> getAppointmentByCustomerId(Long customerId) {
-        List<Appointment> appointmentList = appointmentRepository.findByBookedBy_Id(customerId);
-        return appointmentList.stream()
-                .map(this::convertToCard)
-                .toList();
+        String cacheKey = "v1:appointments:cust:" + customerId;
+        return cacheService.getOrLoad(cacheKey, new com.fasterxml.jackson.core.type.TypeReference<List<AppointmentCard>>() {}, Duration.ofMinutes(3), () -> {
+            List<Appointment> appointmentList = appointmentRepository.findByBookedBy_Id(customerId);
+            return appointmentList.stream()
+                    .map(this::convertToCard)
+                    .toList();
+        });
     }
 
     @Override
@@ -433,13 +451,16 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public List<AppointmentCard> getAllAppointmentsByBusinessId(Long businessId) {
-        businessRepository.findById(businessId)
-                .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
+        String cacheKey = "v1:appointments:biz:" + businessId;
+        return cacheService.getOrLoad(cacheKey, new com.fasterxml.jackson.core.type.TypeReference<List<AppointmentCard>>() {}, Duration.ofMinutes(3), () -> {
+            businessRepository.findById(businessId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Business not found with id: " + businessId));
 
-        List<Appointment> appointments = appointmentRepository.findByBusiness_Id(businessId);
-        return appointments.stream()
-                .map(this::convertToCard)
-                .collect(Collectors.toList());
+            List<Appointment> appointments = appointmentRepository.findByBusiness_Id(businessId);
+            return appointments.stream()
+                    .map(this::convertToCard)
+                    .collect(Collectors.toList());
+        });
     }
 
     @Override
@@ -637,5 +658,21 @@ public class AppointmentServiceImpl implements AppointmentService {
              return generateAppointmentId();
         }
         return apptId;
+    }
+
+    private void evictAppointmentCaches(Appointment appointment) {
+        if (appointment == null) return;
+        try {
+            if (appointment.getId() != null) {
+                cacheService.delete("v1:appointment:id:" + appointment.getId());
+                cacheService.delete("v1:appointment:details:" + appointment.getId());
+            }
+            if (appointment.getBookedBy() != null && appointment.getBookedBy().getId() != null) {
+                cacheService.deleteByPattern("v1:appointments:cust:" + appointment.getBookedBy().getId() + "*");
+            }
+            if (appointment.getBusiness() != null && appointment.getBusiness().getId() != null) {
+                cacheService.deleteByPattern("v1:appointments:biz:" + appointment.getBusiness().getId() + "*");
+            }
+        } catch (Exception ignored) {}
     }
 }

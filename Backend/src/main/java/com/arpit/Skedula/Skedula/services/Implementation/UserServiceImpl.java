@@ -1,11 +1,11 @@
 package com.arpit.Skedula.Skedula.services.Implementation;
 
-
 import com.arpit.Skedula.Skedula.dto.UserDTO;
 import com.arpit.Skedula.Skedula.entity.User;
 import com.arpit.Skedula.Skedula.entity.enums.Role;
 import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.UserRepository;
+import com.arpit.Skedula.Skedula.services.CacheService;
 import com.arpit.Skedula.Skedula.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,11 +14,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserDetailsService, UserService {
     private final UserRepository userRepository;
-
+    private final CacheService cacheService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -38,17 +40,20 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     @Override
     public UserDTO getCurrentUser() {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(currentEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + currentEmail));
-        UserDTO userDTO = new UserDTO();
-        userDTO.setId(user.getId());
-        userDTO.setEmail(user.getEmail());
-        userDTO.setName(user.getName());
-        userDTO.setPhone(user.getPhone());
-        userDTO.setDob(user.getDob());
-        userDTO.setAddress(user.getAddress());
-        userDTO.setRoles(user.getRoles());
-        userDTO.setImageUrl(user.getImageUrl());
-        return userDTO;
+        String cacheKey = "v1:user:profile:email:" + currentEmail;
+        return cacheService.getOrLoad(cacheKey, UserDTO.class, Duration.ofMinutes(10), () -> {
+            User user = userRepository.findByEmail(currentEmail)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + currentEmail));
+            UserDTO userDTO = new UserDTO();
+            userDTO.setId(user.getId());
+            userDTO.setEmail(user.getEmail());
+            userDTO.setName(user.getName());
+            userDTO.setPhone(user.getPhone());
+            userDTO.setDob(user.getDob());
+            userDTO.setAddress(user.getAddress());
+            userDTO.setRoles(user.getRoles());
+            userDTO.setImageUrl(user.getImageUrl());
+            return userDTO;
+        });
     }
 }

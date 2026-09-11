@@ -1,6 +1,5 @@
 package com.arpit.Skedula.Skedula.utils;
 
-import com.arpit.Skedula.Skedula.entity.BusinessServiceOffered;
 import com.arpit.Skedula.Skedula.entity.User;
 import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.UserRepository;

@@ -49,10 +49,10 @@ public class RedisCacheServiceImpl implements CacheService {
         try {
             String cached = redisTemplate.opsForValue().get(key);
             if (cached == null || cached.isBlank()) {
-                log.debug("CACHE MISS for key: {}", key);
+                log.info("[REDIS CACHE MISS] Key: {}", key);
                 return Optional.empty();
             }
-            log.debug("CACHE HIT for key: {}", key);
+            log.info("[REDIS CACHE HIT] Key: {}", key);
             T value = objectMapper.readValue(cached, clazz);
             return Optional.ofNullable(value);
         } catch (Exception e) {
@@ -69,10 +69,10 @@ public class RedisCacheServiceImpl implements CacheService {
         try {
             String cached = redisTemplate.opsForValue().get(key);
             if (cached == null || cached.isBlank()) {
-                log.debug("CACHE MISS for key: {}", key);
+                log.info("[REDIS CACHE MISS] Key: {}", key);
                 return Optional.empty();
             }
-            log.debug("CACHE HIT for key: {}", key);
+            log.info("[REDIS CACHE HIT] Key: {}", key);
             T value = objectMapper.readValue(cached, typeReference);
             return Optional.ofNullable(value);
         } catch (Exception e) {
@@ -93,7 +93,7 @@ public class RedisCacheServiceImpl implements CacheService {
             } else {
                 redisTemplate.opsForValue().set(key, json);
             }
-            log.debug("CACHE SET for key: {} with TTL: {}s", key, ttl != null ? ttl.toSeconds() : "infinite");
+            log.info("[REDIS CACHE SET] Key: {} | TTL: {}s", key, ttl != null ? ttl.toSeconds() : "infinite");
         } catch (Exception e) {
             log.warn("Redis SET operation failed for key '{}'. Error: {}", key, e.getMessage());
         }
@@ -106,7 +106,7 @@ public class RedisCacheServiceImpl implements CacheService {
         }
         try {
             redisTemplate.delete(key);
-            log.debug("CACHE EVICTED key: {}", key);
+            log.info("[REDIS CACHE EVICTED] Key: {}", key);
         } catch (Exception e) {
             log.warn("Redis DELETE operation failed for key '{}'. Error: {}", key, e.getMessage());
         }

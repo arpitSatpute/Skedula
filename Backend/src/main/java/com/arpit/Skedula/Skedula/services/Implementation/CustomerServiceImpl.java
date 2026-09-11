@@ -10,6 +10,7 @@ import com.arpit.Skedula.Skedula.exceptions.ResourceNotFoundException;
 import com.arpit.Skedula.Skedula.repository.AppointmentRepository;
 import com.arpit.Skedula.Skedula.repository.CustomerRepository;
 import com.arpit.Skedula.Skedula.repository.UserRepository;
+import com.arpit.Skedula.Skedula.services.CacheService;
 import com.arpit.Skedula.Skedula.services.CustomerService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.UUID;
 
 import static org.modelmapper.Converters.Collection.map;
@@ -31,6 +33,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final ModelMapper modelMapper;
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
+    private final CacheService cacheService;
 
     @Override
     public CustomerDTO createCustomer(User user) {
@@ -38,6 +41,7 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setUser(user);
         customer.setCustomerId(generateCustomerId());
         Customer savedCustomer = customerRepository.save(customer);
+        cacheService.deleteByPattern("v1:customer:*");
         return entityToDTO(savedCustomer, user.getId());
     }
 
@@ -45,16 +49,22 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public CustomerDTO getCurrentCustomer() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found for email: " + email));
-        Customer customer = customerRepository.findByUser_Id(user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found for email: " + email));
-        return entityToDTO(customer, user.getId());
+        String cacheKey = "v1:customer:profile:email:" + email;
+        return cacheService.getOrLoad(cacheKey, CustomerDTO.class, Duration.ofMinutes(10), () -> {
+            User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found for email: " + email));
+            Customer customer = customerRepository.findByUser_Id(user.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Customer not found for email: " + email));
+            return entityToDTO(customer, user.getId());
+        });
     }
 
     @Override
     public CustomerDTO getCustomerById(Long id) {
-        Customer customer = customerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
-        return entityToDTO(customer, customer.getUser().getId());
+        String cacheKey = "v1:customer:profile:id:" + id;
+        return cacheService.getOrLoad(cacheKey, CustomerDTO.class, Duration.ofMinutes(10), () -> {
+            Customer customer = customerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+            return entityToDTO(customer, customer.getUser().getId());
+        });
     }
 
     @Override
