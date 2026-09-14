@@ -136,6 +136,9 @@ const OwnerBusiness = () => {
 
   // Handlers
   const handleEditBusiness = () => {
+    if (business) {
+      sessionStorage.setItem('editBusiness', JSON.stringify(business));
+    }
     navigate(`/business/${business.id}/edit`);
   };
 
@@ -166,6 +169,11 @@ const OwnerBusiness = () => {
   };
 
   const handleEditService = (serviceId) => {
+    const sObj = services.find(s => s.id === serviceId);
+    if (sObj) {
+      localStorage.setItem('serviceData', JSON.stringify(sObj));
+      sessionStorage.setItem('editService', JSON.stringify(sObj));
+    }
     navigate(`/services/edit/${business.id}/${serviceId}`);
   };
 
@@ -330,19 +338,19 @@ const OwnerBusiness = () => {
           </div>
 
           {/* Contact and Operational Details */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60 space-y-1">
-              <div className="flex items-center gap-2 text-brand-primary text-xs font-bold">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60 space-y-1">
+              <div className="flex items-center gap-1.5 text-brand-primary text-xs font-bold">
                 <i className="bi bi-clock"></i>
                 <span>Operating Hours</span>
               </div>
-              <p className="text-xs font-bold text-brand-primary">
+              <p className="text-xs font-bold text-brand-primary truncate">
                 {business.openTime || 'N/A'} - {business.closeTime || 'N/A'}
               </p>
             </div>
 
-            <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60 space-y-1">
-              <div className="flex items-center gap-2 text-brand-primary text-xs font-bold">
+            <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60 space-y-1">
+              <div className="flex items-center gap-1.5 text-brand-primary text-xs font-bold">
                 <i className="bi bi-telephone"></i>
                 <span>Phone</span>
               </div>
@@ -351,23 +359,33 @@ const OwnerBusiness = () => {
               </p>
             </div>
 
-            <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60 space-y-1">
-              <div className="flex items-center gap-2 text-brand-primary text-xs font-bold">
-                <i className="bi bi-envelope"></i>
-                <span>Email</span>
+            <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60 space-y-1">
+              <div className="flex items-center gap-1.5 text-brand-primary text-xs font-bold">
+                <i className="bi bi-shield-check"></i>
+                <span>Cancellation Terms</span>
               </div>
               <p className="text-xs font-bold text-brand-primary truncate">
-                {business.email || 'Not provided'}
+                {Math.floor((business.cancellationCutoffMinutes || 120) / 60)}h window ({business.cancellationFeePercentage || 20}% fee)
               </p>
             </div>
 
-            <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60 space-y-1">
-              <div className="flex items-center gap-2 text-brand-primary text-xs font-bold">
+            <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60 space-y-1">
+              <div className="flex items-center gap-1.5 text-brand-primary text-xs font-bold">
                 <i className="bi bi-geo-alt"></i>
-                <span>Address</span>
+                <span>Coordinates</span>
+              </div>
+              <p className="text-xs font-mono font-bold text-brand-primary truncate">
+                {business.latitude && business.longitude ? `${business.latitude}, ${business.longitude}` : 'GPS not set'}
+              </p>
+            </div>
+
+            <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60 space-y-1">
+              <div className="flex items-center gap-1.5 text-brand-primary text-xs font-bold">
+                <i className="bi bi-building-check"></i>
+                <span>Location</span>
               </div>
               <p className="text-xs font-bold text-brand-primary truncate">
-                {business.address ? `${business.address}, ${business.city}` : 'Not provided'}
+                {business.city ? `${business.city}, ${business.state || ''}` : 'Address on file'}
               </p>
             </div>
           </div>

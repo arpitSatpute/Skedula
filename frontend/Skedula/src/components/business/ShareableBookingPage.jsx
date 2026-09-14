@@ -168,7 +168,10 @@ const ShareableBookingPage = () => {
 
   const openStatus = isCurrentlyOpen();
   const fullAddress = [business.address, business.city, business.state, business.country, business.zipCode].filter(Boolean).join(', ');
-  const cutoffHours = Math.round((business.cancellationCutoffMinutes || 120) / 60);
+  const cutoffHours = Math.floor((business.cancellationCutoffMinutes || 120) / 60);
+  const cutoffMinutes = (business.cancellationCutoffMinutes || 120) % 60;
+  const cutoffDisplay = cutoffMinutes > 0 ? `${cutoffHours}h ${cutoffMinutes}m` : `${cutoffHours}h`;
+  const lateFee = business.cancellationFeePercentage !== undefined && business.cancellationFeePercentage !== null ? business.cancellationFeePercentage : 20;
 
   return (
     <div className="min-h-screen bg-neutral-background py-8 px-4 sm:px-6 lg:px-8">
@@ -244,7 +247,7 @@ const ShareableBookingPage = () => {
                   <span>•</span>
                   <span className="flex items-center gap-1.5">
                     <i className="bi bi-shield-check text-emerald-400 text-sm"></i>
-                    <span>100% Refund &gt; {cutoffHours}h</span>
+                    <span>100% Refund &gt; {cutoffDisplay} ({lateFee}% fee &le; {cutoffDisplay})</span>
                   </span>
                 </div>
               </div>

@@ -104,7 +104,10 @@ const Business = () => {
 
   const open = isOpenNow(business.openTime, business.closeTime);
   const fullAddress = [business.address, business.city, business.state, business.country, business.zipCode].filter(Boolean).join(', ');
-  const cutoffHours = Math.round((business.cancellationCutoffMinutes || 120) / 60);
+  const cutoffHours = Math.floor((business.cancellationCutoffMinutes || 120) / 60);
+  const cutoffMinutes = (business.cancellationCutoffMinutes || 120) % 60;
+  const cutoffDisplay = cutoffMinutes > 0 ? `${cutoffHours}h ${cutoffMinutes}m` : `${cutoffHours}h`;
+  const lateFee = business.cancellationFeePercentage !== undefined && business.cancellationFeePercentage !== null ? business.cancellationFeePercentage : 20;
 
   return (
     <div className="py-12 md:py-16 px-4 sm:px-6 bg-mesh-subtle">
@@ -208,7 +211,7 @@ const Business = () => {
             <div className="bg-neutral-background p-4 rounded-2xl border border-neutral-border/60 space-y-1">
               <span className="text-[10px] uppercase font-bold text-text-secondary">Cancellation Policy</span>
               <p className="text-xs font-semibold text-brand-primary">
-                100% Refund &gt; {cutoffHours}h
+                100% Refund &gt; {cutoffDisplay} ({lateFee}% fee &le; {cutoffDisplay})
               </p>
             </div>
           </div>

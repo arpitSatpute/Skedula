@@ -379,6 +379,108 @@ const OwnerProfile = () => {
                 </div>
               </div>
             )}
+
+            {/* Owner Personal & Registration Credentials */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" data-animation-on-scroll="">
+              {/* Personal Information */}
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-neutral-border shadow-card space-y-6">
+                <div className="border-b border-neutral-border/60 pb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold font-primary text-brand-primary">
+                      Owner Personal Profile
+                    </h3>
+                    <p className="text-xs text-text-secondary">User credentials tied to this practitioner account</p>
+                  </div>
+                  <span className="bg-brand-secondary/40 text-brand-primary text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                    Verified
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60">
+                    <span className="text-[10px] uppercase font-bold text-text-secondary block">Full Name</span>
+                    <span className="text-xs font-bold text-brand-primary mt-0.5 block">{user?.name || 'Not provided'}</span>
+                  </div>
+
+                  <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60">
+                    <span className="text-[10px] uppercase font-bold text-text-secondary block">Registered Email</span>
+                    <span className="text-xs font-bold text-brand-primary mt-0.5 block truncate">{user?.email || 'Not provided'}</span>
+                  </div>
+
+                  <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60">
+                    <span className="text-[10px] uppercase font-bold text-text-secondary block">Personal Phone</span>
+                    <span className="text-xs font-bold text-brand-primary mt-0.5 block">{user?.phone || 'Not provided'}</span>
+                  </div>
+
+                  <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60">
+                    <span className="text-[10px] uppercase font-bold text-text-secondary block">Date of Birth</span>
+                    <span className="text-xs font-bold text-brand-primary mt-0.5 block">
+                      {user?.dob ? new Date(user.dob).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not provided'}
+                    </span>
+                  </div>
+
+                  <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60 sm:col-span-2">
+                    <span className="text-[10px] uppercase font-bold text-text-secondary block">Personal Address</span>
+                    <span className="text-xs font-bold text-brand-primary mt-0.5 block">{user?.address || 'Not provided'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Legal & Policy Summary */}
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-neutral-border shadow-card space-y-6">
+                <div className="border-b border-neutral-border/60 pb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold font-primary text-brand-primary">
+                      Compliance & Escrow Rules
+                    </h3>
+                    <p className="text-xs text-text-secondary">Official commercial verification details</p>
+                  </div>
+                  <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-3 py-1 rounded-full">
+                    Active Venue
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60">
+                    <span className="text-[10px] uppercase font-bold text-text-secondary block">CRN Number</span>
+                    <span className="text-xs font-mono font-bold text-brand-primary mt-0.5 block">{business.crnnumber || business.CRNNumber || 'CRN-VERIFIED'}</span>
+                  </div>
+
+                  <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60">
+                    <span className="text-[10px] uppercase font-bold text-text-secondary block">GST Number</span>
+                    <span className="text-xs font-mono font-bold text-brand-primary mt-0.5 block truncate">{business.gstnumber || business.GSTNumber || 'GST-VERIFIED'}</span>
+                  </div>
+
+                  <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60">
+                    <span className="text-[10px] uppercase font-bold text-text-secondary block">Cancellation Window</span>
+                    <span className="text-xs font-bold text-brand-primary mt-0.5 block">
+                      {Math.floor((business.cancellationCutoffMinutes || 120) / 60)}h ({(business.cancellationCutoffMinutes || 120)} mins)
+                    </span>
+                  </div>
+
+                  <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60">
+                    <span className="text-[10px] uppercase font-bold text-text-secondary block">Late Cancellation Fee</span>
+                    <span className="text-xs font-bold text-brand-primary mt-0.5 block">
+                      {business.cancellationFeePercentage || 20}%
+                    </span>
+                  </div>
+
+                  {business.latitude && business.longitude && (
+                    <div className="bg-neutral-background p-3.5 rounded-2xl border border-neutral-border/60 sm:col-span-2 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-text-secondary block">Geo Coordinates</span>
+                        <span className="text-xs font-mono font-bold text-brand-primary mt-0.5 block">
+                          Lat: {business.latitude}, Lng: {business.longitude}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold text-brand-primary bg-brand-secondary/30 px-2.5 py-1 rounded-full">
+                        GPS Active
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </>
         )}
 

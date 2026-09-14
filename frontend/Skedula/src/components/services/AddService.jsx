@@ -9,6 +9,7 @@ function AddService() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
+    category: 'Spa & Wellness',
     description: '',
     duration: '45',
     price: '',
@@ -21,6 +22,17 @@ function AddService() {
   const [loading, setLoading] = useState(false);
 
   const durationPresets = ['15', '30', '45', '60', '90', '120'];
+  const categoryPresets = [
+    'Spa & Wellness',
+    'Hair & Styling',
+    'Skin & Facial',
+    'Massage Therapy',
+    'Nails & Manicure',
+    'Body Treatment',
+    'Consultation & Assessment',
+    'Fitness & Training',
+    'General Services'
+  ];
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -115,19 +127,38 @@ function AddService() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
-                    Service Title *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder="e.g. Deep Botanical Skin Therapy"
-                    disabled={loading}
-                    required
-                    className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-xl py-3 px-4 text-xs font-semibold text-brand-primary outline-none transition-all"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+                      Service Title *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      placeholder="e.g. Deep Botanical Skin Therapy"
+                      disabled={loading}
+                      required
+                      className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-xl py-3 px-4 text-xs font-semibold text-brand-primary outline-none transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+                      Category *
+                    </label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => handleInputChange('category', e.target.value)}
+                      disabled={loading}
+                      required
+                      className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-xl py-3 px-4 text-xs font-semibold text-brand-primary outline-none transition-all cursor-pointer"
+                    >
+                      {categoryPresets.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div>

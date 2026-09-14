@@ -7,18 +7,31 @@ import { extractServiceImages } from '../../utils/imageHelper';
 
 function EditService() {
   const { id, serviceId } = useParams();
-  const serviceData = JSON.parse(localStorage.getItem('serviceData')) || {};
+  
+  const getInitialServiceData = () => {
+    try {
+      const fromSession = sessionStorage.getItem('editService');
+      if (fromSession && fromSession !== 'null') return JSON.parse(fromSession);
+      const fromLocal = localStorage.getItem('serviceData');
+      if (fromLocal && fromLocal !== 'null') return JSON.parse(fromLocal);
+    } catch (_) {}
+    return {};
+  };
+
+  const initialData = getInitialServiceData();
+
   const [formData, setFormData] = useState({
-    name: serviceData.name || '',
-    description: serviceData.description || '',
-    duration: serviceData.duration ? String(serviceData.duration) : '45',
-    price: serviceData.price ? String(serviceData.price) : '',
-    totalSlots: serviceData.totalSlots ? String(serviceData.totalSlots) : '10',
-    business: id || ''
+    name: initialData.name || '',
+    category: initialData.category || 'Spa & Wellness',
+    description: initialData.description || '',
+    duration: initialData.duration ? String(initialData.duration) : '45',
+    price: initialData.price ? String(initialData.price) : '',
+    totalSlots: initialData.totalSlots ? String(initialData.totalSlots) : '10',
+    business: initialData.business || id || ''
   });
 
   // Existing image URLs (from backend)
-  const initialImages = extractServiceImages(serviceData, null).filter(Boolean);
+  const initialImages = extractServiceImages(initialData, null).filter(Boolean);
   const [existingImages, setExistingImages] = useState(initialImages);
   
   // New image files selected by user
@@ -30,8 +43,19 @@ function EditService() {
   const navigate = useNavigate();
 
   const durationPresets = ['15', '30', '45', '60', '90', '120'];
+  const categoryPresets = [
+    'Spa & Wellness',
+    'Hair & Styling',
+    'Skin & Facial',
+    'Massage Therapy',
+    'Nails & Manicure',
+    'Body Treatment',
+    'Consultation & Assessment',
+    'Fitness & Training',
+    'General Services'
+  ];
 
-  // Verify ownership and load latest service data if needed
+  // Verify ownership and load latest service data
   useEffect(() => {
     let ignore = false;
     const verifyAndLoad = async () => {
@@ -47,11 +71,22 @@ function EditService() {
         const myBusinessId = myBizData?.id;
         setOwnershipVerified(myBusinessId != null && String(myBusinessId) === String(id));
 
-        const servData = serviceRes.status === 'fulfilled' ? (serviceRes.value.data?.data || serviceRes.value.data) : null;
+        let servData = serviceRes.status === 'fulfilled' ? (serviceRes.value.data?.data || serviceRes.value.data) : null;
+        
+        // Fallback: search service by business if direct service lookup missed
+        if (!servData && id) {
+          try {
+            const listRes = await apiClient.get(`/public/getServiceByBusinessId/${id}`);
+            const list = listRes.data?.data || listRes.data || [];
+            servData = Array.isArray(list) ? list.find(s => String(s.id) === String(serviceId)) : null;
+          } catch (_) {}
+        }
+
         if (servData) {
           const s = servData;
           setFormData({
             name: s.name || '',
+            category: s.category || 'Spa & Wellness',
             description: s.description || '',
             duration: s.duration ? String(s.duration) : '45',
             price: s.price ? String(s.price) : '',
@@ -59,7 +94,9 @@ function EditService() {
             business: s.business || id
           });
           const fetchedImages = extractServiceImages(s, null).filter(Boolean);
-          setExistingImages(fetchedImages);
+          if (fetchedImages.length > 0) {
+            setExistingImages(fetchedImages);
+          }
         }
       } catch (_) {
         if (!ignore) setOwnershipVerified(false);
@@ -134,6 +171,7 @@ function EditService() {
       const cleanedExisting = Array.from(new Set(existingImages.map(u => (typeof u === 'string' ? u.trim() : '')).filter(Boolean)));
       const requestData = {
         name: formData.name,
+        category: formData.category || 'Spa & Wellness',
         description: formData.description,
         duration: parseInt(formData.duration),
         price: parseFloat(formData.price),
@@ -209,19 +247,38 @@ function EditService() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
-                  Service Title *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="Enter service name"
-                  disabled={loading}
-                  required
-                  className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-xl py-3 px-4 text-xs font-semibold text-brand-primary outline-none transition-all"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+                    Service Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder="Enter service name"
+                    disabled={loading}
+                    required
+                    className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-xl py-3 px-4 text-xs font-semibold text-brand-primary outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+                    Category *
+                  </label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => handleInputChange('category', e.target.value)}
+                    disabled={loading}
+                    required
+                    className="w-full bg-neutral-background/60 border border-neutral-border focus:border-brand-primary focus:bg-white rounded-xl py-3 px-4 text-xs font-semibold text-brand-primary outline-none transition-all cursor-pointer"
+                  >
+                    {categoryPresets.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>
